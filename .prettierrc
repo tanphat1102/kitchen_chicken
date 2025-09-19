@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "singleQuote": false,
+  "tabWidth": 2,
+  "plugins": [
+    "prettier-plugin-packagejson",
+    "prettier-plugin-sh",
+    "prettier-plugin-organize-imports",
+    "prettier-plugin-organize-attributes",
+    "prettier-plugin-tailwindcss"
+  ]
+}
