@@ -1,36 +1,58 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "@/pages/authentication/Login";
+import Register from "@/pages/authentication/Register";
+import ForgotPassword from "@/pages/authentication/ForgotPassword";
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900">
-        <div className="flex gap-8 mb-6">
-          <a href="https://vite.dev" target="_blank">
-            <img src={viteLogo} className="h-24 w-24 transition-transform hover:scale-110" alt="Vite logo" />
-          </a>
-          <a href="https://react.dev" target="_blank">
-            <img src={reactLogo} className="h-24 w-24 transition-transform hover:scale-110" alt="React logo" />
-          </a>
-        </div>
-        <h1 className="text-4xl font-bold text-white mb-4">Vite + React</h1>
-        <div className="bg-gray-800 rounded-lg shadow p-6 mb-4">
-          <button className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition" onClick={() => setCount((count) => count + 1)}>
-            count is {count}
-          </button>
-          <p className="mt-2 text-gray-300">
-            Edit <code className="bg-gray-700 px-1 rounded">src/App.tsx</code> and save to test HMR
-          </p>
-        </div>
-        <p className="text-red-300 mt-2">
-          Click on the Vite and React logos to learn more
-        </p>
+// Simple components
+const HomePage = () => (
+  <div className="min-h-screen bg-gray-50 p-8">
+    <div className="mx-auto max-w-4xl text-center">
+      <h1 className="mb-4 text-4xl font-bold text-gray-900">🍗 Chicken Kitchen</h1>
+      <p className="text-lg text-gray-600">Welcome to our delicious chicken restaurant!</p>
+      <div className="mt-8 space-x-4">
+        <a href="/menu" className="rounded bg-red-600 px-6 py-3 text-white hover:bg-red-700">
+          View Menu
+        </a>
+        <a href="/login" className="rounded border border-red-600 px-6 py-3 text-red-600 hover:bg-red-50">
+          Login
+        </a>
       </div>
-    </>
+    </div>
+  </div>
+);
+
+const MenuPage = () => (
+  <div className="min-h-screen bg-gray-50 p-8">
+    <div className="mx-auto max-w-4xl">
+      <h1 className="mb-8 text-3xl font-bold text-gray-900">Our Menu</h1>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h3 className="text-xl font-semibold">Fried Chicken</h3>
+          <p className="text-gray-600">Crispy and delicious fried chicken</p>
+          <p className="mt-2 text-lg font-bold text-red-600">$12.99</p>
+        </div>
+        <div className="rounded-lg bg-white p-6 shadow">
+          <h3 className="text-xl font-semibold">Grilled Chicken</h3>
+          <p className="text-gray-600">Healthy grilled chicken breast</p>
+          <p className="mt-2 text-lg font-bold text-red-600">$14.99</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/menu" element={<MenuPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
