@@ -41,38 +41,41 @@ const LoginBox: React.FC = () => {
   );
 };
 
-// Hero
+//Hero
 const Hero: React.FC = () => {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }} 
-      className="flex flex-col items-center text-center pb-3 px-4 mt-12 max-w-[70%] md:max-w-[60%] mx-auto"
+      transition={{ duration: 0.5, delay: 0.4 }}
+      className="relative w-full flex flex-col items-center pb-3 px-4 mt-[5vh] max-w-[70%] md:max-w-[60%] mx-auto"
     >
-      <div className="text-2xl md:text-4xl font-bold text-red-500">
-        <h1>COUNT YOUR SALORIES</h1>
-        <h1>SAVOR YOUR TASTE</h1>
-      </div>
-
-      <div className="mt-4 h-24 mb-0"> 
-        <TypeAnimation
-          sequence={[1000, 'Explore a diverse and flavorful menu or customize your own meal by selecting each ingredient to match your preference', 2000, '']}
-          wrapper="p"
-          cursor={true}
-          repeat={Infinity}
-          className="text-gray-500 text-base md:text-lg"
-        />
-      </div>
       
-      <div>
-        <LoginBox />
+      <div className="absolute top-0 left-0 w-full h-24 flex flex-col font-bold text-red-500 text-2xl md:text-4xl">
+        <h1 className="self-start -translate-x-16">"COUNT YOUR SALORIES</h1>
+        <h1 className="self-end mt-2 translate-x-16">SAVOR YOUR TASTE"</h1>
       </div>
 
-      <div className="flex justify-center space-x-6 mt-6">
-        <img src={discordLogoUrl} alt="Discord Logo" className="w-12 h-12 rounded-full object-cover shadow-md cursor-pointer hover:scale-105 transition-transform duration-200" />
-        <img src={googleLogoUrl} alt="Google Logo" className="w-12 h-12 rounded-full object-cover shadow-md cursor-pointer hover:scale-105 transition-transform duration-200" />
-        <img src={facebookLogoUrl} alt="Facebook Logo" className="w-12 h-12 rounded-full object-cover shadow-md cursor-pointer hover:scale-105 transition-transform duration-200" />
+      <div className="pt-28 flex flex-col items-center">
+        <div className="h-[12vh] mb-0"> 
+          <TypeAnimation
+            sequence={[1000, 'Explore a diverse and flavorful menu or customize your own meal by selecting each ingredient to match your preference', 2000, '']}
+            wrapper="p"
+            cursor={true}
+            repeat={Infinity}
+            className="text-gray-500 text-base md:text-lg text-center"
+          />
+        </div>
+        
+        <div>
+          <LoginBox />
+        </div>
+
+        <div className="flex justify-center space-x-6 mt-6">
+          <img src={discordLogoUrl} alt="Discord Logo" className="w-12 h-12 rounded-full object-cover shadow-md cursor-pointer hover:scale-105 transition-transform duration-200" />
+          <img src={googleLogoUrl} alt="Google Logo" className="w-12 h-12 rounded-full object-cover shadow-md cursor-pointer hover:scale-105 transition-transform duration-200" />
+          <img src={facebookLogoUrl} alt="Facebook Logo" className="w-12 h-12 rounded-full object-cover shadow-md cursor-pointer hover:scale-105 transition-transform duration-200" />
+        </div>
       </div>
     </motion.div>
   );
@@ -81,14 +84,14 @@ const Hero: React.FC = () => {
 // Char Img
 const Characters: React.FC = () => {
   return (
-    <div className="text-center -mt-16"> 
+    <div className="text-center relative z-0 -mt-[23vh]"> 
       <motion.img 
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.8 }} 
         src={charactersImage} 
         alt="Chicken Kitchen Characters" 
-        className="max-w-[80%] h-auto inline-block max-h-[90%]" 
+        className="max-w-[80%] h-auto inline-block max-h-[50vh]" 
       />
     </div>
   );
@@ -96,9 +99,9 @@ const Characters: React.FC = () => {
 
 function Login() {
   return (
-    <div className="bg-white h-screen relative overflow-hidden">
+    <div className="bg-gradient-to-b from-white to-[#FEF1E1] h-screen relative overflow-hidden">
       <Header />
-      <div className="max-w-6xl mx-auto h-full flex flex-col pt-24 md:pt-28">
+      <div className="max-w-6xl mx-auto h-full flex flex-col pt-[10vh]">
         <main className="flex-1 flex flex-col justify-center items-center relative z-10">
           <Hero />
         </main>
