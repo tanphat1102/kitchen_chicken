@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "@/pages/authentication/Login";
 import Register from "@/pages/authentication/Register";
 import ForgotPassword from "@/pages/authentication/ForgotPassword";
+import Dashboard from "@/pages/Dashboard";
+import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import './App.css'
 
 // Simple components
@@ -46,11 +48,45 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/menu" element={<MenuPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        {/* Auth routes - redirect to dashboard if already logged in */}
+        <Route 
+          path="/login" 
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <Login />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/register" 
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <Register />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={
+            <ProtectedRoute requireAuth={false}>
+              <ForgotPassword />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* Protected routes - require authentication */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute requireAuth={true}>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </BrowserRouter>
   )
