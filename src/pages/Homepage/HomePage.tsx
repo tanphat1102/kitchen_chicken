@@ -12,30 +12,85 @@ import menuItemsService, { type MenuItem } from '@/services/menuItemsService';
 
 import SaladBowl from '../../assets/img/HeroImg.png';
 
+  const sampleMenuItems: MenuItem[] = [
+  {
+    id: 1,
+    name: 'Classic Grilled Chicken',
+    categoryId: 1,
+    categoryName: 'Main Courses',
+    isActive: true,
+    imageUrl: 'https://i.pinimg.com/564x/a2/2a/d3/a22ad39a2b8510868f051152778b87c7.jpg',
+  },
+  {
+    id: 2,
+    name: 'Spicy Buffalo Wings',
+    categoryId: 2,
+    categoryName: 'Appetizers',
+    isActive: true,
+    imageUrl: 'https://i.pinimg.com/564x/e7/0b/3e/e70b3e70d4f3b171f1b63c20202534f5.jpg',
+  },
+  {
+    id: 3,
+    name: 'Chicken Caesar Salad',
+    categoryId: 3,
+    categoryName: 'Salads',
+    isActive: true,
+    imageUrl: 'https://i.pinimg.com/564x/87/1b/30/871b30e060a809b0b144a95acb6b2b73.jpg',
+  },
+  {
+    id: 4,
+    name: 'Crispy Chicken Wrap',
+    categoryId: 4,
+    categoryName: 'Wraps & Sandwiches',
+    isActive: true,
+    imageUrl: 'https://i.pinimg.com/564x/d1/8a/a5/d18aa54eb0c33d831201389c5b252199.jpg',
+  },
+  {
+    id: 5,
+    name: 'Roasted Herb Chicken',
+    categoryId: 1,
+    categoryName: 'Main Courses',
+    isActive: true,
+    imageUrl: 'https://i.pinimg.com/564x/c7/28/99/c72899477e6869a215357a74a2b97c7e.jpg',
+  },
+  {
+    id: 6,
+    name: 'Garlic Mashed Potatoes',
+    categoryId: 5,
+    categoryName: 'Sides',
+    isActive: true,
+    imageUrl: 'https://i.pinimg.com/564x/f3/15/34/f3153406f916b080808226023315a639.jpg',
+  },
+];
+
 function Homepage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  // const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const todayMenuRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
-        const token = ""; //Fake token
+  //For sample data
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(sampleMenuItems);
+  const [loading, setLoading] = useState<boolean>(false);
 
-        const items = await menuItemsService.getAllMenuItems(token || undefined);
-        setMenuItems(items);
-      } catch (err: any) {
-        console.error('Error fetching menu:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchMenu = async () => {
+  //     try {
+  //       const token = ""; //Fake token
 
-    fetchMenu();
-  }, []);
+  //       const items = await menuItemsService.getAllMenuItems(token || undefined);
+  //       setMenuItems(items);
+  //     } catch (err: any) {
+  //       console.error('Error fetching menu:', err);
+  //       setError(err.message);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchMenu();
+  // }, []);
 
   if (loading) {
     return <div>Loading menu...</div>;
