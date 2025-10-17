@@ -1,20 +1,52 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle } from "lucide-react";
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "@/services/authService";
+import Logo from "@/assets/img/Logo.png";
 
 const ForgotPassword: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Chỉ là UI demo - không có logic xử lý
-    console.log("Password:", password);
-    console.log("Confirm Password:", confirmPassword);
+    setError("");
+    
+    if (!email.trim()) {
+      setError("Vui lòng nhập email của bạn");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("Email không hợp lệ");
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      await authService.resetPassword(email);
+      setSuccess(true);
+    } catch (err: any) {
+      if (err.message) {
+        setError(err.message);
+      } else {
+        setError("Có lỗi xảy ra, vui lòng thử lại");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -31,7 +63,7 @@ const ForgotPassword: React.FC = () => {
         <div className="relative z-10">
           <h2 className="mb-4 text-4xl font-bold">Quên mật khẩu?</h2>
           <p className="text-xl opacity-90">
-            Tạo lại mật khẩu mới để tiếp tục trải nghiệm dịch vụ của chúng tôi
+            Nhập email để nhận liên kết đặt lại mật khẩu
           </p>
         </div>
       </div>
@@ -41,84 +73,83 @@ const ForgotPassword: React.FC = () => {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <span className="text-xl font-bold text-red-600">🍗</span>
+              <img src={Logo} alt="Logo" className="h-8 w-8" />
             </div>
-            <CardTitle className="text-2xl">Tạo mật khẩu mới</CardTitle>
+            <CardTitle className="text-2xl">
+              {success ? "Kiểm tra email của bạn" : "Quên mật khẩu"}
+            </CardTitle>
             <CardDescription>
-              Nhập mật khẩu mới cho tài khoản của bạn
+              {success 
+                ? "Chúng tôi đã gửi liên kết đặt lại mật khẩu đến email của bạn" 
+                : "Nhập email để nhận liên kết đặt lại mật khẩu"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Mật khẩu mới
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Nhập mật khẩu mới"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+            {success ? (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                    <CheckCircle className="h-8 w-8 text-green-600" />
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium">
-                  Xác nhận mật khẩu
-                </label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Nhập lại mật khẩu mới"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
+                <div className="text-center text-sm text-gray-600">
+                  Nếu bạn không thấy email trong hộp thư đến, vui lòng kiểm tra thư mục spam.
                 </div>
-              </div>
-
-              <Button type="submit" className="w-full bg-red-600 hover:bg-red-700">
-                Đổi mật khẩu
-              </Button>
-
-              <div className="text-center">
                 <Button 
-                  variant="ghost" 
-                  className="text-sm text-red-600 hover:text-red-700"
-                  onClick={() => window.history.back()}
+                  onClick={() => navigate("/login")}
+                  className="w-full bg-red-600 hover:bg-red-700"
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Quay lại đăng nhập
                 </Button>
               </div>
-            </form>
+            ) : (
+              <>
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
+                    {error}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="email" className="text-sm font-medium">
+                      Email
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Nhập email của bạn"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={loading}
+                      required
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    disabled={loading}
+                  >
+                    {loading ? "Đang gửi..." : "Gửi liên kết đặt lại"}
+                  </Button>
+
+                  <div className="text-center">
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      className="text-sm text-red-600 hover:text-red-700"
+                      onClick={() => navigate("/login")}
+                      disabled={loading}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Quay lại đăng nhập
+                    </Button>
+                  </div>
+                </form>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
