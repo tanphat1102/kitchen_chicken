@@ -15,8 +15,8 @@ import logo from '../assets/img/Logo.png';
 
 const navLinks = [
   { name: "Home", path: "/" },
-  { name: "Categories", path: "/categories" },
-  { name: "Ingredients", path: "/ingredients" },
+  { name: "Menu", path: "/menu" },
+  { name: "Custom", path: "/custom" },
   { name: "Services", path: "/services" },
   { name: "Restaurants", path: "/restaurants" },
 ];
