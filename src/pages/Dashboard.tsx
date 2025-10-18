@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, User } from 'lucide-react';
+import AdminLayout from '@/layouts/admin/AdminLayout';
 
 const Dashboard: React.FC = () => {
   const { currentUser, signOut } = useAuth();
@@ -16,6 +17,8 @@ const Dashboard: React.FC = () => {
   };
 
   return (
+  <AdminLayout>
+
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
@@ -76,6 +79,7 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
     </div>
+  </AdminLayout>
   );
 };
 
