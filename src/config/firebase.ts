@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, GithubAuthProvider, OAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
@@ -24,10 +24,17 @@ export const auth = getAuth(app);
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
 
-// Google Auth Provider
+// Auth Providers
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
   prompt: 'select_account'
 });
+
+export const githubProvider = new GithubAuthProvider();
+githubProvider.addScope('user:email');
+
+export const discordProvider = new OAuthProvider('discord.com');
+discordProvider.addScope('identify');
+discordProvider.addScope('email');
 
 export default app;

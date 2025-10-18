@@ -1,26 +1,11 @@
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   signInWithPopup,
-  sendPasswordResetEmail,
-  updateProfile,
   type User
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, googleProvider, db } from '@/config/firebase';
+import { auth, googleProvider, githubProvider, discordProvider, db } from '@/config/firebase';
 
 // Types
-export interface RegisterData {
-  email: string;
-  password: string;
-  displayName: string;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
 export interface UserProfile {
   uid: string;
   email: string;
@@ -28,6 +13,7 @@ export interface UserProfile {
   photoURL?: string;
   createdAt: Date;
   role: 'user' | 'admin';
+  provider: 'google' | 'github' | 'discord';
   preferences?: {
     theme?: 'light' | 'dark';
     notifications?: boolean;
@@ -36,37 +22,6 @@ export interface UserProfile {
 
 // Auth Service Class
 class AuthService {
-  // Register with email and password
-  async register({ email, password, displayName }: RegisterData): Promise<User> {
-    try {
-      // Create user account
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update user profile with display name
-      await updateProfile(user, {
-        displayName: displayName
-      });
-
-      // Create user document in Firestore
-      await this.createUserDocument(user, { displayName });
-
-      return user;
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      throw this.handleAuthError(error);
-    }
-  }
-
-  // Login with email and password
-  async login({ email, password }: LoginData): Promise<User> {
-    try {
-      const { user } = await signInWithEmailAndPassword(auth, email, password);
-      return user;
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw this.handleAuthError(error);
-    }
-  }
 
   // Login with Google
   async loginWithGoogle(): Promise<User> {
@@ -76,7 +31,7 @@ class AuthService {
       // Check if user document exists, if not create it
       const userDoc = await this.getUserDocument(user.uid);
       if (!userDoc) {
-        await this.createUserDocument(user);
+        await this.createUserDocument(user, { provider: 'google' });
       }
 
       return user;
@@ -86,12 +41,38 @@ class AuthService {
     }
   }
 
-  // Send password reset email
-  async resetPassword(email: string): Promise<void> {
+  // Login with GitHub
+  async loginWithGithub(): Promise<User> {
     try {
-      await sendPasswordResetEmail(auth, email);
+      const { user } = await signInWithPopup(auth, githubProvider);
+      
+      // Check if user document exists, if not create it
+      const userDoc = await this.getUserDocument(user.uid);
+      if (!userDoc) {
+        await this.createUserDocument(user, { provider: 'github' });
+      }
+
+      return user;
     } catch (error: any) {
-      console.error('Password reset error:', error);
+      console.error('GitHub login error:', error);
+      throw this.handleAuthError(error);
+    }
+  }
+
+  // Login with Discord
+  async loginWithDiscord(): Promise<User> {
+    try {
+      const { user } = await signInWithPopup(auth, discordProvider);
+      
+      // Check if user document exists, if not create it
+      const userDoc = await this.getUserDocument(user.uid);
+      if (!userDoc) {
+        await this.createUserDocument(user, { provider: 'discord' });
+      }
+
+      return user;
+    } catch (error: any) {
+      console.error('Discord login error:', error);
       throw this.handleAuthError(error);
     }
   }
@@ -107,6 +88,7 @@ class AuthService {
       photoURL: user.photoURL || undefined,
       createdAt: new Date(),
       role: 'user',
+      provider: additionalData?.provider || 'google',
       preferences: {
         theme: 'light',
         notifications: true
