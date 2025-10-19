@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { ChefHat, Home, Users, ShoppingBag, BarChart3, Settings } from "lucide-react"
+import { ChefHat, Home } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 
 interface SidebarData {

@@ -24,6 +24,24 @@ export const auth = getAuth(app);
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
 
+// Configure Firestore settings for better performance and error handling
+import { enableNetwork } from "firebase/firestore";
+
+// Enable offline persistence and better error handling
+const initializeFirestore = async () => {
+  try {
+    // Enable network for Firestore
+    await enableNetwork(db);
+    console.log('Firestore network enabled successfully');
+  } catch (error) {
+    console.warn('Firestore network initialization warning:', error);
+    // Continue anyway - might be already enabled
+  }
+};
+
+// Initialize Firestore connection
+initializeFirestore();
+
 // Auth Providers
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({

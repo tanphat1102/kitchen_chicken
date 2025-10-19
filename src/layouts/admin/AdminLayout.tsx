@@ -18,11 +18,13 @@ const getBreadcrumbFromPath = (pathname: string) => {
     return { section: "Chicken Kitchen Admin", page: topLevelItem.title };
   }
 
-  // Check sub-items
+  // Check sub-items (if any exist in the future)
   for (const section of sidebarData.navMain) {
-    const subItem = section.items?.find((item) => item.url === pathname);
-    if (subItem) {
-      return { section: section.title, page: subItem.title };
+    if ('items' in section && Array.isArray(section.items)) {
+      const subItem = section.items.find((item: any) => item.url === pathname);
+      if (subItem) {
+        return { section: section.title, page: subItem.title };
+      }
     }
   }
 

@@ -3,79 +3,58 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginModal from "@/components/shared/LoginModal";
+import { useGoogleLogin, useGithubLogin, useDiscordLogin } from "@/hooks/useAuth";
 import Logo from "@/assets/img/Logo.png";
 
 const Register: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
+  // TanStack Query mutations
+  const googleLogin = useGoogleLogin();
+  const githubLogin = useGithubLogin();
+  const discordLogin = useDiscordLogin();
+
+  // Helper function to redirect based on role
+  const redirectByRole = (role: string) => {
+    switch (role) {
+      case 'admin':
+        navigate("/admin/dashboard");
+        break;
+      case 'member':
+        navigate("/member/dashboard");
+        break;
+      default:
+        navigate("/");
+        break;
+    }
+  };
+
   // Redirect if already logged in
   React.useEffect(() => {
     if (currentUser) {
-      navigate("/dashboard");
+      redirectByRole(currentUser.role);
     }
   }, [currentUser, navigate]);
 
-  const handleGoogleRegister = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      await authService.loginWithGoogle();
-      navigate("/dashboard");
-    } catch (err: any) {
-      if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Có lỗi xảy ra, vui lòng thử lại");
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleRegister = () => {
+    googleLogin.mutate();
   };
 
-  const handleGithubRegister = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      await authService.loginWithGithub();
-      navigate("/dashboard");
-    } catch (err: any) {
-      if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Có lỗi xảy ra, vui lòng thử lại");
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleGithubRegister = () => {
+    githubLogin.mutate();
   };
 
-  const handleDiscordRegister = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      await authService.loginWithDiscord();
-      navigate("/dashboard");
-    } catch (err: any) {
-      if (err.message) {
-        setError(err.message);
-      } else {
-        setError("Có lỗi xảy ra, vui lòng thử lại");
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleDiscordRegister = () => {
+    discordLogin.mutate();
   };
+
+  // Get loading state from any active mutation
+  const isLoading = googleLogin.isPending || githubLogin.isPending || discordLogin.isPending;
 
   return (
     <div className="flex min-h-screen">
@@ -113,21 +92,15 @@ const Register: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-4">
-                {error}
-              </div>
-            )}
-
             <div className="space-y-4">
               <Button
                 type="button"
                 variant="outline"
                 className="w-full"
                 onClick={handleGoogleRegister}
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -157,9 +130,9 @@ const Register: React.FC = () => {
                 variant="outline"
                 className="w-full"
                 onClick={handleGithubRegister}
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -174,9 +147,9 @@ const Register: React.FC = () => {
                 variant="outline" 
                 className="w-full"
                 onClick={handleDiscordRegister}
-                disabled={loading}
+                disabled={isLoading}
               >
-                {loading ? (
+                {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -192,7 +165,7 @@ const Register: React.FC = () => {
                   type="button"
                   onClick={() => setLoginModalOpen(true)}
                   className="text-red-600 hover:underline"
-                  disabled={loading}
+                  disabled={isLoading}
                 >
                   Đăng nhập ngay
                 </button>

@@ -5,6 +5,8 @@ import {
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth } from '@/config/firebase';
+import { authService } from '@/services/authService';
+import type { UserRole } from '@/services/authService';
 
 // Types
 export interface AuthUser {
@@ -13,6 +15,7 @@ export interface AuthUser {
   displayName: string | null;
   photoURL: string | null;
   emailVerified: boolean;
+  role: UserRole;
 }
 
 interface AuthContextType {
@@ -43,16 +46,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Convert Firebase User to AuthUser
-  const convertFirebaseUser = (user: User | null): AuthUser | null => {
+  const convertFirebaseUser = async (user: User | null): Promise<AuthUser | null> => {
     if (!user) return null;
     
-    return {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      emailVerified: user.emailVerified
-    };
+    try {
+      // Fetch user profile from Firestore to get role
+      const userProfile = await authService.getUserDocument(user.uid);
+      
+      return {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        role: userProfile?.role || 'guest' // Default to guest if no profile found
+      };
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      // Return user with guest role as fallback
+      return {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified,
+        role: 'guest'
+      };
+    }
   };
 
   // Sign out function
@@ -66,8 +86,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(convertFirebaseUser(user));
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      const authUser = await convertFirebaseUser(user);
+      setCurrentUser(authUser);
       setLoading(false);
     });
 
