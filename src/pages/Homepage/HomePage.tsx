@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import {useState, useRef, useEffect} from 'react';
 import { TypeAnimation } from 'react-type-animation';
 import { motion } from 'framer-motion';
 import { FaPlay, FaShippingFast, FaShoppingBag } from 'react-icons/fa';
@@ -8,89 +8,113 @@ import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import MenuItemCard from '@/modules/Homepage/menuitem-card';
-import menuItemsService, { type MenuItem } from '@/services/menuItemsService';
+import { dailyMenuService, type DailyMenuItem} from '@/services/dailyMenuService';
+import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
+import { storeService, type Store } from '@/services/storeService';
+import { StoreSelector } from '@/modules/Homepage/storeSelector'; 
 
 import SaladBowl from '../../assets/img/HeroImg.png';
 
-  const sampleMenuItems: MenuItem[] = [
-  {
-    id: 1,
-    name: 'Classic Grilled Chicken',
-    categoryId: 1,
-    categoryName: 'Main Courses',
-    isActive: true,
-    imageUrl: 'https://i.pinimg.com/564x/a2/2a/d3/a22ad39a2b8510868f051152778b87c7.jpg',
-  },
-  {
-    id: 2,
-    name: 'Spicy Buffalo Wings',
-    categoryId: 2,
-    categoryName: 'Appetizers',
-    isActive: true,
-    imageUrl: 'https://i.pinimg.com/564x/e7/0b/3e/e70b3e70d4f3b171f1b63c20202534f5.jpg',
-  },
-  {
-    id: 3,
-    name: 'Chicken Caesar Salad',
-    categoryId: 3,
-    categoryName: 'Salads',
-    isActive: true,
-    imageUrl: 'https://i.pinimg.com/564x/87/1b/30/871b30e060a809b0b144a95acb6b2b73.jpg',
-  },
-  {
-    id: 4,
-    name: 'Crispy Chicken Wrap',
-    categoryId: 4,
-    categoryName: 'Wraps & Sandwiches',
-    isActive: true,
-    imageUrl: 'https://i.pinimg.com/564x/d1/8a/a5/d18aa54eb0c33d831201389c5b252199.jpg',
-  },
-  {
-    id: 5,
-    name: 'Roasted Herb Chicken',
-    categoryId: 1,
-    categoryName: 'Main Courses',
-    isActive: true,
-    imageUrl: 'https://i.pinimg.com/564x/c7/28/99/c72899477e6869a215357a74a2b97c7e.jpg',
-  },
-  {
-    id: 6,
-    name: 'Garlic Mashed Potatoes',
-    categoryId: 5,
-    categoryName: 'Sides',
-    isActive: true,
-    imageUrl: 'https://i.pinimg.com/564x/f3/15/34/f3153406f916b080808226023315a639.jpg',
-  },
-];
 
 function Homepage() {
-  // const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  // const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [allStores, setAllStores] = useState<Store[]>([]);
+  const [allDailyMenus, setAllDailyMenus] = useState<DailyMenuItem[]>([]);
+  
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+
+  const [currentDailyMenu, setCurrentDailyMenu] = useState<DailyMenuItem | null>(null);
+  const [todayFullMenuItems, setTodayFullMenuItems] = useState<MenuItem[]>([]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const todayMenuRef = useRef<HTMLElement | null>(null);
 
-  //For sample data
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(sampleMenuItems);
-  const [loading, setLoading] = useState<boolean>(false);
+// Load stores & all daily menu
+  useEffect(() => {
+    const fetchGlobalData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  // useEffect(() => {
-  //   const fetchMenu = async () => {
-  //     try {
-  //       const token = ""; //Fake token
+        const [stores, dailyMenus] = await Promise.all([
+          storeService.getAllStores(),
+          dailyMenuService.getAllDailyMenus() 
+        ]);
 
-  //       const items = await menuItemsService.getAllMenuItems(token || undefined);
-  //       setMenuItems(items);
-  //     } catch (err: any) {
-  //       console.error('Error fetching menu:', err);
-  //       setError(err.message);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
+        setAllStores(stores);
+        setAllDailyMenus(dailyMenus);
 
-  //   fetchMenu();
-  // }, []);
+        if (stores.length > 0) {
+          setSelectedStoreId(stores[0].id);
+        } else {
+          setLoading(false); 
+        }
+        console.log('Fetched initial data:', { stores, dailyMenus });
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch initial data');
+        setLoading(false); 
+      }
+    };
+
+    fetchGlobalData();
+  }, []); 
+
+  // Load menu  when choose store
+  useEffect(() => {
+    if (!selectedStoreId || allDailyMenus.length === 0) return;
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    const foundMenu = allDailyMenus.find(menu => {
+      const menuDateStr = menu.menuDate.split('T')[0];
+      //Filter by store
+      const hasStore = menu.storeList.some(store => store.storeId === selectedStoreId);
+      return menuDateStr === todayStr && hasStore;
+    });
+
+    setCurrentDailyMenu(foundMenu || null);
+    setCurrentIndex(0); 
+
+  }, [allDailyMenus, selectedStoreId]); 
+
+  useEffect(() => {
+    const fetchMenuItemDetails = async () => {
+      if (!currentDailyMenu) {
+        setTodayFullMenuItems([]);
+        setLoading(false); 
+        return;
+      }
+      
+      setLoading(true); 
+      
+      try {
+        const itemIds = currentDailyMenu.itemList.map(item => item.menuItemId);
+        if (itemIds.length === 0) {
+           setTodayFullMenuItems([]);
+           setLoading(false);
+           return;
+        }
+        
+        const fetchPromises = itemIds.map(id => menuItemsService.getMenuItemById(id));
+        const fullMenuItems = await Promise.all(fetchPromises);
+
+        setTodayFullMenuItems(fullMenuItems);
+        
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch menu item details');
+      } finally {
+        setLoading(false); 
+      }
+    };
+
+    fetchMenuItemDetails();
+  }, [currentDailyMenu]); 
 
   if (loading) {
     return <div>Loading menu...</div>;
@@ -101,14 +125,14 @@ function Homepage() {
   }
 
   const handleNext = () => {
-    if (menuItems.length > 0) {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % menuItems.length);
+    if (todayFullMenuItems.length > 0) {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % todayFullMenuItems.length);
     }
   };
 
   const handlePrev = () => {
-    if (menuItems.length > 0) {
-      setCurrentIndex((prevIndex) => (prevIndex - 1 + menuItems.length) % menuItems.length);
+    if (todayFullMenuItems.length > 0) {
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + todayFullMenuItems.length) % todayFullMenuItems.length);
     }
   };
 
@@ -265,65 +289,90 @@ function Homepage() {
     {/* Today Menu */}
       <section ref={todayMenuRef} className="bg-[#FFF7F2] py-20 flex items-center justify-center">
         <div className="relative w-full max-w-[1300px]">
-        <div className="flex items-center gap-4 mb-16 px-4 md:px-0">
-          <div className="w-2 h-16 bg-red-600"></div>
-          <div>
-            <h2 className="text-4xl font-bold text-red-600">Today Menu</h2>
-            <p className="text-gray-500 mt-2">Discover our most loved, crafted for taste and health.</p>
-          </div>
-        </div>
 
-        <Link 
-          to="/menu" 
-          className="absolute top-4 right-4 text-sm font-semibold text-gray-700 hover:text-red-600 transition-colors flex items-center gap-1"
-        >
-          View more
-          <span aria-hidden="true">&rarr;</span>
-        </Link>
-
-      <div className="mx-12 relative">
-        {menuItems.length > 4 && (
-          <button 
-            onClick={handlePrev}
-            className="absolute -left-10 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            <FaChevronLeft />
-          </button>
-        )}
-
-        <div className="relative bg-white rounded-[50px] shadow-lg px-8 sm:px-12 lg:px-16 py-12">
-          <div className="absolute top-1/2 -translate-y-1/2 -left-7 w-14 h-28 bg-[#FFF7F2] rounded-r-full hidden md:block"></div>
-          <div className="absolute top-1/2 -translate-y-1/2 -right-7 w-14 h-28 bg-[#FFF7F2] rounded-l-full hidden md:block"></div>
-          
-          <div className="relative z-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-7"> 
-              {[...menuItems, ...menuItems].slice(currentIndex, currentIndex + 4).map((item) => (
-                <motion.div
-                  key={item.id + currentIndex} 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <MenuItemCard
-                    imageUrl={item.imageUrl}
-                    title={item.name}
-                    description={item.categoryName}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-          {menuItems.length > 4 && (
-            <button 
-              onClick={handleNext}
-              className="absolute -right-10 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+         <div className="flex justify-end px-4 md:px-0 mb-1">
+            <Link 
+              to="/menu" 
+              className="text-sm font-semibold text-gray-700 hover:text-red-600 transition-colors flex items-center gap-1"
             >
-              <FaChevronRight />
-            </button>
-          )}
-        </div>
+              View more
+              <span aria-hidden="true">&rarr;</span>
+            </Link>
+          </div>
+
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-16 px-4 md:px-0">
+            <div className="flex items-center gap-4">
+              <div className="w-2 h-16 bg-red-600"></div>
+              <div>
+                <h2 className="text-4xl font-bold text-red-600">Today Menu</h2>
+                <p className="text-gray-500 mt-2">Discover our most loved, crafted for taste and health.</p>
+              </div>
+            </div>
+            
+            <StoreSelector 
+              stores={allStores}
+              selectedStoreId={selectedStoreId}
+              onSelect={setSelectedStoreId}
+            />
+          </div>
+  
+          <div className="mx-12 relative">
+            {loading ? (
+              <div className="text-center py-20">Loading menu...</div>
+            ) : error ? (
+              <div className="text-center py-20 text-red-500">Error: {error}</div>
+            ) : todayFullMenuItems.length === 0 ? (
+              <div className="text-center py-20 text-gray-600">
+                {/* No available menu items*/}
+                No menu items available for this store today.
+              </div>
+            ) : (
+              <>
+                {todayFullMenuItems.length > 4 && (
+                  <button 
+                    onClick={handlePrev}
+                    className="absolute -left-10 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <FaChevronLeft />
+                  </button>
+                )}
+
+                <div className="relative bg-white rounded-[50px] shadow-lg px-8 sm:px-12 lg:px-16 py-12">
+                  <div className="absolute top-1/2 -translate-y-1/2 -left-7 w-14 h-28 bg-[#FFF7F2] rounded-r-full hidden md:block"></div>
+                  <div className="absolute top-1/2 -translate-y-1/2 -right-7 w-14 h-28 bg-[#FFF7F2] rounded-l-full hidden md:block"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-7"> 
+                      {[...todayFullMenuItems, ...todayFullMenuItems].slice(currentIndex, currentIndex + 4).map((item, index) => ( 
+                        <motion.div
+                          key={`${item.id}-${index}`} 
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <MenuItemCard
+                            imageUrl={item.imageUrl}
+                            title={item.name}
+                            description={item.categoryName}
+                            price={item.price}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {todayFullMenuItems.length > 4 && (
+                  <button 
+                    onClick={handleNext}
+                    className="absolute -right-10 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                  >
+                    <FaChevronRight />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </section>
 
@@ -410,7 +459,7 @@ function Homepage() {
       </div>
     </section>
 
-    {/* Promotion */}
+    {/* Promotion */} 
     {/* Map Stores */}
     <Footer />
     </>
