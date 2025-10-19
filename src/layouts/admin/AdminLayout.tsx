@@ -47,11 +47,11 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>{breadcrumb.section}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-sm text-gray-500">{breadcrumb.section}</BreadcrumbPage>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumb.page}</BreadcrumbPage>
+                  <BreadcrumbPage className="text-sm font-medium text-gray-900">{breadcrumb.page}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
