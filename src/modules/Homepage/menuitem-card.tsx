@@ -5,7 +5,7 @@ interface MenuItemCardProps {
   imageUrl: string;
   title: string;
   description: string;
-  // price: number; 
+  price?: number;
 }
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({ imageUrl, title, description, price }) => {
@@ -39,7 +39,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ imageUrl, title, descriptio
 
           <div className="mt-6 flex justify-between items-center">
             <p className="text-2xl font-bold text-red-600">
-              {/* {price.toFixed(2)}$ */}
+              {price !== undefined ? `${price}` : ''}
             </p>
             <button className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-300 transition-colors">
               <FaPlus />

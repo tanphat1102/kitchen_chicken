@@ -4,25 +4,8 @@ import Register from "@/pages/authentication/Register";
 import ForgotPassword from "@/pages/authentication/ForgotPassword";
 import Dashboard from "@/pages/Dashboard";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import  HomePage from "@/pages/Homepage/HomePage";
 import './App.css'
-
-// Simple components
-const HomePage = () => (
-  <div className="min-h-screen bg-gray-50 p-8">
-    <div className="mx-auto max-w-4xl text-center">
-      <h1 className="mb-4 text-4xl font-bold text-gray-900">🍗 Chicken Kitchen</h1>
-      <p className="text-lg text-gray-600">Welcome to our delicious chicken restaurant!</p>
-      <div className="mt-8 space-x-4">
-        <a href="/menu" className="rounded bg-red-600 px-6 py-3 text-white hover:bg-red-700">
-          View Menu
-        </a>
-        <a href="/login" className="rounded border border-red-600 px-6 py-3 text-red-600 hover:bg-red-50">
-          Login
-        </a>
-      </div>
-    </div>
-  </div>
-);
 
 const MenuPage = () => (
   <div className="min-h-screen bg-gray-50 p-8">
@@ -49,7 +32,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<HomePage/>} />
         <Route path="/menu" element={<MenuPage />} />
         
         {/* Auth routes - redirect to dashboard if already logged in */}

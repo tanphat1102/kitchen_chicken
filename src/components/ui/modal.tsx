@@ -8,12 +8,12 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
-const backdropVariants = {
+const backdropVariants: any = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
 };
 
-const modalVariants = {
+const modalVariants: any = {
   hidden: { y: "-50px", opacity: 0 },
   visible: { y: "0", opacity: 1, transition: { type: "spring", stiffness: 300, damping: 30 } },
   exit: { y: "50px", opacity: 0 },
