@@ -20,10 +20,13 @@ export const APP_ROUTES = {
 export const ADMIN_ROUTES = {
   ADMIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_STORES: '/admin/stores',
   ADMIN_MENU: '/admin/menu',
   ADMIN_ORDERS: '/admin/orders',
+  ADMIN_INGREDIENTS: '/admin/ingredients',
   ADMIN_USERS: '/admin/users',
   ADMIN_ANALYTICS: '/admin/analytics',
+  ADMIN_SETTINGS: '/admin/settings',
 } as const;
 
 // API endpoints
@@ -163,6 +166,11 @@ export const ROUTE_METADATA = {
     description: 'Trang tổng quan quản trị',
     access: ROUTE_ACCESS.ADMIN,
   },
+  [ADMIN_ROUTES.ADMIN_STORES]: {
+    title: 'Quản trị - Cửa hàng',
+    description: 'Quản lý cửa hàng',
+    access: ROUTE_ACCESS.ADMIN,
+  },
   [ADMIN_ROUTES.ADMIN_MENU]: {
     title: 'Quản trị - Thực đơn',
     description: 'Quản lý thực đơn',
@@ -173,6 +181,11 @@ export const ROUTE_METADATA = {
     description: 'Quản lý đơn hàng',
     access: ROUTE_ACCESS.ADMIN,
   },
+  [ADMIN_ROUTES.ADMIN_INGREDIENTS]: {
+    title: 'Quản trị - Nguyên liệu',
+    description: 'Quản lý kho nguyên liệu',
+    access: ROUTE_ACCESS.ADMIN,
+  },
   [ADMIN_ROUTES.ADMIN_USERS]: {
     title: 'Quản trị - Người dùng',
     description: 'Quản lý người dùng',
@@ -181,6 +194,11 @@ export const ROUTE_METADATA = {
   [ADMIN_ROUTES.ADMIN_ANALYTICS]: {
     title: 'Quản trị - Thống kê',
     description: 'Xem thống kê và báo cáo',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [ADMIN_ROUTES.ADMIN_SETTINGS]: {
+    title: 'Quản trị - Cài đặt',
+    description: 'Cài đặt hệ thống',
     access: ROUTE_ACCESS.ADMIN,
   },
 } as const;
@@ -219,6 +237,11 @@ export const ADMIN_NAVIGATION_ITEMS = [
     icon: 'BarChart3',
   },
   {
+    path: ADMIN_ROUTES.ADMIN_STORES,
+    label: 'Cửa hàng',
+    icon: 'Store',
+  },
+  {
     path: ADMIN_ROUTES.ADMIN_MENU,
     label: 'Thực đơn',
     icon: 'Menu',
@@ -229,14 +252,24 @@ export const ADMIN_NAVIGATION_ITEMS = [
     icon: 'ShoppingBag',
   },
   {
+    path: ADMIN_ROUTES.ADMIN_INGREDIENTS,
+    label: 'Nguyên liệu',
+    icon: 'Package',
+  },
+  {
     path: ADMIN_ROUTES.ADMIN_USERS,
     label: 'Người dùng',
     icon: 'Users',
   },
   {
     path: ADMIN_ROUTES.ADMIN_ANALYTICS,
-    label: 'Thống kê',
+    label: 'Báo cáo',
     icon: 'TrendingUp',
+  },
+  {
+    path: ADMIN_ROUTES.ADMIN_SETTINGS,
+    label: 'Cài đặt',
+    icon: 'Settings',
   },
 ] as const;
 
