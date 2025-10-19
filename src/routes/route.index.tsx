@@ -11,9 +11,6 @@ import Register from "@/pages/authentication/Register";
 import Dashboard from "@/pages/Dashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import MemberDashboard from "@/pages/member/MemberDashboard";
-import AuthTestComponent from "@/components/AuthTestComponent";
-import AuthDebugComponent from "@/components/AuthDebugComponent";
-import SimpleCORSTest from "@/components/SimpleCORSTest";
 import LocalStorageTest from "@/components/LocalStorageTest";
 import { useState } from "react";
 
@@ -101,15 +98,6 @@ export function AppRoutes() {
           </RoleBasedRoute>
         } 
       />
-
-      {/* Auth test route - accessible to all */}
-      <Route path={AUTH_ROUTES.AUTH_TEST} element={<AuthTestComponent />} />
-      
-      {/* Auth debug route - for debugging 403 errors */}
-      <Route path={AUTH_ROUTES.AUTH_DEBUG} element={<AuthDebugComponent />} />
-      
-      {/* CORS test route - simple CORS debugging */}
-      <Route path={AUTH_ROUTES.CORS_TEST} element={<SimpleCORSTest />} />
       
       {/* LocalStorage test route - test token persistence */}
       <Route path={AUTH_ROUTES.STORAGE_TEST} element={<LocalStorageTest />} />
