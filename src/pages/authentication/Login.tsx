@@ -1,18 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGoogleLogin, useGithubLogin, useDiscordLogin } from "@/hooks/useAuth";
 import Logo from "@/assets/img/Logo.png";
 
 const Login: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  
+  const googleLoginMutation = useGoogleLogin();
+  const githubLoginMutation = useGithubLogin();
+  const discordLoginMutation = useDiscordLogin();
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -22,45 +23,27 @@ const Login: React.FC = () => {
   }, [currentUser, navigate]);
 
   const handleGoogleLogin = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      await authService.loginWithGoogle();
-      navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    googleLoginMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/dashboard");
+      }
+    });
   };
 
   const handleGithubLogin = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      await authService.loginWithGithub();
-      navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    githubLoginMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/dashboard");
+      }
+    });
   };
 
   const handleDiscordLogin = async () => {
-    setError("");
-    setLoading(true);
-
-    try {
-      await authService.loginWithDiscord();
-      navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    discordLoginMutation.mutate(undefined, {
+      onSuccess: () => {
+        navigate("/dashboard");
+      }
+    });
   };
 
   return (
@@ -82,9 +65,14 @@ const Login: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {error && (
+            {(googleLoginMutation.isError || githubLoginMutation.isError || discordLoginMutation.isError) && (
               <div className="mb-4 rounded-md bg-red-50 border border-red-200 p-3">
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm text-red-600">
+                  {googleLoginMutation.error?.message || 
+                   githubLoginMutation.error?.message || 
+                   discordLoginMutation.error?.message || 
+                   'Đã xảy ra lỗi trong quá trình đăng nhập'}
+                </p>
               </div>
             )}
 
@@ -94,9 +82,9 @@ const Login: React.FC = () => {
                 variant="outline"
                 className="w-full"
                 onClick={handleGoogleLogin}
-                disabled={loading}
+                disabled={googleLoginMutation.isPending}
               >
-                {loading ? (
+                {googleLoginMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
@@ -126,9 +114,9 @@ const Login: React.FC = () => {
                 variant="outline"
                 className="w-full"
                 onClick={handleGithubLogin}
-                disabled={loading}
+                disabled={githubLoginMutation.isPending}
               >
-                {loading ? (
+                {githubLoginMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -143,9 +131,9 @@ const Login: React.FC = () => {
                 variant="outline" 
                 className="w-full"
                 onClick={handleDiscordLogin}
-                disabled={loading}
+                disabled={discordLoginMutation.isPending}
               >
-                {loading ? (
+                {discordLoginMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">

@@ -11,6 +11,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthErrorHandler } from "@/utils/authErrorHandler";
 import Logo from "@/assets/img/Logo.png";
 
 interface LoginModalProps {
@@ -20,59 +21,95 @@ interface LoginModalProps {
 
 const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+
+  // Helper function to redirect based on role
+  const redirectByRole = (role: string) => {
+    switch (role) {
+      case 'admin':
+        navigate("/admin/dashboard");
+        break;
+      case 'member':
+        navigate("/member/dashboard");
+        break;
+      default:
+        navigate("/");
+        break;
+    }
+  };
 
   // Close modal if already logged in
   React.useEffect(() => {
     if (currentUser) {
       onOpenChange(false);
-      navigate("/dashboard");
+      redirectByRole(currentUser.role);
     }
   }, [currentUser, navigate, onOpenChange]);
 
   const handleGoogleLogin = async () => {
-    setError("");
     setLoading(true);
+    const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với Google...");
 
     try {
-      await authService.loginWithGoogle();
+      await AuthErrorHandler.retryOperation(
+        () => authService.loginWithGoogle(),
+        2,
+        1000
+      );
+      
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
       onOpenChange(false);
-      navigate("/dashboard");
+      // Note: redirectByRole will be called automatically by useEffect when currentUser updates
     } catch (err: any) {
-      setError(err.message);
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showErrorToast(err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleGithubLogin = async () => {
-    setError("");
     setLoading(true);
+    const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với GitHub...");
 
     try {
-      await authService.loginWithGithub();
+      await AuthErrorHandler.retryOperation(
+        () => authService.loginWithGithub(),
+        2,
+        1000
+      );
+      
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
       onOpenChange(false);
-      navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showErrorToast(err);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDiscordLogin = async () => {
-    setError("");
     setLoading(true);
+    const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với Discord...");
 
     try {
-      await authService.loginWithDiscord();
+      await AuthErrorHandler.retryOperation(
+        () => authService.loginWithDiscord(),
+        2,
+        1000
+      );
+      
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
       onOpenChange(false);
-      navigate("/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showErrorToast(err);
     } finally {
       setLoading(false);
     }
@@ -96,12 +133,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
         </DialogHeader>
 
         <div className="space-y-4">
-          {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-3">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
           <Button
             type="button"
             variant="outline"
