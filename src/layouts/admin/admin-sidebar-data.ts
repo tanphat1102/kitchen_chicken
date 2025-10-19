@@ -1,5 +1,14 @@
 import { ROUTES } from "@/routes/route.constants";
-import { Home } from "lucide-react";
+import {
+  Home,
+  Users,
+  ShoppingBag,
+  Settings,
+  ChefHat,
+  Package,
+  FileText,
+  Store,
+} from "lucide-react";
 
 export const sidebarData = {
   user: {
@@ -13,21 +22,40 @@ export const sidebarData = {
       url: ROUTES.ADMIN_DASHBOARD,
       icon: Home,
     },
-    // TODO: Add more admin routes when implemented
-    // {
-    //   title: "Menu Management",
-    //   url: "#",
-    //   icon: ChefHat,
-    // },
-    // {
-    //   title: "Orders",
-    //   url: "#", 
-    //   icon: ShoppingBag,
-    // },
-    // {
-    //   title: "Users",
-    //   url: "#",
-    //   icon: Users,
-    // },
+    {
+      title: "Stores",
+      url: ROUTES.ADMIN_STORES,
+      icon: Store,
+    },
+    {
+      title: "Orders",
+      url: ROUTES.ADMIN_ORDERS,
+      icon: ShoppingBag,
+    },
+    {
+      title: "Menu",
+      url: ROUTES.ADMIN_MENU,
+      icon: ChefHat,
+    },
+    {
+      title: "Ingredients",
+      url: ROUTES.ADMIN_INGREDIENTS,
+      icon: Package,
+    },
+    {
+      title: "Customers",
+      url: ROUTES.ADMIN_USERS,
+      icon: Users,
+    },
+    {
+      title: "Reports",
+      url: ROUTES.ADMIN_ANALYTICS,
+      icon: FileText,
+    },
+    {
+      title: "Settings",
+      url: ROUTES.ADMIN_SETTINGS,
+      icon: Settings,
+    },
   ],
 };

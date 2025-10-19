@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Tester - Chicken Kitchen</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #000;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #666;
+      margin-top: 0;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      background: #000;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    button:hover {
+      background: #333;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .response {
+      background: #f8f8f8;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 13px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .success {
+      border-left: 4px solid #4CAF50;
+      background: #e8f5e9;
+    }
+    .error {
+      border-left: 4px solid #f44336;
+      background: #ffebee;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .status-200 { background: #4CAF50; color: white; }
+    .status-400 { background: #ff9800; color: white; }
+    .status-401 { background: #f44336; color: white; }
+    .status-500 { background: #9c27b0; color: white; }
+    .endpoint-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .endpoint-btn {
+      width: 100%;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍗 Chicken Kitchen - API Tester</h1>
+
+  <!-- Token Setup -->
+  <div class="container">
+    <h2>🔐 Authentication Token</h2>
+    <div class="input-group">
+      <label>Your JWT Token:</label>
+      <textarea id="token" placeholder="Paste your JWT token here...">eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0MTExQGdtYWlsLmNvbSIsImlhdCI6MTczMDg5ODczMSwiZXhwIjoxNzMwOTAyMzMxfQ.cHmFOBSUCmwF9XMKVPAy7-QZr7YwY-Rr4yO3VDUWQmQ</textarea>
+    </div>
+  </div>
+
+  <!-- Test Endpoints -->
+  <div class="container">
+    <h2>🧪 Test API Endpoints</h2>
+    
+    <h3>Stores API</h3>
+    <div class="endpoint-group">
+      <button class="endpoint-btn" onclick="testGetStores()">GET /stores</button>
+      <button class="endpoint-btn" onclick="testCreateStore()">POST /stores</button>
+      <button class="endpoint-btn" onclick="testUpdateStore()">PUT /stores/{id}</button>
+      <button class="endpoint-btn" onclick="testDeleteStore()">DELETE /stores/{id}</button>
+    </div>
+
+    <h3>Auth API</h3>
+    <div class="endpoint-group">
+      <button class="endpoint-btn" onclick="testLogin()">POST /auth/login</button>
+      <button class="endpoint-btn" onclick="testGetProfile()">GET /users/profile</button>
+    </div>
+
+    <div id="loading" style="display:none; color: #666; margin: 10px 0;">
+      ⏳ Loading...
+    </div>
+    <div id="response"></div>
+  </div>
+
+  <!-- Request Body Editor -->
+  <div class="container">
+    <h2>📝 Custom Request</h2>
+    <div class="input-group">
+      <label>Method:</label>
+      <select id="method" style="width: 100%; padding: 10px;">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+        <option value="PUT">PUT</option>
+        <option value="PATCH">PATCH</option>
+        <option value="DELETE">DELETE</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label>Endpoint:</label>
+      <input type="text" id="endpoint" placeholder="/stores" value="/stores">
+    </div>
+    <div class="input-group">
+      <label>Request Body (JSON):</label>
+      <textarea id="requestBody" placeholder='{"name": "Test Store"}'></textarea>
+    </div>
+    <button onclick="testCustomRequest()">Send Request</button>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'https://chickenkitchen.milize-lena.space/api';
+    
+    function getToken() {
+      return document.getElementById('token').value.trim();
+    }
+
+    function showResponse(response, status, isError = false) {
+      const responseDiv = document.getElementById('response');
+      const statusClass = `status-${Math.floor(status / 100) * 100}`;
+      
+      responseDiv.innerHTML = `
+        <div class="${isError ? 'error' : 'success'}">
+          <span class="status ${statusClass}">Status: ${status}</span>
+          <pre>${JSON.stringify(response, null, 2)}</pre>
+        </div>
+      `;
+      
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function showError(error) {
+      const responseDiv = document.getElementById('response');
+      responseDiv.innerHTML = `
+        <div class="error">
+          <span class="status status-500">Error</span>
+          <pre>${error.message || error}</pre>
+        </div>
+      `;
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    function showLoading() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('response').innerHTML = '';
+    }
+
+    async function makeRequest(method, endpoint, body = null) {
+      showLoading();
+      const token = getToken();
+      
+      if (!token) {
+        showError(new Error('Please provide a token first!'));
+        return;
+      }
+
+      try {
+        const options = {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        };
+
+        if (body) {
+          options.body = JSON.stringify(body);
+        }
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        const data = await response.json();
+        
+        showResponse(data, response.status, !response.ok);
+        return data;
+      } catch (error) {
+        showError(error);
+      }
+    }
+
+    // Test Functions
+    async function testGetStores() {
+      await makeRequest('GET', '/stores');
+    }
+
+    async function testCreateStore() {
+      const store = {
+        name: "Test Store - " + new Date().toISOString(),
+        address: "123 Test Street, District 1, HCMC",
+        phone: "+84 28 1234 5678",
+        email: "test@chickenkitchen.com",
+        openTime: "08:00",
+        closeTime: "22:00"
+      };
+      await makeRequest('POST', '/stores', store);
+    }
+
+    async function testUpdateStore() {
+      const storeId = prompt('Enter Store ID to update:');
+      if (!storeId) return;
+      
+      const store = {
+        name: "Updated Store - " + new Date().toISOString(),
+        address: "456 Updated Street",
+        phone: "+84 28 9999 8888"
+      };
+      await makeRequest('PUT', `/stores/${storeId}`, store);
+    }
+
+    async function testDeleteStore() {
+      const storeId = prompt('Enter Store ID to delete:');
+      if (!storeId) return;
+      
+      if (confirm(`Are you sure you want to delete store ${storeId}?`)) {
+        await makeRequest('DELETE', `/stores/${storeId}`);
+      }
+    }
+
+    async function testLogin() {
+      const credentials = {
+        idToken: getToken()
+      };
+      await makeRequest('POST', '/auth/login', credentials);
+    }
+
+    async function testGetProfile() {
+      await makeRequest('GET', '/users/profile');
+    }
+
+    async function testCustomRequest() {
+      const method = document.getElementById('method').value;
+      const endpoint = document.getElementById('endpoint').value;
+      const bodyText = document.getElementById('requestBody').value.trim();
+      
+      let body = null;
+      if (bodyText && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        try {
+          body = JSON.parse(bodyText);
+        } catch (e) {
+          showError(new Error('Invalid JSON in request body'));
+          return;
+        }
+      }
+      
+      await makeRequest(method, endpoint, body);
+    }
+  </script>
+</body>
+</html>
