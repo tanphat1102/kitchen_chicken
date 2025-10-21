@@ -1,3 +1,4 @@
+import api from '@/config/axios';
 export interface Category {
   id: number;
   name: string;
@@ -15,12 +16,10 @@ const API_ENDPOINTS = {
 };
 
 class CategoryService {
-  private baseUrl: string;
   private cache: Map<string, { data: Category[]; timestamp: number }>;
   private readonly CACHE_DURATION = 10 * 60 * 1000; 
 
   constructor() {
-    this.baseUrl = ''; 
     this.cache = new Map();
   }
 
@@ -30,17 +29,10 @@ class CategoryService {
     if (cached) return cached;
 
     try {
-      const headers: HeadersInit = { 'accept': '*/*' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.CATEGORIES}`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
-      const result: CategoriesResponse = await response.json();
+      const { data: result } = await api.get<CategoriesResponse>(
+        API_ENDPOINTS.CATEGORIES,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
 
       if (result.statusCode === 200) {
         this.setCache(cacheKey, result.data);
@@ -50,6 +42,8 @@ class CategoryService {
       }
     } catch (error: any) {
       console.error('Error fetching categories:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw new Error(`HTTP Error: ${status}`);
       throw error;
     }
   }

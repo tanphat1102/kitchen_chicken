@@ -1,4 +1,5 @@
-interface Nutrient {
+import api from '@/config/axios';
+export interface Nutrient {
   id: number;
   name: string;
   quantity: number;
@@ -27,12 +28,10 @@ const API_ENDPOINTS = {
 };
 
 class MenuItemsService {
-  private baseUrl: string;
   private cache: Map<number, { data: MenuItem; timestamp: number }>;
   private readonly CACHE_DURATION = 10 * 60 * 1000; 
 
   constructor() {
-    this.baseUrl = ''; 
     this.cache = new Map();
   }
 
@@ -43,23 +42,10 @@ class MenuItemsService {
         return cached;
       }
 
-      const headers: HeadersInit = {
-        'accept': '*/*',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.MENU_ITEMS}/${id}`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw this.handleHttpError(response.status);
-      }
-
-      const result: MenuItemResponse = await response.json();
+      const { data: result } = await api.get<MenuItemResponse>(
+        `${API_ENDPOINTS.MENU_ITEMS}/${id}`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
 
       if (result.statusCode === 200) {
         this.setCache(id, result.data);
@@ -69,6 +55,8 @@ class MenuItemsService {
       }
     } catch (error: any) {
       console.error(`Error fetching menu item ${id}:`, error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
   }
