@@ -1,3 +1,4 @@
+import api from '@/config/axios';
 interface Store {
   storeId: number;
   storeName: string;
@@ -33,12 +34,10 @@ const API_ENDPOINTS = {
 };
 
 class DailyMenuService {
-  private baseUrl: string;
   private cache: Map<string, { data: DailyMenuItem[]; timestamp: number }>;
   private readonly CACHE_DURATION = 10 * 60 * 1000; 
 
   constructor() {
-    this.baseUrl = '';
     this.cache = new Map();
   }
 
@@ -50,25 +49,10 @@ class DailyMenuService {
         return cached;
       }
 
-      const headers: HeadersInit = {
-        'accept': '*/*',
-        'Content-Type': 'application/json',
-      };
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.DAILY_MENU}`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw this.handleHttpError(response.status);
-      }
-
-      const result: DailyMenuResponse = await response.json();
+      const { data: result } = await api.get<DailyMenuResponse>(
+        API_ENDPOINTS.DAILY_MENU,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
 
       if (result.statusCode === 200) {
         this.setCache(cacheKey, result.data);
@@ -78,6 +62,8 @@ class DailyMenuService {
       }
     } catch (error: any) {
       console.error('Error fetching daily menus:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
   }

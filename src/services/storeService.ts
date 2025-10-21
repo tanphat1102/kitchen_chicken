@@ -1,3 +1,5 @@
+import api from '@/config/axios';
+
 export interface Store {
   id: number;
   name: string;
@@ -18,12 +20,10 @@ const API_ENDPOINTS = {
 };
 
 class StoreService {
-  private baseUrl: string;
   private cache: Map<string, { data: Store[]; timestamp: number }>;
   private readonly CACHE_DURATION = 10 * 60 * 1000; 
 
   constructor() {
-    this.baseUrl = ''; 
     this.cache = new Map();
   }
 
@@ -35,21 +35,10 @@ class StoreService {
         return cached;
       }
 
-      const headers: HeadersInit = { 'accept': '*/*' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${this.baseUrl}${API_ENDPOINTS.STORE}`, {
-        method: 'GET',
-        headers,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error: ${response.status}`);
-      }
-
-      const result: StoreResponse = await response.json();
+      const { data: result } = await api.get<StoreResponse>(
+        API_ENDPOINTS.STORE,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
 
       if (result.statusCode === 200) {
         this.setCache(cacheKey, result.data);
@@ -59,6 +48,8 @@ class StoreService {
       }
     } catch (error: any) {
       console.error('Error fetching stores:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw new Error(`HTTP Error: ${status}`);
       throw error;
     }
   }
