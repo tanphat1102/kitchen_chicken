@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaShoppingCart, FaGoogle, FaDiscord , FaFacebook, FaUserAlt } from "react-icons/fa";
 import { Modal } from '../components/ui/modal';
 
@@ -11,7 +12,6 @@ import {
     DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 import logo from '../assets/img/Logo.png'; 
-
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -24,11 +24,33 @@ const navLinks = [
 export const Navbar: React.FC = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loginService, setLoginService] = useState("");
 
     const [user, setUser] = useState<{ name: string } | null>(null);
+
+    const [showNav, setShowNav] = useState(true);
+    const lastScrollY = useRef(0);
+    useEffect(() => {
+      const onScroll = () => {
+        const y = window.scrollY || 0;
+        if (y < 10) {
+          setShowNav(true);
+        } else {
+          if (y > lastScrollY.current + 5) {
+            setShowNav(false);
+          } else if (y < lastScrollY.current - 5) {
+            setShowNav(true);
+          }
+        }
+        lastScrollY.current = y;
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     useEffect(() => {
     if (isSearchOpen) {
@@ -36,10 +58,6 @@ export const Navbar: React.FC = () => {
     }
 }, [isSearchOpen]);
 
-const searchVariants = {
-        hidden: { width: 0, opacity: 0, transition: { duration: 0.3, ease: "easeOut" } },
-        visible: { width: 120, opacity: 1, transition: { duration: 0.3, ease: "easeOut" } }, 
-};
 
 const handleProceedLogin = () => {
         setUser({ name: "Paw Pasta" }); 
@@ -57,12 +75,18 @@ const handleLogout = () => {
 
      return (
     <>
+    <div
+      className="fixed top-0 left-0 right-0 h-5 z-[60] opacity-0"
+      onMouseEnter={() => setShowNav(true)}
+    />
+
     <motion.header
-      initial={{ opacity: 0, y: -40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-      className="w-full max-w-7xl mx-auto flex justify-between items-center p-4"
+      initial={{ y: -80 }}
+      animate={{ y: showNav ? 0 : -80 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className="fixed top-2 left-0 right-0 z-[100]"
     >
+      <div className="w-[min(95%,1100px)] mx-auto flex justify-between items-center px-4 py-2 rounded-2xl bg-white/50 backdrop-blur-md border border-white/30 shadow-lg">
       <div className="flex items-center space-x-2">
         <img src={logo} alt="Logo" className="h-10 w-10" />
         <span className="font-bold text-2xl text-red-500">Chicken Kitchen</span>
@@ -96,7 +120,7 @@ const handleLogout = () => {
         </ul>
       </nav>
 
-      <div className="flex items-center space-x-5 relative">
+    <div className="flex items-center space-x-5 relative">
         <motion.div 
             whileHover={{ scale: 1.2 }} 
             className={`cursor-pointer z-10 relative transition-colors duration-300 ${
@@ -108,18 +132,31 @@ const handleLogout = () => {
 
             <AnimatePresence>
                 {isSearchOpen && (
-                    <motion.input
-                        key="search-bar"
+                    <motion.div
+                      key="search-pop"
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.18, ease: [0.16,1,0.3,1] as any }}
+                      className="absolute top-full right-0 mt-3"
+                    >
+                      <input
                         ref={searchInputRef}
-                        variants={searchVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        placeholder="Search..."
-                        className="absolute top-1/2 -translate-y-1/2 right-8 w-50 px-4 py-1 rounded-full border border-gray-300 focus:outline-none focus:ring-gray-400 placeholder:text-gray-500"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const q = searchTerm.trim();
+                            if (q) navigate(`/menu?q=${encodeURIComponent(q)}`);
+                            setIsSearchOpen(false);
+                          }
+                        }}
+                        placeholder="Search menu..."
+                        className="w-56 h-9 px-3 text-sm rounded-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder:text-gray-500"
                         onBlur={() => setIsSearchOpen(false)}
-                        onClick={(e) => e.stopPropagation()} 
-                    />
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </motion.div>
                 )}
             </AnimatePresence>
         </motion.div>
@@ -164,6 +201,7 @@ const handleLogout = () => {
                         </div>
                     )
             }
+      </div>
       </div>
     </motion.header>
 
