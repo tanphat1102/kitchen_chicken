@@ -98,7 +98,7 @@ export function AppRoutes() {
           </RoleBasedRoute>
         } 
       />
-      
+
       {/* LocalStorage test route - test token persistence */}
       <Route path={AUTH_ROUTES.STORAGE_TEST} element={<LocalStorageTest />} />
 
