@@ -3,7 +3,10 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse 
 import { auth } from '@/config/firebase';
 
 // API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://chickenkitchen.milize-lena.space/api';
+// Use proxy in development (to avoid CORS), direct URL in production
+const API_BASE_URL = import.meta.env.DEV 
+  ? '/api'  // Proxy to backend via Vite dev server
+  : import.meta.env.VITE_API_BASE_URL || 'https://chickenkitchen.milize-lena.space/api';
 
 /**
  * Create Axios instance with default config
@@ -21,6 +24,8 @@ const createAxiosInstance = (): AxiosInstance => {
   instance.interceptors.request.use(
     async (config) => {
       try {
+        // TEMPORARY: Skip auth in development since backend endpoints are public
+        // TODO: Re-enable when backend security is configured
         const currentUser = auth.currentUser;
         if (currentUser) {
           const token = await currentUser.getIdToken();
@@ -28,6 +33,7 @@ const createAxiosInstance = (): AxiosInstance => {
         }
       } catch (error) {
         console.error('Error getting auth token:', error);
+        // Don't block request if auth fails
       }
       return config;
     },
