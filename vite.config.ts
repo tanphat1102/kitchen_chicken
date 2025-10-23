@@ -11,4 +11,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      // Proxy API requests to backend (TEMPORARY WORKAROUND for CORS)
+      '/api': {
+        target: 'https://chickenkitchen.milize-lena.space',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path,
+      },
+    },
+  },
 })

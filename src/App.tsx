@@ -5,6 +5,26 @@ import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import LoginModal from "@/components/shared/LoginModal";
 import { useState } from "react";
 import './App.css'
+import { Toaster } from 'react-hot-toast';
+
+// Admin pages
+import AdminLayout from "@/layouts/admin/AdminLayout";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import Stores from "@/pages/admin/Stores";
+import Users from "@/pages/admin/Users";
+import PaymentMethods from "@/pages/admin/PaymentMethods";
+import Transactions from "@/pages/admin/Transactions";
+
+// Manager pages
+import ManagerLayout from "@/layouts/manager/ManagerLayout";
+import ManagerDashboard from "@/pages/manager/ManagerDashboard";
+import Categories from "@/pages/manager/Categories";
+import MenuItems from "@/pages/manager/MenuItems";
+import DailyMenu from "@/pages/manager/DailyMenu";
+import Orders from "@/pages/manager/Orders";
+import Ingredients from "@/pages/manager/Ingredients";
+import Promotions from "@/pages/manager/Promotions";
+import Reports from "@/pages/manager/Reports";
 
 // Simple components
 const HomePage = () => {
@@ -76,6 +96,30 @@ const MenuPage = () => {
 function App() {
   return (
     <BrowserRouter>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<HomePage />} />
@@ -93,14 +137,53 @@ function App() {
 
         
         {/* Protected routes - require authentication */}
-        <Route 
+        {/* COMMENTED FOR DEVELOPMENT - UNCOMMENT IN PRODUCTION */}
+        {/* <Route 
           path="/dashboard" 
           element={
             <ProtectedRoute requireAuth={true}>
               <Dashboard />
             </ProtectedRoute>
           } 
-        />
+        /> */}
+
+        {/* Temporary unprotected route for development */}
+        <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Admin routes - UNPROTECTED FOR DEVELOPMENT */}
+        {/* REMEMBER TO ENABLE ProtectedRoute IN PRODUCTION! */}
+        {/* <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute requireAuth={true}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        > */}
+        
+        {/* Admin routes - System Administration (4 pages) */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<Users />} />
+          <Route path="stores" element={<Stores />} />
+          <Route path="payment-methods" element={<PaymentMethods />} />
+          <Route path="transactions" element={<Transactions />} />
+        </Route>
+
+        {/* Manager routes - Restaurant Operations (9 pages) */}
+        <Route path="/manager" element={<ManagerLayout />}>
+          <Route index element={<ManagerDashboard />} />
+          <Route path="dashboard" element={<ManagerDashboard />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="menu-items" element={<MenuItems />} />
+            <Route path="daily-menu" element={<DailyMenu />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="ingredients" element={<Ingredients />} />
+            <Route path="promotions" element={<Promotions />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="settings" element={<div className="p-6">Settings - Coming Soon</div>} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )

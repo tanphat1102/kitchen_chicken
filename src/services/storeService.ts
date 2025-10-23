@@ -72,33 +72,79 @@ let mockStoreData = [...mockStores]; // Mutable copy for CRUD operations
 
 // ============= REAL API CALLS =============
 
+interface ApiResponse<T> {
+  status: number;
+  message: string;
+  data: T;
+}
+
 const realApiGetAllStores = async (): Promise<Store[]> => {
-  const response = await api.get('/stores');
-  return response.data;
+  const response = await api.get<ApiResponse<any[]>>('/store');
+  // Convert backend response to frontend format
+  return response.data.data.map((store: any) => ({
+    id: store.id.toString(),
+    name: store.name,
+    address: store.address,
+    phone: store.phone,
+    status: store.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: store.createAt,
+  }));
 };
 
 const realApiGetStoreById = async (id: string): Promise<Store> => {
-  const response = await api.get(`/stores/${id}`);
-  return response.data;
+  const response = await api.get<ApiResponse<any>>(`/store/${id}`);
+  const store = response.data.data;
+  return {
+    id: store.id.toString(),
+    name: store.name,
+    address: store.address,
+    phone: store.phone,
+    status: store.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: store.createAt,
+  };
 };
 
 const realApiCreateStore = async (data: CreateStoreDto): Promise<Store> => {
-  const response = await api.post('/stores', data);
-  return response.data;
+  const response = await api.post<ApiResponse<any>>('/store', data);
+  const store = response.data.data;
+  return {
+    id: store.id.toString(),
+    name: store.name,
+    address: store.address,
+    phone: store.phone,
+    status: store.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: store.createAt,
+  };
 };
 
 const realApiUpdateStore = async (id: string, data: UpdateStoreDto): Promise<Store> => {
-  const response = await api.put(`/stores/${id}`, data);
-  return response.data;
+  const response = await api.put<ApiResponse<any>>(`/store/${id}`, data);
+  const store = response.data.data;
+  return {
+    id: store.id.toString(),
+    name: store.name,
+    address: store.address,
+    phone: store.phone,
+    status: store.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: store.createAt,
+  };
 };
 
 const realApiToggleStoreStatus = async (id: string): Promise<Store> => {
-  const response = await api.patch(`/stores/${id}/toggle-status`);
-  return response.data;
+  const response = await api.patch<ApiResponse<any>>(`/store/${id}`);
+  const store = response.data.data;
+  return {
+    id: store.id.toString(),
+    name: store.name,
+    address: store.address,
+    phone: store.phone,
+    status: store.isActive ? 'ACTIVE' : 'INACTIVE',
+    createdAt: store.createAt,
+  };
 };
 
 const realApiDeleteStore = async (id: string): Promise<void> => {
-  await api.delete(`/stores/${id}`);
+  await api.delete(`/store/${id}`);
 };
 
 // ============= MOCK API CALLS =============
