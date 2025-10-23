@@ -3,6 +3,7 @@ export interface Nutrient {
   id: number;
   name: string;
   quantity: number;
+  baseUnit?: string;
 }
 
 export interface MenuItem {
@@ -14,6 +15,8 @@ export interface MenuItem {
   imageUrl: string;
   createdAt: string;
   price: number;
+  cal?: number;
+  description?: string;
   nutrients: Nutrient[];
 }
 
