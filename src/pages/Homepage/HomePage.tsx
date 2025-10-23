@@ -2,12 +2,11 @@ import {useState, useRef, useEffect} from 'react';
 import { TypeAnimation } from 'react-type-animation';
 import { motion } from 'framer-motion';
 import { FaPlay, FaShippingFast, FaShoppingBag } from 'react-icons/fa';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import MenuItemCard from '@/modules/Homepage/menuitem-card';
+import TodayEmblaCarousel from '@/modules/Homepage/TodayEmblaCarousel';
 import { dailyMenuService, type DailyMenuItem} from '@/services/dailyMenuService';
 import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
 import { storeService, type Store } from '@/services/storeService';
@@ -28,7 +27,6 @@ function Homepage() {
   const [currentDailyMenu, setCurrentDailyMenu] = useState<DailyMenuItem | null>(null);
   const [todayFullMenuItems, setTodayFullMenuItems] = useState<MenuItem[]>([]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
   const todayMenuRef = useRef<HTMLElement | null>(null);
 
 // Load stores & all daily menu
@@ -61,7 +59,7 @@ function Homepage() {
     fetchGlobalData();
   }, []); 
 
-  // Load menu  when choose store
+  // Load detailed menu for selected store (using summary list to locate today's id)
   useEffect(() => {
     if (!selectedStoreId || allDailyMenus.length === 0) return;
 
@@ -71,16 +69,35 @@ function Homepage() {
     const day = today.getDate().toString().padStart(2, '0');
     const todayStr = `${year}-${month}-${day}`;
 
-    const foundMenu = allDailyMenus.find(menu => {
-      const menuDateStr = menu.menuDate.split('T')[0];
-      //Filter by store
-      const hasStore = menu.storeList.some(store => store.storeId === selectedStoreId);
-      return menuDateStr === todayStr && hasStore;
-    });
-
-    setCurrentDailyMenu(foundMenu || null);
-    setCurrentIndex(0); 
-
+    (async () => {
+      try {
+        setLoading(true);
+        // First find summary by date only
+        const summary = allDailyMenus.find((m) => (m.menuDate || '').split('T')[0] === todayStr);
+        if (!summary) {
+          setCurrentDailyMenu(null);
+          setLoading(false);
+          return;
+        }
+        // Then load detailed record (has storeList and items)
+        const detailed = await dailyMenuService.getDailyMenuById(summary.id);
+        if (!detailed) {
+          setCurrentDailyMenu(null);
+          setLoading(false);
+          return;
+        }
+        //ensure store exists in detailed.storeList if provided
+        const hasStore = !selectedStoreId
+          ? true
+          : !!(detailed && Array.isArray(detailed.storeList) && detailed.storeList.some((s) => s.storeId === selectedStoreId));
+        setCurrentDailyMenu(hasStore ? detailed : null);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load today\'s menu');
+        setCurrentDailyMenu(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [allDailyMenus, selectedStoreId]); 
 
   useEffect(() => {
@@ -94,7 +111,7 @@ function Homepage() {
       setLoading(true); 
       
       try {
-        const itemIds = currentDailyMenu.itemList.map(item => item.menuItemId);
+        const itemIds = (currentDailyMenu.itemList || []).map(item => item.menuItemId);
         if (itemIds.length === 0) {
            setTodayFullMenuItems([]);
            setLoading(false);
@@ -124,18 +141,6 @@ function Homepage() {
     return <div style={{ color: 'red' }}>Error: {error}</div>;
   }
 
-  const handleNext = () => {
-    if (todayFullMenuItems.length > 0) {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % todayFullMenuItems.length);
-    }
-  };
-
-  const handlePrev = () => {
-    if (todayFullMenuItems.length > 0) {
-      setCurrentIndex((prevIndex) => (prevIndex - 1 + todayFullMenuItems.length) % todayFullMenuItems.length);
-    }
-  };
-
   const handleScrollToMenu = () => {
     if (todayMenuRef.current) {
       todayMenuRef.current.scrollIntoView({
@@ -150,7 +155,7 @@ function Homepage() {
     <Navbar />
 
     {/* Poster */}
-      <section className="font-sans bg-[#FFF7F2] h-screen flex items-center p-8">
+      <section className="font-sans bg-white h-screen flex items-center p-8">
         <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           
           <motion.div
@@ -287,7 +292,7 @@ function Homepage() {
       </section>
 
     {/* Today Menu */}
-      <section ref={todayMenuRef} className="bg-[#FFF7F2] py-20 flex items-center justify-center">
+      <section ref={todayMenuRef} className="bg-white py-20 flex items-center justify-center">
         <div className="relative w-full max-w-[1300px]">
 
          <div className="flex justify-end px-4 md:px-0 mb-1">
@@ -323,61 +328,17 @@ function Homepage() {
               <div className="text-center py-20 text-red-500">Error: {error}</div>
             ) : todayFullMenuItems.length === 0 ? (
               <div className="text-center py-20 text-gray-600">
-                {/* No available menu items*/}
                 No menu items available for this store today.
               </div>
             ) : (
-              <>
-                {todayFullMenuItems.length > 4 && (
-                  <button 
-                    onClick={handlePrev}
-                    className="absolute -left-10 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    <FaChevronLeft />
-                  </button>
-                )}
-
-                <div className="relative bg-white rounded-[50px] shadow-lg px-8 sm:px-12 lg:px-16 py-12">
-                  <div className="absolute top-1/2 -translate-y-1/2 -left-7 w-14 h-28 bg-[#FFF7F2] rounded-r-full hidden md:block"></div>
-                  <div className="absolute top-1/2 -translate-y-1/2 -right-7 w-14 h-28 bg-[#FFF7F2] rounded-l-full hidden md:block"></div>
-                  
-                  <div className="relative z-10">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-7"> 
-                      {[...todayFullMenuItems, ...todayFullMenuItems].slice(currentIndex, currentIndex + 4).map((item, index) => ( 
-                        <motion.div
-                          key={`${item.id}-${index}`} 
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <MenuItemCard
-                            imageUrl={item.imageUrl}
-                            title={item.name}
-                            description={item.categoryName}
-                            price={item.price}
-                          />
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {todayFullMenuItems.length > 4 && (
-                  <button 
-                    onClick={handleNext}
-                    className="absolute -right-10 top-1/2 -translate-y-1/2 z-20 w-14 h-14 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-                  >
-                    <FaChevronRight />
-                  </button>
-                )}
-              </>
+              <TodayEmblaCarousel items={todayFullMenuItems} />
             )}
           </div>
         </div>
       </section>
 
     {/* Get Started*/}
-    <section className="bg-[#FFF7F2] py-24 px-8">
+    <section className="bg-white py-24 px-8">
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -445,7 +406,7 @@ function Homepage() {
             />
 
             <Link 
-              to="/" //Fill link sau
+              to="/custom" 
               className="absolute bottom-10 left-1/2 -translate-x-1/2 w-40 h-12 bg-white text-red-600 rounded-full 
                         flex items-center justify-center font-bold text-m shadow-lg 
                         hover:bg-red-600 hover:text-white transition-all duration-300 transform hover:scale-105"

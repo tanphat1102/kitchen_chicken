@@ -12,6 +12,10 @@ interface Category {
 interface DailyMenuFoodItem {
   menuItemId: number;
   name: string;
+  price?: number;
+  cal?: number;
+  imageUrl?: string;
+  description?: string;
   category: Category;
 }
 
@@ -31,6 +35,8 @@ export interface DailyMenuResponse {
 
 const API_ENDPOINTS = {
   DAILY_MENU: '/api/daily-menu',
+  DAILY_MENU_DETAIL: (id: number) => `/api/daily-menu/${id}`,
+  DAILY_MENU_BY_STORE: (storeId: number) => `/api/daily-menu/store/${storeId}`,
 };
 
 class DailyMenuService {
@@ -49,17 +55,24 @@ class DailyMenuService {
         return cached;
       }
 
-      const { data: result } = await api.get<DailyMenuResponse>(
+      const { data: result } = await api.get<any>(
         API_ENDPOINTS.DAILY_MENU,
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
 
-      if (result.statusCode === 200) {
-        this.setCache(cacheKey, result.data);
-        return result.data;
-      } else {
-        throw new Error(result.message || 'Failed to fetch daily menus');
-      }
+      const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+      const arr: any[] = Array.isArray(raw) ? raw : [];
+
+      const transformed: DailyMenuItem[] = arr.map((m: any) => ({
+        id: m?.id,
+        menuDate: m?.menuDate,
+        createdAt: m?.createdAt ?? '',
+        storeList: [],
+        itemList: [],
+      }));
+
+      this.setCache(cacheKey, transformed);
+      return transformed;
     } catch (error: any) {
       console.error('Error fetching daily menus:', error);
       const status = error?.response?.status ?? error?.status;
@@ -70,10 +83,46 @@ class DailyMenuService {
 
   async getDailyMenuById(id: number, token?: string): Promise<DailyMenuItem | null> {
     try {
-      const allMenus = await this.getAllDailyMenus(token);
-      return allMenus.find(menu => menu.id === id) || null;
+      const { data: result } = await api.get<any>(
+        API_ENDPOINTS.DAILY_MENU_DETAIL(id),
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+      if (!raw) return null;
+
+      const categoryList: any[] = Array.isArray(raw?.categoryList) ? raw.categoryList : [];
+      const flatItems: DailyMenuFoodItem[] = [];
+      for (const cat of categoryList) {
+        const items: any[] = Array.isArray(cat?.items) ? cat.items : [];
+        for (const it of items) {
+          flatItems.push({
+            menuItemId: it?.id,
+            name: it?.name,
+            price: it?.price,
+            cal: it?.cal,
+            imageUrl: it?.imageUrl,
+            description: it?.description,
+            category: {
+              categoryId: cat?.categoryId,
+              name: cat?.categoryName,
+            },
+          });
+        }
+      }
+
+      const detailed: DailyMenuItem = {
+        id: raw?.id,
+        menuDate: raw?.menuDate,
+        createdAt: raw?.createdAt ?? '',
+        storeList: Array.isArray(raw?.storeList) ? raw.storeList : [],
+        itemList: flatItems,
+      };
+      return detailed;
     } catch (error: any) {
       console.error('Error fetching daily menu by ID:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
   }
@@ -81,18 +130,17 @@ class DailyMenuService {
   async getDailyMenuByDate(date: Date | string, token?: string): Promise<DailyMenuItem | null> {
     try {
       const allMenus = await this.getAllDailyMenus(token);
-      
+
       let targetDate: string;
       if (date instanceof Date) {
-        targetDate = date.toISOString().split('T')[0]; 
+        targetDate = date.toISOString().split('T')[0];
       } else {
-        targetDate = date.split('T')[0]; 
+        targetDate = date.split('T')[0];
       }
-      
-      return allMenus.find(menu => {
-        const menuDateStr = menu.menuDate.split('T')[0];
-        return menuDateStr === targetDate;
-      }) || null;
+
+      const summary = allMenus.find((menu) => (menu.menuDate || '').split('T')[0] === targetDate);
+      if (!summary) return null;
+      return this.getDailyMenuById(summary.id, token);
     } catch (error: any) {
       console.error('Error fetching daily menu by date:', error);
       throw this.handleApiError(error);
@@ -107,14 +155,90 @@ class DailyMenuService {
       const day = today.getDate().toString().padStart(2, '0');
       const todayStr = `${year}-${month}-${day}`;
       
-      const allMenus = await this.getAllDailyMenus(token);
-      return allMenus.find(menu => {
-        const menuDateStr = menu.menuDate.split('T')[0];
-        return menuDateStr === todayStr;
-      }) || null;
+      const byDate = await this.getDailyMenuByDate(todayStr, token);
+      return byDate;
 
     } catch (error: any) {
       console.error("Error fetching today's daily menu:", error);
+      throw this.handleApiError(error);
+    }
+  }
+
+  async getDailyMenuForStoreByDate(storeId: number, date: Date | string, token?: string): Promise<DailyMenuItem | null> {
+    try {
+      let targetDate: string;
+      if (date instanceof Date) {
+        targetDate = date.toISOString().split('T')[0];
+      } else {
+        targetDate = date.split('T')[0];
+      }
+
+      // Some backends may expect `menuDate` or even return an array; support both.
+      const { data: result } = await api.get<any>(
+        API_ENDPOINTS.DAILY_MENU_BY_STORE(storeId),
+        {
+          params: { date: targetDate, menuDate: targetDate },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+        }
+      );
+
+      let raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+      if (!raw) return null;
+
+      if (Array.isArray(raw)) {
+        raw = raw.find((m: any) => String(m?.menuDate ?? '').split('T')[0] === targetDate) ?? raw[0];
+      }
+
+      const categoryList: any[] = Array.isArray(raw?.categoryList)
+        ? raw.categoryList
+        : Array.isArray(raw?.categories)
+          ? raw.categories
+          : [];
+      const flatItems: DailyMenuFoodItem[] = [];
+      for (const cat of categoryList) {
+        const items: any[] = Array.isArray(cat?.items)
+          ? cat.items
+          : Array.isArray(cat?.itemList)
+            ? cat.itemList
+            : Array.isArray(cat?.menuItems)
+              ? cat.menuItems
+              : [];
+        for (const it of items) {
+          flatItems.push({
+            menuItemId: it?.id ?? it?.menuItemId,
+            name: it?.name,
+            price: it?.price,
+            cal: it?.cal ?? it?.kcal ?? it?.calories,
+            imageUrl: it?.imageUrl,
+            description: it?.description,
+            category: {
+              categoryId: cat?.categoryId ?? cat?.id,
+              name: cat?.categoryName ?? cat?.name,
+            },
+          });
+        }
+      }
+
+      const detailed: DailyMenuItem = {
+        id: raw?.id ?? raw?.dailyMenuId ?? 0,
+        menuDate: raw?.menuDate ?? targetDate,
+        createdAt: raw?.createdAt ?? '',
+        storeList: Array.isArray(raw?.storeList) ? raw.storeList : Array.isArray(raw?.stores) ? raw.stores : [],
+        itemList: flatItems,
+      };
+      return detailed;
+    } catch (error: any) {
+      console.error('Error fetching daily menu by store and date:', error);
+      try {
+        const generic = await this.getDailyMenuByDate(date, token);
+        if (generic && Array.isArray((generic as any).storeList)) {
+          const ok = (generic as any).storeList.some((s: any) => s.storeId === storeId);
+          if (ok) return generic;
+        }
+      } catch (_) {
+      }
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
   }
