@@ -15,6 +15,10 @@ export const ENV = {
   // Pagination
   DEFAULT_PAGE_SIZE: 10,
   MAX_PAGE_SIZE: 100,
+  
+  // Cloudinary Configuration
+  CLOUDINARY_CLOUD_NAME: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || '',
+  CLOUDINARY_UPLOAD_PRESET: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || '',
 } as const;
 
 // Check if running in development mode
