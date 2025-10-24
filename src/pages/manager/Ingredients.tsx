@@ -28,37 +28,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Search, Package, AlertTriangle, Store, TrendingDown } from 'lucide-react';
-import { api } from '@/services/api';
+import { storeService, type Store as StoreLocation } from '@/services/storeService';
+import { ingredientService, type Ingredient } from '@/services/ingredientService';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-
-interface Ingredient {
-  id: number;
-  name: string;
-  description?: string;
-  quantity: number;
-  unit: string;
-  minimumStock: number;
-  batchNumber?: string;
-  expiryDate?: string;
-  storeId: number;
-  storeName?: string;
-  supplierId?: number;
-  supplierName?: string;
-}
-
-interface StoreLocation {
-  id: number;
-  name: string;
-  address?: string;
-  isActive: boolean;
-}
-
-interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
 
 const Ingredients: React.FC = () => {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -84,8 +57,8 @@ const Ingredients: React.FC = () => {
   const fetchIngredients = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ApiResponse<Ingredient[]>>('/ingredients');
-      setIngredients(response.data.data);
+      const data = await ingredientService.getAll();
+      setIngredients(data);
     } catch (error) {
       console.error('Error fetching ingredients:', error);
       toast.error('Failed to load ingredients');
@@ -97,8 +70,8 @@ const Ingredients: React.FC = () => {
   // Fetch stores
   const fetchStores = async () => {
     try {
-      const response = await api.get<ApiResponse<StoreLocation[]>>('/store');
-      setStores(response.data.data.filter(store => store.isActive));
+      const data = await storeService.getAll();
+      setStores(data.filter((store: StoreLocation) => store.status === 'ACTIVE'));
     } catch (error) {
       console.error('Error fetching stores:', error);
       toast.error('Failed to load stores');
@@ -186,11 +159,11 @@ const Ingredients: React.FC = () => {
 
       if (editingIngredient) {
         // Update
-        await api.put(`/ingredients/${editingIngredient.id}`, submitData);
+        await ingredientService.update(editingIngredient.id, submitData);
         toast.success('Ingredient updated successfully');
       } else {
         // Create
-        await api.post('/ingredients', submitData);
+        await ingredientService.create(submitData);
         toast.success('Ingredient created successfully');
       }
 
@@ -210,7 +183,7 @@ const Ingredients: React.FC = () => {
     }
 
     try {
-      await api.delete(`/ingredients/${id}`);
+      await ingredientService.delete(id);
       toast.success('Ingredient deleted successfully');
       fetchIngredients();
     } catch (error) {

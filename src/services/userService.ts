@@ -61,16 +61,17 @@ export const userService = {
     const response = await api.post<ApiResponse<any>>('/users', {
       email: data.email,
       fullName: data.displayName,
-      roles: data.role, // Backend expects "roles"
-      phone: data.phone,
-      address: data.address,
+      role: data.role, // Backend expects "role" (singular)
+      isActive: true, // Default to active
+      imageURL: null,
+      birthday: null,
     });
     const user = response.data.data;
     return {
       id: user.id.toString(),
       email: user.email,
       displayName: user.fullName,
-      role: user.roles,
+      role: user.roles || user.role, // Handle both formats
       isActive: user.isActive,
       isVerified: true,
       phone: user.phone || '',

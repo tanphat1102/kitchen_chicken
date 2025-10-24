@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,15 +9,39 @@ import {
   Package,
   TrendingUp,
   AlertCircle,
-  Clock,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart } from "recharts";
+import { api } from '@/services/api';
+import { menuItemService } from '@/services/menuItemService';
+import { ingredientService } from '@/services/ingredientService';
+import toast from 'react-hot-toast';
+import { startOfDay, endOfDay } from 'date-fns';
+
+interface Order {
+  id: number;
+  orderDate: string;
+  totalAmount: number;
+  status: string;
+}
+
+interface ApiResponse<T> {
+  statusCode: number;
+  message: string;
+  data: T;
+}
 
 const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    todayRevenue: 0,
+    todayOrders: 0,
+    activeMenuItems: 0,
+    lowStockAlerts: 0,
+  });
 
-  // Mock data for charts
+  // Mock data for charts (will be replaced with real data when backend provides hourly/daily stats)
   const orderChartData = [
     { hour: "7AM", orders: 5 },
     { hour: "8AM", orders: 12 },
@@ -43,6 +67,59 @@ const ManagerDashboard: React.FC = () => {
     { day: "Sun", revenue: 14000000 }
   ];
 
+  // Fetch dashboard stats
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch all data in parallel
+      const [ordersResponse, menuItems, ingredients] = await Promise.all([
+        api.get<ApiResponse<Order[]>>('/orders/current').catch(() => ({ data: { data: [] } })),
+        menuItemService.getAll().catch(() => []),
+        ingredientService.getAll().catch(() => []),
+      ]);
+
+      const orders = ordersResponse.data.data || [];
+      
+      // Filter orders for today
+      const today = new Date();
+      const startOfToday = startOfDay(today);
+      const endOfToday = endOfDay(today);
+      
+      const todayOrders = orders.filter(order => {
+        const orderDate = new Date(order.orderDate);
+        return orderDate >= startOfToday && orderDate <= endOfToday;
+      });
+
+      // Calculate today's revenue
+      const todayRevenue = todayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+      // Count active menu items
+      const activeMenuItems = menuItems.filter(item => item.isActive).length;
+
+      // Count low stock items (items below minimum stock level)
+      const lowStockItems = ingredients.filter(ing => 
+        ing.minimumStock && ing.quantity < ing.minimumStock
+      ).length;
+
+      setStats({
+        todayRevenue,
+        todayOrders: todayOrders.length,
+        activeMenuItems,
+        lowStockAlerts: lowStockItems,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      toast.error('Failed to load dashboard statistics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -67,51 +144,75 @@ const ManagerDashboard: React.FC = () => {
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/manager/reports')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Today Revenue</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatVND(12500000)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600 font-medium">+12.5%</span> from yesterday
-            </p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{formatVND(stats.todayRevenue)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From {stats.todayOrders} orders today
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/manager/orders')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Today Orders</CardTitle>
             <ShoppingCart className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-orange-600 font-medium">12 pending</span>
-            </p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.todayOrders}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click to view all orders
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/manager/menu-items')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Active Menu Items</CardTitle>
             <ChefHat className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground mt-1">Available today</p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.activeMenuItems}</div>
+                <p className="text-xs text-muted-foreground mt-1">Available today</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate('/manager/ingredients')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Low Stock Alerts</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">3</div>
-            <p className="text-xs text-muted-foreground mt-1">Items need restocking</p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-red-600">{stats.lowStockAlerts}</div>
+                <p className="text-xs text-muted-foreground mt-1">Items need restocking</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

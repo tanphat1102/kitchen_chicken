@@ -105,7 +105,13 @@ const realApiGetStoreById = async (id: string): Promise<Store> => {
 };
 
 const realApiCreateStore = async (data: CreateStoreDto): Promise<Store> => {
-  const response = await api.post<ApiResponse<any>>('/store', data);
+  const response = await api.post<ApiResponse<any>>('/store', {
+    name: data.name,
+    address: data.address,
+    phone: data.phone,
+    createAt: new Date().toISOString(), // Backend requires timestamp
+    isActive: true, // Default to active
+  });
   const store = response.data.data;
   return {
     id: store.id.toString(),
@@ -118,7 +124,12 @@ const realApiCreateStore = async (data: CreateStoreDto): Promise<Store> => {
 };
 
 const realApiUpdateStore = async (id: string, data: UpdateStoreDto): Promise<Store> => {
-  const response = await api.put<ApiResponse<any>>(`/store/${id}`, data);
+  const response = await api.put<ApiResponse<any>>(`/store/${id}`, {
+    name: data.name,
+    address: data.address,
+    phone: data.phone,
+    isActive: data.status === 'ACTIVE', // Convert status to isActive
+  });
   const store = response.data.data;
   return {
     id: store.id.toString(),
@@ -226,4 +237,14 @@ export const toggleStoreStatus = async (id: string): Promise<Store> => {
 
 export const deleteStore = async (id: string): Promise<void> => {
   return ENV.USE_MOCK_DATA ? mockApiDeleteStore(id) : realApiDeleteStore(id);
+};
+
+// Service object for consistent API with other services
+export const storeService = {
+  getAll: getAllStores,
+  getById: getStoreById,
+  create: createStore,
+  update: updateStore,
+  toggleStatus: toggleStoreStatus,
+  delete: deleteStore,
 };
