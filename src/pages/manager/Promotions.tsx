@@ -28,30 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Search, TrendingUp, CheckCircle, XCircle, Percent, DollarSign, Calendar } from 'lucide-react';
-import { api } from '@/services/api';
+import { promotionService, type Promotion, type DiscountType } from '@/services/promotionService';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-
-type DiscountType = 'PERCENT' | 'AMOUNT';
-
-interface Promotion {
-  id: number;
-  name: string;
-  description?: string;
-  discountType: DiscountType;
-  discountValue: number;
-  startDate: string;
-  endDate: string;
-  quantityLimit?: number;
-  usedCount?: number;
-  isActive: boolean;
-}
-
-interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
 
 const Promotions: React.FC = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -75,8 +54,8 @@ const Promotions: React.FC = () => {
   const fetchPromotions = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ApiResponse<Promotion[]>>('/promotions');
-      setPromotions(response.data.data);
+      const data = await promotionService.getAll();
+      setPromotions(data);
     } catch (error) {
       console.error('Error fetching promotions:', error);
       toast.error('Failed to load promotions');
@@ -182,11 +161,11 @@ const Promotions: React.FC = () => {
 
       if (editingPromotion) {
         // Update
-        await api.put(`/promotions/${editingPromotion.id}`, submitData);
+        await promotionService.update(editingPromotion.id, submitData);
         toast.success('Promotion updated successfully');
       } else {
         // Create
-        await api.post('/promotions', submitData);
+        await promotionService.create(submitData);
         toast.success('Promotion created successfully');
       }
 
@@ -202,7 +181,7 @@ const Promotions: React.FC = () => {
   // Handle toggle status
   const handleToggleStatus = async (promo: Promotion) => {
     try {
-      await api.patch(`/promotions/${promo.id}/status`);
+      await promotionService.toggleStatus(promo.id);
       toast.success(`Promotion ${promo.isActive ? 'deactivated' : 'activated'} successfully`);
       fetchPromotions();
     } catch (error) {
@@ -218,7 +197,7 @@ const Promotions: React.FC = () => {
     }
 
     try {
-      await api.delete(`/promotions/${id}`);
+      await promotionService.delete(id);
       toast.success('Promotion deleted successfully');
       fetchPromotions();
     } catch (error) {

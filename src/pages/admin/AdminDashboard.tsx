@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,22 @@ import {
   Receipt
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { userService } from '@/services/userService';
+import { storeService } from '@/services/storeService';
+import { paymentMethodService } from '@/services/paymentMethodService';
+import { transactionService } from '@/services/transactionService';
+import toast from 'react-hot-toast';
 
 const AdminDashboard: React.FC = () => {
   const { currentUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalStores: 0,
+    activePaymentMethods: 0,
+    totalTransactions: 0,
+  });
 
   const handleLogout = async () => {
     try {
@@ -24,12 +36,36 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const stats = {
-    totalUsers: 156,
-    totalStores: 3,
-    activePaymentMethods: 5,
-    totalTransactions: 1247,
+  // Fetch dashboard stats
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all data in parallel
+      const [users, stores, paymentMethods, transactions] = await Promise.all([
+        userService.getAll().catch(() => []),
+        storeService.getAll().catch(() => []),
+        paymentMethodService.getAll().catch(() => []),
+        transactionService.getAll().catch(() => []),
+      ]);
+
+      setStats({
+        totalUsers: users.length,
+        totalStores: stores.length,
+        activePaymentMethods: paymentMethods.filter(pm => pm.isActive).length,
+        totalTransactions: transactions.length,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      toast.error('Failed to load dashboard statistics');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
 
 
@@ -64,8 +100,14 @@ const AdminDashboard: React.FC = () => {
             <Users className="h-4 w-4 text-indigo-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">System users</p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                <p className="text-xs text-muted-foreground mt-1">System users</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -75,8 +117,14 @@ const AdminDashboard: React.FC = () => {
             <Store className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalStores}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active locations</p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalStores}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active locations</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -86,8 +134,14 @@ const AdminDashboard: React.FC = () => {
             <CreditCard className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activePaymentMethods}</div>
-            <p className="text-xs text-muted-foreground mt-1">Active methods</p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.activePaymentMethods}</div>
+                <p className="text-xs text-muted-foreground mt-1">Active methods</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -97,8 +151,14 @@ const AdminDashboard: React.FC = () => {
             <Receipt className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTransactions}</div>
-            <p className="text-xs text-muted-foreground mt-1">Total transactions</p>
+            {loading ? (
+              <div className="text-xl font-bold text-muted-foreground">Loading...</div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+                <p className="text-xs text-muted-foreground mt-1">Total transactions</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

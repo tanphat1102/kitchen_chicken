@@ -504,26 +504,39 @@ const Users: React.FC = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  placeholder="+84 123 456 789"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
+              {editingUser && (
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    placeholder="+84 123 456 789"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                placeholder="Street, District, City"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
+            {editingUser && (
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  placeholder="Street, District, City"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+            )}
+
+            {!editingUser && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <strong>Note:</strong> Phone and Address can only be updated after the user is created. 
+                  The user will receive an email to set their password.
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

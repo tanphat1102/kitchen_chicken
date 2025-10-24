@@ -19,30 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Search, CreditCard, CheckCircle, XCircle } from 'lucide-react';
-import { api } from '@/services/api';
+import { paymentMethodService, type PaymentMethod } from '@/services/paymentMethodService';
 import toast from 'react-hot-toast';
-
-interface PaymentMethod {
-  id: number;
-  name: string;
-  description?: string;
-  type: string;
-  isActive: boolean;
-}
-
-interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
 
 const PaymentMethods: React.FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -53,15 +32,14 @@ const PaymentMethods: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'CASH',
   });
 
   // Fetch payment methods
   const fetchPaymentMethods = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ApiResponse<PaymentMethod[]>>('/transaction/payment-method');
-      setPaymentMethods(response.data.data);
+      const data = await paymentMethodService.getAll();
+      setPaymentMethods(data);
     } catch (error) {
       console.error('Error fetching payment methods:', error);
       toast.error('Failed to load payment methods');
@@ -96,11 +74,11 @@ const PaymentMethods: React.FC = () => {
 
       if (editingMethod) {
         // Update
-        await api.put(`/transaction/payment-method/${editingMethod.id}`, formData);
+        await paymentMethodService.update(editingMethod.id, formData);
         toast.success('Payment method updated successfully');
       } else {
         // Create
-        await api.post('/transaction/payment-method', formData);
+        await paymentMethodService.create(formData);
         toast.success('Payment method created successfully');
       }
 
@@ -116,7 +94,7 @@ const PaymentMethods: React.FC = () => {
   // Handle toggle status
   const handleToggleStatus = async (method: PaymentMethod) => {
     try {
-      await api.patch(`/transaction/payment-method/${method.id}`);
+      await paymentMethodService.toggleStatus(method.id);
       toast.success(`Payment method ${method.isActive ? 'deactivated' : 'activated'} successfully`);
       fetchPaymentMethods();
     } catch (error) {
@@ -132,7 +110,7 @@ const PaymentMethods: React.FC = () => {
     }
 
     try {
-      await api.delete(`/transaction/payment-method/${id}`);
+      await paymentMethodService.delete(id);
       toast.success('Payment method deleted successfully');
       fetchPaymentMethods();
     } catch (error) {
@@ -147,7 +125,6 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: method.name,
       description: method.description || '',
-      type: method.type,
     });
     setDialogOpen(true);
   };
@@ -158,7 +135,6 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      type: 'CASH',
     });
     setDialogOpen(true);
   };
@@ -170,7 +146,6 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      type: 'CASH',
     });
   };
 
@@ -258,7 +233,6 @@ const PaymentMethods: React.FC = () => {
                 <TableRow>
                   <TableHead>ID</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -275,9 +249,6 @@ const PaymentMethods: React.FC = () => {
                         </div>
                         <span className="font-semibold">{method.name}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{method.type}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {method.description || '-'}
@@ -350,25 +321,6 @@ const PaymentMethods: React.FC = () => {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
-              <Select 
-                value={formData.type} 
-                onValueChange={(value) => setFormData({ ...formData, type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CASH">Cash</SelectItem>
-                  <SelectItem value="CARD">Card</SelectItem>
-                  <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
-                  <SelectItem value="E_WALLET">E-Wallet</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-2">
