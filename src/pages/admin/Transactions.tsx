@@ -18,26 +18,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Search, Receipt, Eye, DollarSign, CreditCard, Calendar } from 'lucide-react';
-import { api } from '@/services/api';
+import { transactionService, type Transaction } from '@/services/transactionService';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-
-interface Transaction {
-  id: number;
-  amount: number;
-  description?: string;
-  transactionDate: string;
-  paymentMethodId: number;
-  paymentMethodName?: string;
-  userId: number;
-  userName?: string;
-}
-
-interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
 
 const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -50,8 +33,8 @@ const Transactions: React.FC = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ApiResponse<Transaction[]>>('/transaction');
-      setTransactions(response.data.data);
+      const data = await transactionService.getAll();
+      setTransactions(data);
     } catch (error) {
       console.error('Error fetching transactions:', error);
       toast.error('Failed to load transactions');
@@ -67,8 +50,7 @@ const Transactions: React.FC = () => {
   // Filter transactions
   const filteredTransactions = transactions.filter((trans) =>
     trans.id.toString().includes(searchTerm) ||
-    trans.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trans.userName?.toLowerCase().includes(searchTerm.toLowerCase())
+    trans.note?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Stats
@@ -76,7 +58,8 @@ const Transactions: React.FC = () => {
     total: transactions.length,
     totalAmount: transactions.reduce((sum, t) => sum + t.amount, 0),
     todayCount: transactions.filter(t => {
-      const transDate = new Date(t.transactionDate);
+      if (!t.createAt) return false;
+      const transDate = new Date(t.createAt);
       const today = new Date();
       return transDate.toDateString() === today.toDateString();
     }).length,
@@ -89,7 +72,8 @@ const Transactions: React.FC = () => {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
     try {
       return format(new Date(dateString), 'dd/MM/yyyy HH:mm');
     } catch {
@@ -98,15 +82,8 @@ const Transactions: React.FC = () => {
   };
 
   const handleViewDetails = async (transaction: Transaction) => {
-    try {
-      // Fetch full details
-      const response = await api.get<ApiResponse<Transaction>>(`/transaction/${transaction.id}`);
-      setSelectedTransaction(response.data.data);
-      setDetailsOpen(true);
-    } catch (error) {
-      console.error('Error fetching transaction details:', error);
-      toast.error('Failed to load transaction details');
-    }
+    setSelectedTransaction(transaction);
+    setDetailsOpen(true);
   };
 
   return (
@@ -194,8 +171,8 @@ const Transactions: React.FC = () => {
                   <TableHead>Date & Time</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Payment Method</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Note</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -206,7 +183,7 @@ const Transactions: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
-                        {formatDate(transaction.transactionDate)}
+                        {formatDate(transaction.createAt)}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -221,15 +198,17 @@ const Transactions: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4 text-blue-600" />
                         <Badge variant="outline">
-                          {transaction.paymentMethodName || `ID: ${transaction.paymentMethodId}`}
+                          {transaction.paymentMethodId ? `Payment #${transaction.paymentMethodId}` : 'N/A'}
                         </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm">{transaction.userName || `User #${transaction.userId}`}</span>
+                      <Badge variant={transaction.transactionType === 'CREDIT' ? 'default' : 'secondary'}>
+                        {transaction.transactionType}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {transaction.description || '-'}
+                      {transaction.note || '-'}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
@@ -274,27 +253,36 @@ const Transactions: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Payment Method</p>
+                  <p className="text-sm font-medium text-muted-foreground">Payment Method ID</p>
                   <Badge variant="outline" className="text-sm">
-                    {selectedTransaction.paymentMethodName || `ID: ${selectedTransaction.paymentMethodId}`}
+                    {selectedTransaction.paymentMethodId ? `#${selectedTransaction.paymentMethodId}` : 'N/A'}
                   </Badge>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Transaction Date</p>
-                  <p className="text-sm">{formatDate(selectedTransaction.transactionDate)}</p>
+                  <p className="text-sm">{formatDate(selectedTransaction.createAt)}</p>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">User</p>
-                <p className="text-sm">{selectedTransaction.userName || `User #${selectedTransaction.userId}`}</p>
+                <p className="text-sm font-medium text-muted-foreground">Transaction Type</p>
+                <Badge variant={selectedTransaction.transactionType === 'CREDIT' ? 'default' : 'secondary'}>
+                  {selectedTransaction.transactionType}
+                </Badge>
               </div>
 
-              {selectedTransaction.description && (
+              {selectedTransaction.paymentId && (
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">Description</p>
+                  <p className="text-sm font-medium text-muted-foreground">Payment ID</p>
+                  <p className="text-sm">#{selectedTransaction.paymentId}</p>
+                </div>
+              )}
+
+              {selectedTransaction.note && (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Note</p>
                   <p className="text-sm bg-gray-50 p-3 rounded-lg border">
-                    {selectedTransaction.description}
+                    {selectedTransaction.note}
                   </p>
                 </div>
               )}
