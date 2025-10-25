@@ -30,15 +30,15 @@ export interface UpdatePromotionRequest {
 }
 
 export const promotionService = {
-  // Get all promotions (Manager view - internal)
+  // Get all promotions (Manager view)
   getAll: async (): Promise<Promotion[]> => {
-    const response = await api.get<ApiResponse<Promotion[]>>('/promotion/internal');
+    const response = await api.get<ApiResponse<Promotion[]>>('/promotion');
     return response.data.data;
   },
 
-  // Get all public promotions (Customer view)
+  // Get all public promotions (Customer view) - Same endpoint for now
   getAllPublic: async (): Promise<Promotion[]> => {
-    const response = await api.get<ApiResponse<Promotion[]>>('/promotion/external');
+    const response = await api.get<ApiResponse<Promotion[]>>('/promotion');
     return response.data.data;
   },
 

@@ -10,6 +10,7 @@ export interface Ingredient {
   imageUrl?: string;
   storeId?: number;
   storeName?: string;
+  minimumStock?: number; // Added for low stock alerts
   isActive: boolean;
   createdAt?: string;
 }
