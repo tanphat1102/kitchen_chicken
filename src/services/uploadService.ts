@@ -82,11 +82,8 @@ class UploadService {
         formData.append("folder", options.folder);
       }
 
-      // Build transformation string
-      const transformations = this.buildTransformation(options);
-      if (transformations) {
-        formData.append("transformation", transformations);
-      }
+      // Note: Transformations are not allowed in unsigned uploads
+      // They should be applied via upload preset or after upload via URL transformations
 
       // Upload to Cloudinary
       const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/image/upload`;
