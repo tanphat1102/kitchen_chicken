@@ -1,3 +1,89 @@
-
 @import "tailwindcss";
 
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+.animate-fade-up {
+  animation: fade-up 400ms ease forwards;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.animate-pop {
+  animation: pop 180ms ease-out;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.calories-range input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 0;
+}
+.calories-range input[type="range"]:focus {
+  outline: none;
+}
+.calories-range input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+}
+.calories-range input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+  cursor: pointer;
+}
+.calories-range input[type="range"]::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #10b981;
+  border: 2px solid white;
+}
