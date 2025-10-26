@@ -156,7 +156,7 @@ const Promotions: React.FC = () => {
         discountValue: parseFloat(formData.discountValue),
         startDate: formData.startDate,
         endDate: formData.endDate,
-        quantityLimit: formData.quantityLimit ? parseInt(formData.quantityLimit) : undefined,
+        quantity: formData.quantityLimit ? parseInt(formData.quantityLimit) : 0,
       };
 
       if (editingPromotion) {
@@ -216,7 +216,7 @@ const Promotions: React.FC = () => {
       discountValue: promo.discountValue.toString(),
       startDate: promo.startDate,
       endDate: promo.endDate,
-      quantityLimit: promo.quantityLimit?.toString() || '',
+      quantityLimit: (promo.quantityLimit || promo.quantity)?.toString() || '',
     });
     setDialogOpen(true);
   };
@@ -417,9 +417,9 @@ const Promotions: React.FC = () => {
                     <TableCell>
                       <div className="text-sm">
                         <p className="font-medium">{promo.usedCount || 0} used</p>
-                        {promo.quantityLimit && (
+                        {(promo.quantityLimit || promo.quantity) && (
                           <p className="text-muted-foreground">
-                            / {promo.quantityLimit} limit
+                            / {promo.quantityLimit || promo.quantity} limit
                           </p>
                         )}
                       </div>
