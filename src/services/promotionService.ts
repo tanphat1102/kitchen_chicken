@@ -5,24 +5,36 @@ export type DiscountType = 'PERCENT' | 'AMOUNT';
 
 export interface Promotion {
   id: number;
+  name: string;
+  description?: string;
+  code?: string;
   discountType: DiscountType;
   discountValue: number;
   startDate: string;
   endDate: string;
   quantity: number;
+  usedCount?: number;
+  quantityLimit?: number; // Alias for quantity
   isActive: boolean;
   createdAt?: string;
 }
 
 export interface CreatePromotionRequest {
+  name: string;
+  description?: string;
+  code?: string;
   discountType: DiscountType;
   discountValue: number;
   startDate: string;
   endDate: string;
   quantity: number;
+  isActive?: boolean;
 }
 
 export interface UpdatePromotionRequest {
+  name?: string;
+  description?: string;
+  code?: string;
   discountValue?: number;
   endDate?: string;
   quantity?: number;
@@ -51,11 +63,14 @@ export const promotionService = {
   // Create new promotion (Manager only)
   create: async (data: CreatePromotionRequest): Promise<Promotion> => {
     const response = await api.post<ApiResponse<Promotion>>('/promotion', {
+      name: data.name,
+      description: data.description || null,
+      code: data.code || null,
       discountType: data.discountType,
       discountValue: data.discountValue,
       startDate: data.startDate,
       endDate: data.endDate,
-      isActive: true,
+      isActive: data.isActive ?? true,
       quantity: data.quantity,
     });
     return response.data.data;
@@ -64,6 +79,9 @@ export const promotionService = {
   // Update promotion (Manager only)
   update: async (id: number, data: UpdatePromotionRequest): Promise<Promotion> => {
     const response = await api.put<ApiResponse<Promotion>>(`/promotion/${id}`, {
+      name: data.name,
+      description: data.description,
+      code: data.code,
       discountValue: data.discountValue,
       endDate: data.endDate,
       isActive: data.isActive,
