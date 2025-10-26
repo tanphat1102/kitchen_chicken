@@ -84,7 +84,7 @@ const RestaurantsPage: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        const data = await storeService.getAllStores();
+        const data = await storeService.getAll();
         const normalized = (data as any[]).map((s) => ({
           ...s,
           latitude: s.latitude ?? s.lat ?? s.Latitude ?? s.location?.lat ?? s.geo?.lat ?? undefined,

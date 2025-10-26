@@ -24,17 +24,16 @@ export function StoreDialog({ open, onClose, onSave, store }: StoreDialogProps) 
     name: store?.name || "",
     address: store?.address || "",
     phone: store?.phone || "",
-    email: store?.email || "",
-    openTime: store?.openTime || "08:00",
-    closeTime: store?.closeTime || "22:00",
+    createAt: new Date().toISOString(),
+    isActive: store?.isActive ?? true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (field: keyof CreateStoreDto, value: string) => {
+  const handleChange = (field: keyof CreateStoreDto, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (typeof field === 'string' && errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[field];
@@ -56,9 +55,6 @@ export function StoreDialog({ open, onClose, onSave, store }: StoreDialogProps) 
       newErrors.phone = "Phone number is required";
     } else if (!/^[\d\s\+\-\(\)]+$/.test(formData.phone)) {
       newErrors.phone = "Invalid phone number format";
-    }
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
     }
 
     setErrors(newErrors);
@@ -119,61 +115,21 @@ export function StoreDialog({ open, onClose, onSave, store }: StoreDialogProps) 
             )}
           </div>
 
-          {/* Phone and Email */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="phone">
-                Phone <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="phone"
-                placeholder="+84 28 1234 5678"
-                value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
-                className={errors.phone ? "border-red-500" : ""}
-              />
-              {errors.phone && (
-                <p className="text-xs text-red-500">{errors.phone}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email (Optional)</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="store@chickenkitchen.com"
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && (
-                <p className="text-xs text-red-500">{errors.email}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Open and Close Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="openTime">Opening Time</Label>
-              <Input
-                id="openTime"
-                type="time"
-                value={formData.openTime}
-                onChange={(e) => handleChange("openTime", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="closeTime">Closing Time</Label>
-              <Input
-                id="closeTime"
-                type="time"
-                value={formData.closeTime}
-                onChange={(e) => handleChange("closeTime", e.target.value)}
-              />
-            </div>
+          {/* Phone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone">
+              Phone <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="phone"
+              placeholder="+84 28 1234 5678"
+              value={formData.phone}
+              onChange={(e) => handleChange("phone", e.target.value)}
+              className={errors.phone ? "border-red-500" : ""}
+            />
+            {errors.phone && (
+              <p className="text-xs text-red-500">{errors.phone}</p>
+            )}
           </div>
 
           {/* Actions */}

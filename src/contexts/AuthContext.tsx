@@ -22,6 +22,7 @@ interface AuthContextType {
   currentUser: AuthUser | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 // Create Context
@@ -47,22 +48,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Convert Firebase User to AuthUser
   const convertFirebaseUser = async (user: User | null): Promise<AuthUser | null> => {
-    if (!user) return null;
+    if (!user) {
+      return null;
+    }
     
     try {
-      // Fetch user profile from Firestore to get role
-      const userProfile = await authService.getUserDocument(user.uid);
+      // Get role from JWT token stored in localStorage
+      const accessToken = localStorage.getItem('accessToken');
+      let role: UserRole = 'guest';
+
+      if (accessToken) {
+        try {
+          // Decode JWT token to get role
+          const payload = JSON.parse(atob(accessToken.split('.')[1]));
+          const roleFromToken = payload.role;
+          
+          // Map backend role to frontend role
+          if (roleFromToken === 'ADMIN') {
+            role = 'admin';
+          } else if (roleFromToken === 'MANAGER' || roleFromToken === 'USER') {
+            role = 'member';
+          } else {
+            role = 'guest';
+          }
+          
+          console.log('🔑 User role:', role, '(from JWT:', roleFromToken + ')');
+        } catch (decodeError) {
+          console.error('❌ Error decoding JWT token:', decodeError);
+        }
+      }
       
-      return {
+      const authUser = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
         emailVerified: user.emailVerified,
-        role: userProfile?.role || 'guest' // Default to guest if no profile found
+        role
       };
+      
+      return authUser;
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ Error fetching user profile:', error);
       // Return user with guest role as fallback
       return {
         uid: user.uid,
@@ -85,6 +112,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Refresh user data (useful after login to get updated role)
+  const refreshUser = async () => {
+    const currentFirebaseUser = auth.currentUser;
+    if (currentFirebaseUser) {
+      const authUser = await convertFirebaseUser(currentFirebaseUser);
+      setCurrentUser(authUser);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       const authUser = await convertFirebaseUser(user);
@@ -94,12 +130,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Cleanup subscription on unmount
     return unsubscribe;
-  }, []);
+  }, [convertFirebaseUser]);
 
   const value: AuthContextType = {
     currentUser,
     loading,
-    signOut
+    signOut,
+    refreshUser
   };
 
   return (

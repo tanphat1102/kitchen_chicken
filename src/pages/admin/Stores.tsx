@@ -53,7 +53,7 @@ export default function Stores() {
   );
 
   // Toggle store status
-  const handleToggleStatus = async (id: string) => {
+  const handleToggleStatus = async (id: number) => {
     try {
       const updatedStore = await toggleStoreStatus(id);
       setStores(stores.map(store => 
@@ -66,7 +66,7 @@ export default function Stores() {
   };
 
   // Delete store
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this store?")) return;
     
     try {
@@ -147,7 +147,7 @@ export default function Stores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {stores.filter(s => s.status === 'ACTIVE').length}
+              {stores.filter(s => s.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Currently operational
@@ -161,7 +161,7 @@ export default function Stores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-400">
-              {stores.filter(s => s.status === 'INACTIVE').length}
+              {stores.filter(s => !s.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Temporarily closed
@@ -203,14 +203,14 @@ export default function Stores() {
                   <div className="flex-1">
                     <CardTitle className="text-lg">{store.name}</CardTitle>
                     <Badge
-                      variant={store.status === 'ACTIVE' ? 'default' : 'secondary'}
+                      variant={store.isActive ? 'default' : 'secondary'}
                       className={`mt-2 ${
-                        store.status === 'ACTIVE'
+                        store.isActive
                           ? 'bg-green-100 text-green-700 hover:bg-green-100'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
                       }`}
                     >
-                      {store.status}
+                      {store.isActive ? 'ACTIVE' : 'INACTIVE'}
                     </Badge>
                   </div>
                   <DropdownMenu>
@@ -225,7 +225,7 @@ export default function Stores() {
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleStatus(store.id)}>
-                        {store.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                        {store.isActive ? 'Deactivate' : 'Activate'}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-600"
@@ -248,14 +248,6 @@ export default function Stores() {
                     <Phone className="h-4 w-4 text-gray-400 shrink-0" />
                     <span className="text-gray-600">{store.phone}</span>
                   </div>
-                  {store.openTime && store.closeTime && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-gray-400 shrink-0" />
-                      <span className="text-gray-600">
-                        {store.openTime} - {store.closeTime}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </CardContent>
             </Card>
