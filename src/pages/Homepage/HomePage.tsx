@@ -37,7 +37,7 @@ function Homepage() {
         setError(null);
 
         const [stores, dailyMenus] = await Promise.all([
-          storeService.getAllStores(),
+          storeService.getAll(),
           dailyMenuService.getAllDailyMenus() 
         ]);
 

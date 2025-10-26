@@ -71,7 +71,7 @@ const Ingredients: React.FC = () => {
   const fetchStores = async () => {
     try {
       const data = await storeService.getAll();
-      setStores(data.filter((store: StoreLocation) => store.status === 'ACTIVE'));
+      setStores(data.filter((store: StoreLocation) => store.isActive));
     } catch (error) {
       console.error('Error fetching stores:', error);
       toast.error('Failed to load stores');

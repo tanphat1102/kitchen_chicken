@@ -17,13 +17,23 @@ export const APP_ROUTES = {
 // Admin routes
 export const ADMIN_ROUTES = {
   ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_DASHBOARD_REALTIME: '/admin/dashboard-realtime',
   ADMIN_STORES: '/admin/stores',
-  ADMIN_MENU: '/admin/menu',
-  ADMIN_ORDERS: '/admin/orders',
-  ADMIN_INGREDIENTS: '/admin/ingredients',
   ADMIN_USERS: '/admin/users',
-  ADMIN_ANALYTICS: '/admin/analytics',
-  ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_TRANSACTIONS: '/admin/transactions',
+  ADMIN_PAYMENT_METHODS: '/admin/payment-methods',
+} as const;
+
+// Manager routes
+export const MANAGER_ROUTES = {
+  MANAGER_DASHBOARD: '/manager/dashboard',
+  MANAGER_MENU_ITEMS: '/manager/menu-items',
+  MANAGER_CATEGORIES: '/manager/categories',
+  MANAGER_INGREDIENTS: '/manager/ingredients',
+  MANAGER_DAILY_MENU: '/manager/daily-menu',
+  MANAGER_ORDERS: '/manager/orders',
+  MANAGER_PROMOTIONS: '/manager/promotions',
+  MANAGER_REPORTS: '/manager/reports',
 } as const;
 
 // API endpoints
@@ -127,24 +137,14 @@ export const ROUTE_METADATA = {
     description: 'Trang tổng quan quản trị',
     access: ROUTE_ACCESS.ADMIN,
   },
+  [ADMIN_ROUTES.ADMIN_DASHBOARD_REALTIME]: {
+    title: 'Quản trị - Tổng quan Real-time',
+    description: 'Trang tổng quan thời gian thực',
+    access: ROUTE_ACCESS.ADMIN,
+  },
   [ADMIN_ROUTES.ADMIN_STORES]: {
     title: 'Quản trị - Cửa hàng',
     description: 'Quản lý cửa hàng',
-    access: ROUTE_ACCESS.ADMIN,
-  },
-  [ADMIN_ROUTES.ADMIN_MENU]: {
-    title: 'Quản trị - Thực đơn',
-    description: 'Quản lý thực đơn',
-    access: ROUTE_ACCESS.ADMIN,
-  },
-  [ADMIN_ROUTES.ADMIN_ORDERS]: {
-    title: 'Quản trị - Đơn hàng',
-    description: 'Quản lý đơn hàng',
-    access: ROUTE_ACCESS.ADMIN,
-  },
-  [ADMIN_ROUTES.ADMIN_INGREDIENTS]: {
-    title: 'Quản trị - Nguyên liệu',
-    description: 'Quản lý kho nguyên liệu',
     access: ROUTE_ACCESS.ADMIN,
   },
   [ADMIN_ROUTES.ADMIN_USERS]: {
@@ -152,14 +152,54 @@ export const ROUTE_METADATA = {
     description: 'Quản lý người dùng',
     access: ROUTE_ACCESS.ADMIN,
   },
-  [ADMIN_ROUTES.ADMIN_ANALYTICS]: {
-    title: 'Quản trị - Thống kê',
-    description: 'Xem thống kê và báo cáo',
+  [ADMIN_ROUTES.ADMIN_TRANSACTIONS]: {
+    title: 'Quản trị - Giao dịch',
+    description: 'Quản lý giao dịch tài chính',
     access: ROUTE_ACCESS.ADMIN,
   },
-  [ADMIN_ROUTES.ADMIN_SETTINGS]: {
-    title: 'Quản trị - Cài đặt',
-    description: 'Cài đặt hệ thống',
+  [ADMIN_ROUTES.ADMIN_PAYMENT_METHODS]: {
+    title: 'Quản trị - Phương thức thanh toán',
+    description: 'Quản lý phương thức thanh toán',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_DASHBOARD]: {
+    title: 'Quản lý - Tổng quan',
+    description: 'Trang tổng quan quản lý',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_MENU_ITEMS]: {
+    title: 'Quản lý - Món ăn',
+    description: 'Quản lý món ăn',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_CATEGORIES]: {
+    title: 'Quản lý - Danh mục',
+    description: 'Quản lý danh mục món ăn',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_INGREDIENTS]: {
+    title: 'Quản lý - Nguyên liệu',
+    description: 'Quản lý kho nguyên liệu',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_DAILY_MENU]: {
+    title: 'Quản lý - Thực đơn hàng ngày',
+    description: 'Quản lý thực đơn hàng ngày',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_ORDERS]: {
+    title: 'Quản lý - Đơn hàng',
+    description: 'Quản lý đơn hàng',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_PROMOTIONS]: {
+    title: 'Quản lý - Khuyến mãi',
+    description: 'Quản lý chương trình khuyến mãi',
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_REPORTS]: {
+    title: 'Quản lý - Báo cáo',
+    description: 'Xem báo cáo và thống kê',
     access: ROUTE_ACCESS.ADMIN,
   },
 } as const;
@@ -186,39 +226,68 @@ export const ADMIN_NAVIGATION_ITEMS = [
     icon: 'BarChart3',
   },
   {
-    path: ADMIN_ROUTES.ADMIN_STORES,
-    label: 'Cửa hàng',
-    icon: 'Store',
-  },
-  {
-    path: ADMIN_ROUTES.ADMIN_MENU,
-    label: 'Thực đơn',
-    icon: 'Menu',
-  },
-  {
-    path: ADMIN_ROUTES.ADMIN_ORDERS,
-    label: 'Đơn hàng',
-    icon: 'ShoppingBag',
-  },
-  {
-    path: ADMIN_ROUTES.ADMIN_INGREDIENTS,
-    label: 'Nguyên liệu',
-    icon: 'Package',
-  },
-  {
     path: ADMIN_ROUTES.ADMIN_USERS,
     label: 'Người dùng',
     icon: 'Users',
   },
   {
-    path: ADMIN_ROUTES.ADMIN_ANALYTICS,
-    label: 'Báo cáo',
+    path: ADMIN_ROUTES.ADMIN_STORES,
+    label: 'Cửa hàng',
+    icon: 'Store',
+  },
+  {
+    path: ADMIN_ROUTES.ADMIN_PAYMENT_METHODS,
+    label: 'Thanh toán',
+    icon: 'CreditCard',
+  },
+  {
+    path: ADMIN_ROUTES.ADMIN_TRANSACTIONS,
+    label: 'Giao dịch',
+    icon: 'Receipt',
+  },
+] as const;
+
+// Manager navigation items
+export const MANAGER_NAVIGATION_ITEMS = [
+  {
+    path: MANAGER_ROUTES.MANAGER_DASHBOARD,
+    label: 'Tổng quan',
+    icon: 'Home',
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_MENU_ITEMS,
+    label: 'Món ăn',
+    icon: 'ChefHat',
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_CATEGORIES,
+    label: 'Danh mục',
+    icon: 'Tag',
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_INGREDIENTS,
+    label: 'Nguyên liệu',
+    icon: 'Package',
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_DAILY_MENU,
+    label: 'Thực đơn hàng ngày',
+    icon: 'Calendar',
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_ORDERS,
+    label: 'Đơn hàng',
+    icon: 'ShoppingBag',
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_PROMOTIONS,
+    label: 'Khuyến mãi',
     icon: 'TrendingUp',
   },
   {
-    path: ADMIN_ROUTES.ADMIN_SETTINGS,
-    label: 'Cài đặt',
-    icon: 'Settings',
+    path: MANAGER_ROUTES.MANAGER_REPORTS,
+    label: 'Báo cáo',
+    icon: 'FileText',
   },
 ] as const;
 
@@ -227,6 +296,7 @@ export const ROUTES = {
   ...AUTH_ROUTES,
   ...APP_ROUTES,
   ...ADMIN_ROUTES,
+  ...MANAGER_ROUTES,
   ...MEMBER_ROUTES,
 } as const;
 

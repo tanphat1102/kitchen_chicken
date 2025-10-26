@@ -63,7 +63,7 @@ const MenuFilterSidebar: React.FC<MenuFilterSidebarProps> = ({
       setErrorStores(null);
       try {
         // Sử dụng storeService
-        const fetchedStores = await storeService.getAllStores();
+        const fetchedStores = await storeService.getAll();
         setStores(fetchedStores || []);
       } catch (err: any) {
         console.error('Error fetching stores:', err);

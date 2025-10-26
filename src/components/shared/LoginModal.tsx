@@ -61,8 +61,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
       
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
-      onOpenChange(false);
-      // Note: redirectByRole will be called automatically by useEffect when currentUser updates
+      
+      // Force reload to refresh auth state
+      window.location.reload();
     } catch (err: any) {
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showErrorToast(err);
@@ -84,7 +85,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
       
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
-      onOpenChange(false);
+      
+      // Force reload to refresh auth state
+      window.location.reload();
     } catch (err: any) {
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showErrorToast(err);
@@ -106,7 +109,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
       
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
-      onOpenChange(false);
+      
+      // Force reload to refresh auth state
+      window.location.reload();
     } catch (err: any) {
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showErrorToast(err);

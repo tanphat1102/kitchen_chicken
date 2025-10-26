@@ -48,7 +48,7 @@ const CustomOrder: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const all = await storeService.getAllStores();
+        const all = await storeService.getAll();
         if (!mounted) return;
         setStores(all);
         if (all.length > 0) setSelectedStoreId(all[0].id);

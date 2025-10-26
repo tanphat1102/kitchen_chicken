@@ -52,7 +52,7 @@ const AdminDashboard: React.FC = () => {
       setStats({
         totalUsers: users.length,
         totalStores: stores.length,
-        activePaymentMethods: paymentMethods.filter(pm => pm.isActive).length,
+        activePaymentMethods: paymentMethods.filter((pm: { isActive: boolean }) => pm.isActive).length,
         totalTransactions: transactions.length,
       });
     } catch (error) {
