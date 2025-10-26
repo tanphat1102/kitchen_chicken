@@ -1,14 +1,31 @@
 import api from '@/config/axios';
+
 export interface Category {
   id: number;
   name: string;
   description: string;
 }
 
-export interface CategoriesResponse {
+export interface CreateCategoryDto {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateCategoryDto {
+  name?: string;
+  description?: string;
+}
+
+interface CategoriesResponse {
   statusCode: number;
   message: string;
   data: Category[];
+}
+
+interface CategoryResponse {
+  statusCode: number;
+  message: string;
+  data: Category;
 }
 
 const API_ENDPOINTS = {
@@ -23,7 +40,8 @@ class CategoryService {
     this.cache = new Map();
   }
 
-  async getAllCategories(token?: string): Promise<Category[]> {
+  // Get all categories
+  async getAll(token?: string): Promise<Category[]> {
     const cacheKey = 'all-categories';
     const cached = this.getFromCache(cacheKey);
     if (cached) return cached;
@@ -48,6 +66,87 @@ class CategoryService {
     }
   }
 
+  // Alias for backward compatibility
+  async getAllCategories(token?: string): Promise<Category[]> {
+    return this.getAll(token);
+  }
+
+  // Get category by ID
+  async getById(id: number): Promise<Category> {
+    try {
+      const { data: result } = await api.get<CategoryResponse>(
+        `${API_ENDPOINTS.CATEGORIES}/${id}`
+      );
+
+      if (result.statusCode === 200) {
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to fetch category');
+      }
+    } catch (error: any) {
+      console.error('Error fetching category:', error);
+      throw error;
+    }
+  }
+
+  // Create new category
+  async create(dto: CreateCategoryDto): Promise<Category> {
+    try {
+      const { data: result } = await api.post<CategoryResponse>(
+        API_ENDPOINTS.CATEGORIES,
+        dto
+      );
+
+      if (result.statusCode === 200) {
+        this.clearCache();
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to create category');
+      }
+    } catch (error: any) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
+  }
+
+  // Update category
+  async update(id: number, dto: UpdateCategoryDto): Promise<Category> {
+    try {
+      const { data: result } = await api.put<CategoryResponse>(
+        `${API_ENDPOINTS.CATEGORIES}/${id}`,
+        dto
+      );
+
+      if (result.statusCode === 200) {
+        this.clearCache();
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to update category');
+      }
+    } catch (error: any) {
+      console.error('Error updating category:', error);
+      throw error;
+    }
+  }
+
+  // Delete category
+  async delete(id: number): Promise<void> {
+    try {
+      const { data: result } = await api.delete<{ statusCode: number; message: string }>(
+        `${API_ENDPOINTS.CATEGORIES}/${id}`
+      );
+
+      if (result.statusCode === 200) {
+        this.clearCache();
+      } else {
+        throw new Error(result.message || 'Failed to delete category');
+      }
+    } catch (error: any) {
+      console.error('Error deleting category:', error);
+      throw error;
+    }
+  }
+
   private getFromCache(key: string): Category[] | null {
      const cached = this.cache.get(key);
      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
@@ -56,8 +155,13 @@ class CategoryService {
      this.cache.delete(key);
      return null;
   }
+
   private setCache(key: string, data: Category[]): void {
      this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  private clearCache(): void {
+    this.cache.clear();
   }
 }
 
