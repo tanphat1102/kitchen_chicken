@@ -4,28 +4,35 @@ import type { ApiResponse } from '@/types/api.types';
 export interface Ingredient {
   id: number;
   name: string;
+  description?: string;
   quantity: number;
   baseUnit: string;
+  unit: string; // Alias for baseUnit (for UI display)
   batchNumber?: string;
+  expiryDate?: string;
   imageUrl?: string;
   storeId?: number;
   storeName?: string;
-  minimumStock?: number; // Added for low stock alerts
+  minimumStock?: number;
   isActive: boolean;
   createdAt?: string;
 }
 
 export interface CreateIngredientRequest {
   name: string;
+  description?: string;
   baseUnit: string; // UnitType enum
   batchNumber: string;
   quantity: number;
   storeIds: number[]; // Array of store IDs
   imageUrl?: string;
+  createAt?: string;
+  isActive?: boolean;
 }
 
 export interface UpdateIngredientRequest {
   name?: string;
+  description?: string;
   baseUnit?: string;
   batchNumber?: string;
   quantity?: number;
@@ -50,10 +57,11 @@ export const ingredientService = {
   create: async (data: CreateIngredientRequest): Promise<Ingredient> => {
     const response = await api.post<ApiResponse<Ingredient>>('/ingredient', {
       name: data.name,
+      description: data.description || null,
       baseUnit: data.baseUnit,
-      createAt: new Date().toISOString(),
+      createAt: data.createAt || new Date().toISOString(),
       imageUrl: data.imageUrl || '',
-      isActive: true,
+      isActive: data.isActive ?? true,
       storeIds: data.storeIds,
       batchNumber: data.batchNumber,
       quantity: data.quantity,
@@ -65,8 +73,9 @@ export const ingredientService = {
   update: async (id: number, data: UpdateIngredientRequest): Promise<Ingredient> => {
     const response = await api.put<ApiResponse<Ingredient>>(`/ingredient/${id}`, {
       name: data.name,
+      description: data.description,
       imageUrl: data.imageUrl,
-      baseUnit: data.baseUnit || 'GRAM', // Default unit
+      baseUnit: data.baseUnit || 'GRAM',
       isActive: data.isActive ?? true,
       batchNumber: data.batchNumber,
       quantity: data.quantity,

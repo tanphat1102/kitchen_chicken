@@ -87,8 +87,8 @@ const Ingredients: React.FC = () => {
   const filteredIngredients = ingredients.filter((ingredient) => {
     const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ingredient.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStore = filterStore === 'all' || ingredient.storeId.toString() === filterStore;
-    const isLowStock = ingredient.quantity <= ingredient.minimumStock;
+    const matchesStore = filterStore === 'all' || ingredient.storeId?.toString() === filterStore;
+    const isLowStock = ingredient.minimumStock ? ingredient.quantity <= ingredient.minimumStock : false;
     const matchesStock = filterStock === 'all' || 
                         (filterStock === 'low' && isLowStock) ||
                         (filterStock === 'normal' && !isLowStock);
@@ -98,9 +98,9 @@ const Ingredients: React.FC = () => {
   // Stats
   const stats = {
     total: ingredients.length,
-    lowStock: ingredients.filter(i => i.quantity <= i.minimumStock).length,
-    critical: ingredients.filter(i => i.quantity <= i.minimumStock * 0.5).length,
-    stores: new Set(ingredients.map(i => i.storeId)).size,
+    lowStock: ingredients.filter(i => i.minimumStock && i.quantity <= i.minimumStock).length,
+    critical: ingredients.filter(i => i.minimumStock && i.quantity <= i.minimumStock * 0.5).length,
+    stores: new Set(ingredients.map(i => i.storeId).filter(Boolean)).size,
   };
 
   const formatDate = (dateString?: string) => {
@@ -114,12 +114,12 @@ const Ingredients: React.FC = () => {
 
   // Check if ingredient is low stock
   const isLowStock = (ingredient: Ingredient) => {
-    return ingredient.quantity <= ingredient.minimumStock;
+    return ingredient.minimumStock ? ingredient.quantity <= ingredient.minimumStock : false;
   };
 
   // Check if ingredient is critical
   const isCritical = (ingredient: Ingredient) => {
-    return ingredient.quantity <= ingredient.minimumStock * 0.5;
+    return ingredient.minimumStock ? ingredient.quantity <= ingredient.minimumStock * 0.5 : false;
   };
 
   // Handle create/edit
@@ -150,16 +150,21 @@ const Ingredients: React.FC = () => {
         name: formData.name,
         description: formData.description || undefined,
         quantity: parseFloat(formData.quantity),
-        unit: formData.unit,
-        minimumStock: parseFloat(formData.minimumStock),
-        batchNumber: formData.batchNumber || undefined,
-        expiryDate: formData.expiryDate || undefined,
-        storeId: parseInt(formData.storeId),
+        baseUnit: formData.unit, // Map 'unit' to 'baseUnit'
+        batchNumber: formData.batchNumber || '',
+        storeIds: [parseInt(formData.storeId)], // Single store wrapped in array
+        imageUrl: undefined, // Optional
       };
 
       if (editingIngredient) {
-        // Update
-        await ingredientService.update(editingIngredient.id, submitData);
+        // Update - needs different structure
+        await ingredientService.update(editingIngredient.id, {
+          name: formData.name,
+          description: formData.description || undefined,
+          quantity: parseFloat(formData.quantity),
+          baseUnit: formData.unit,
+          batchNumber: formData.batchNumber || undefined,
+        });
         toast.success('Ingredient updated successfully');
       } else {
         // Create
@@ -199,11 +204,11 @@ const Ingredients: React.FC = () => {
       name: ingredient.name,
       description: ingredient.description || '',
       quantity: ingredient.quantity.toString(),
-      unit: ingredient.unit,
-      minimumStock: ingredient.minimumStock.toString(),
+      unit: ingredient.unit || ingredient.baseUnit,
+      minimumStock: ingredient.minimumStock?.toString() || '0',
       batchNumber: ingredient.batchNumber || '',
       expiryDate: ingredient.expiryDate || '',
-      storeId: ingredient.storeId.toString(),
+      storeId: ingredient.storeId?.toString() || '',
     });
     setDialogOpen(true);
   };
@@ -413,13 +418,13 @@ const Ingredients: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-lg">{ingredient.quantity}</span>
-                        <span className="text-sm text-muted-foreground">{ingredient.unit}</span>
+                        <span className="text-sm text-muted-foreground">{ingredient.unit || ingredient.baseUnit}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <TrendingDown className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{ingredient.minimumStock} {ingredient.unit}</span>
+                        <span className="text-sm">{ingredient.minimumStock || 0} {ingredient.unit || ingredient.baseUnit}</span>
                       </div>
                     </TableCell>
                     <TableCell>
