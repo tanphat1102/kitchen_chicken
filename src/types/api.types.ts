@@ -238,13 +238,15 @@ export interface CreateUserRequest {
   email: string;
   displayName?: string;
   role: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
-  phone?: string;
-  address?: string;
+  isActive?: boolean;
+  birthday?: string | null;
+  imageURL?: string | null;
 }
 
 export interface UpdateUserRequest {
   displayName?: string;
-  phone?: string;
-  address?: string;
-  avatar?: string;
+  role?: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
+  isActive?: boolean;
+  birthday?: string | null;
+  imageURL?: string | null;
 }

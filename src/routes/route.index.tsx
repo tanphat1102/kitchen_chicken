@@ -25,6 +25,9 @@ import Users from "@/pages/admin/Users";
 import Transactions from "@/pages/admin/Transactions";
 import PaymentMethods from "@/pages/admin/PaymentMethods";
 
+// Admin layout
+import AdminLayout from "@/layouts/admin/AdminLayout";
+
 // Manager pages
 import ManagerDashboard from "@/pages/manager/ManagerDashboard";
 import MenuItems from "@/pages/manager/MenuItems";
@@ -78,55 +81,22 @@ export function AppRoutes() {
       {/* LocalStorage test route - test token persistence */}
       <Route path={AUTH_ROUTES.STORAGE_TEST} element={<LocalStorageTest />} />
 
-      {/* Admin routes */}
+      {/* Admin routes - wrapped in AdminLayout */}
       <Route 
-        path={ADMIN_ROUTES.ADMIN_DASHBOARD} 
+        path="/admin" 
         element={
           <RoleBasedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
+            <AdminLayout />
           </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={ADMIN_ROUTES.ADMIN_DASHBOARD_REALTIME} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <AdminDashboardRealtime />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={ADMIN_ROUTES.ADMIN_STORES} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Stores />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={ADMIN_ROUTES.ADMIN_USERS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Users />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={ADMIN_ROUTES.ADMIN_TRANSACTIONS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Transactions />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={ADMIN_ROUTES.ADMIN_PAYMENT_METHODS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <PaymentMethods />
-          </RoleBasedRoute>
-        } 
-      />
+        }
+      >
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="dashboard-realtime" element={<AdminDashboardRealtime />} />
+        <Route path="stores" element={<Stores />} />
+        <Route path="users" element={<Users />} />
+        <Route path="transactions" element={<Transactions />} />
+        <Route path="payment-methods" element={<PaymentMethods />} />
+      </Route>
 
       {/* Manager routes */}
       <Route 

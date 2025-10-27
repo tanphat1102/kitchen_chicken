@@ -58,22 +58,23 @@ export const userService = {
 
   // Create new user (Admin only)
   create: async (data: CreateUserRequest): Promise<User> => {
+    // Match backend CreateUserRequest format exactly
     const response = await api.post<ApiResponse<any>>('/users', {
+      fullName: data.displayName || '',
       email: data.email,
-      fullName: data.displayName,
-      role: data.role, // Backend expects "role" (singular)
-      isActive: true, // Default to active
-      imageURL: null,
-      birthday: null,
+      role: data.role,
+      isActive: data.isActive ?? true,
+      birthday: data.birthday || null,
+      imageURL: data.imageURL || null,
     });
     const user = response.data.data;
     return {
       id: user.id.toString(),
       email: user.email,
       displayName: user.fullName,
-      role: user.roles || user.role, // Handle both formats
+      role: user.roles || user.role,
       isActive: user.isActive,
-      isVerified: true,
+      isVerified: user.isVerified || false,
       phone: user.phone || '',
       address: user.address || '',
       avatar: user.imageURL,
@@ -85,9 +86,10 @@ export const userService = {
   updateMe: async (data: UpdateUserRequest): Promise<User> => {
     const response = await api.put<ApiResponse<any>>('/users/me', {
       fullName: data.displayName,
-      phone: data.phone,
-      address: data.address,
-      imageURL: data.avatar,
+      role: data.role,
+      isActive: data.isActive,
+      birthday: data.birthday || null,
+      imageURL: data.imageURL || null,
     });
     const user = response.data.data;
     return {
@@ -106,20 +108,22 @@ export const userService = {
 
   // Update user by ID (Admin only)
   update: async (id: string, data: UpdateUserRequest): Promise<User> => {
+    // Match backend UpdateUserRequest format
     const response = await api.put<ApiResponse<any>>(`/users/${id}`, {
       fullName: data.displayName,
-      phone: data.phone,
-      address: data.address,
-      imageURL: data.avatar,
+      role: data.role,
+      isActive: data.isActive,
+      birthday: data.birthday || null,
+      imageURL: data.imageURL || null,
     });
     const user = response.data.data;
     return {
       id: user.id.toString(),
       email: user.email,
       displayName: user.fullName,
-      role: user.roles,
+      role: user.roles || user.role,
       isActive: user.isActive,
-      isVerified: true,
+      isVerified: user.isVerified || false,
       phone: user.phone || '',
       address: user.address || '',
       avatar: user.imageURL,

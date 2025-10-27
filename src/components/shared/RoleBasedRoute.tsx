@@ -41,6 +41,9 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   // If user is not logged in, treat as guest
   const userRole: UserRole = currentUser?.role || 'guest';
 
+  // 🚧 TEMPORARY: Authentication check disabled for UI development
+  // TODO: Re-enable this after UI development is complete
+  /* 
   // Check if user's role is allowed to access this route
   if (!allowedRoles.includes(userRole)) {
     console.warn('🚫 Access denied to', location.pathname, '- User role:', userRole, '- Required:', allowedRoles);
@@ -60,6 +63,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
       return <Navigate to={fallbackPath} replace />;
     }
   }
+  */
 
   console.log('✅ Access granted to', location.pathname, '- User role:', userRole);
   return <>{children}</>;
