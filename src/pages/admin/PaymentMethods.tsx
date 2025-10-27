@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -27,11 +28,13 @@ const PaymentMethods: React.FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    isActive: false,
   });
 
   // Fetch payment methods
@@ -53,9 +56,15 @@ const PaymentMethods: React.FC = () => {
   }, []);
 
   // Filter payment methods
-  const filteredMethods = paymentMethods.filter((method) =>
-    method.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMethods = paymentMethods.filter((method) => {
+    const matchesSearch = method.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'all' ? true :
+      statusFilter === 'active' ? method.isActive :
+      !method.isActive;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   // Stats
   const stats = {
@@ -72,13 +81,26 @@ const PaymentMethods: React.FC = () => {
         return;
       }
 
+      if (!formData.description.trim()) {
+        toast.error('Payment method description is required');
+        return;
+      }
+
       if (editingMethod) {
         // Update
-        await paymentMethodService.update(editingMethod.id, formData);
+        await paymentMethodService.update(editingMethod.id, {
+          name: formData.name,
+          description: formData.description,
+          isActive: formData.isActive,
+        });
         toast.success('Payment method updated successfully');
       } else {
         // Create
-        await paymentMethodService.create(formData);
+        await paymentMethodService.create({
+          name: formData.name,
+          description: formData.description,
+          isActive: formData.isActive,
+        });
         toast.success('Payment method created successfully');
       }
 
@@ -125,6 +147,7 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: method.name,
       description: method.description || '',
+      isActive: method.isActive,
     });
     setDialogOpen(true);
   };
@@ -135,6 +158,7 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: '',
       description: '',
+      isActive: false,
     });
     setDialogOpen(true);
   };
@@ -146,6 +170,7 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: '',
       description: '',
+      isActive: false,
     });
   };
 
@@ -198,17 +223,28 @@ const PaymentMethods: React.FC = () => {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search and Filter */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search payment methods..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search payment methods..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              className="px-4 py-2 border rounded-md bg-background"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -324,12 +360,26 @@ const PaymentMethods: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description *</Label>
               <Input
                 id="description"
-                placeholder="Optional description..."
+                placeholder="Enter payment method description..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="status">Active Status</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable this payment method for customers
+                </p>
+              </div>
+              <Switch
+                id="status"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
             </div>
           </div>
