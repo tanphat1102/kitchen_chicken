@@ -28,33 +28,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, Search, ChefHat, CheckCircle, XCircle, ImagePlus } from 'lucide-react';
-import { api } from '@/services/api';
+import { menuItemService } from '@/services/menuItemService';
+import { categoryService } from '@/services/categoryService';
+import type { MenuItem, Category } from '@/types/api.types';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary } from '@/utils/cloudinary';
-
-interface MenuItem {
-  id: number;
-  name: string;
-  description?: string;
-  price: number;
-  imageURL?: string;
-  categoryId: number;
-  categoryName?: string;
-  isActive: boolean;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  isActive: boolean;
-}
-
-interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
-}
 
 const MenuItems: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -71,15 +49,17 @@ const MenuItems: React.FC = () => {
     description: '',
     price: '',
     categoryId: '',
-    imageURL: '',
+    imageUrl: '',
+    cal: '',
+    isActive: true,
   });
 
   // Fetch menu items
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ApiResponse<MenuItem[]>>('/menu-items');
-      setMenuItems(response.data.data);
+      const data = await menuItemService.getAll();
+      setMenuItems(data);
     } catch (error) {
       console.error('Error fetching menu items:', error);
       toast.error('Failed to load menu items');
@@ -91,8 +71,8 @@ const MenuItems: React.FC = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const response = await api.get<ApiResponse<Category[]>>('/categories');
-      setCategories(response.data.data.filter(cat => cat.isActive));
+      const data = await categoryService.getAll();
+      setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Failed to load categories');
@@ -149,7 +129,7 @@ const MenuItems: React.FC = () => {
     try {
       setUploading(true);
       const imageUrl = await uploadToCloudinary(file);
-      setFormData({ ...formData, imageURL: imageUrl });
+      setFormData({ ...formData, imageUrl: imageUrl });
       toast.success('Image uploaded successfully');
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -180,16 +160,18 @@ const MenuItems: React.FC = () => {
         description: formData.description,
         price: parseFloat(formData.price),
         categoryId: parseInt(formData.categoryId),
-        imageURL: formData.imageURL || undefined,
+        imageUrl: formData.imageUrl || undefined,
+        cal: formData.cal ? parseInt(formData.cal) : 0,
+        isActive: formData.isActive,
       };
 
       if (editingItem) {
         // Update
-        await api.put(`/menu-items/${editingItem.id}`, submitData);
+        await menuItemService.update(editingItem.id, submitData);
         toast.success('Menu item updated successfully');
       } else {
         // Create
-        await api.post('/menu-items', submitData);
+        await menuItemService.create(submitData);
         toast.success('Menu item created successfully');
       }
 
@@ -205,7 +187,7 @@ const MenuItems: React.FC = () => {
   // Handle toggle status
   const handleToggleStatus = async (item: MenuItem) => {
     try {
-      await api.patch(`/menu-items/${item.id}/status`);
+      await menuItemService.toggleStatus(item.id);
       toast.success(`Menu item ${item.isActive ? 'deactivated' : 'activated'} successfully`);
       fetchMenuItems();
     } catch (error) {
@@ -221,7 +203,7 @@ const MenuItems: React.FC = () => {
     }
 
     try {
-      await api.delete(`/menu-items/${id}`);
+      await menuItemService.delete(id);
       toast.success('Menu item deleted successfully');
       fetchMenuItems();
     } catch (error) {
@@ -238,7 +220,9 @@ const MenuItems: React.FC = () => {
       description: item.description || '',
       price: item.price.toString(),
       categoryId: item.categoryId.toString(),
-      imageURL: item.imageURL || '',
+      imageUrl: item.imageUrl || '',
+      cal: item.cal?.toString() || '0',
+      isActive: item.isActive,
     });
     setDialogOpen(true);
   };
@@ -251,7 +235,9 @@ const MenuItems: React.FC = () => {
       description: '',
       price: '',
       categoryId: '',
-      imageURL: '',
+      imageUrl: '',
+      cal: '0',
+      isActive: true,
     });
     setDialogOpen(true);
   };
@@ -265,7 +251,9 @@ const MenuItems: React.FC = () => {
       description: '',
       price: '',
       categoryId: '',
-      imageURL: '',
+      imageUrl: '',
+      cal: '0',
+      isActive: true,
     });
   };
 
@@ -391,15 +379,15 @@ const MenuItems: React.FC = () => {
                 {filteredItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
-                      {item.imageURL ? (
+                      {item.imageUrl ? (
                         <img 
-                          src={item.imageURL} 
+                          src={item.imageUrl} 
                           alt={item.name}
-                          className="h-16 w-16 object-cover rounded-lg"
+                          className="w-12 h-12 object-cover rounded"
                         />
                       ) : (
-                        <div className="h-16 w-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <ChefHat className="h-6 w-6 text-gray-400" />
+                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                          <span className="text-gray-400 text-xs">No image</span>
                         </div>
                       )}
                     </TableCell>
@@ -543,10 +531,10 @@ const MenuItems: React.FC = () => {
                   />
                   {uploading && <span className="text-sm text-muted-foreground">Uploading...</span>}
                 </div>
-                {formData.imageURL && (
+                {formData.imageUrl && (
                   <div className="mt-2">
                     <img 
-                      src={formData.imageURL} 
+                      src={formData.imageUrl} 
                       alt="Preview" 
                       className="h-32 w-32 object-cover rounded-lg border"
                     />
