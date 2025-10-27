@@ -17,6 +17,30 @@ import { api } from '@/services/api';
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, subMonths, startOfWeek, endOfWeek } from 'date-fns';
 
+/**
+ * ⚠️ PENDING: Backend Report/Dashboard API Not Implemented
+ * 
+ * This component currently uses MOCK DATA for display purposes.
+ * 
+ * Required Backend APIs (Manager role):
+ * - GET /api/reports/summary?startDate={date}&endDate={date}
+ *   → Returns: { totalRevenue, totalOrders, averageOrderValue, topItem }
+ * 
+ * - GET /api/reports/revenue-trend?startDate={date}&endDate={date}
+ *   → Returns: [{ date, revenue, orders }]
+ * 
+ * - GET /api/reports/store-performance?startDate={date}&endDate={date}
+ *   → Returns: [{ storeId, storeName, revenue, orders }]
+ * 
+ * - GET /api/reports/popular-items?startDate={date}&endDate={date}&limit=5
+ *   → Returns: [{ menuItemId, menuItemName, orderCount, revenue }]
+ * 
+ * - GET /api/reports/category-performance?startDate={date}&endDate={date}
+ *   → Returns: [{ categoryId, categoryName, revenue, percentage }]
+ * 
+ * Once backend implements these endpoints, replace mock data with real API calls.
+ */
+
 interface RevenueData {
   date: string;
   revenue: number;
