@@ -12,19 +12,12 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Calendar, Store, ChefHat, Plus, Trash2, AlertCircle } from 'lucide-react';
-import { api } from '@/services/api';
 import toast from 'react-hot-toast';
 import { format, addDays, startOfToday } from 'date-fns';
-
-interface MenuItem {
-  id: number;
-  name: string;
-  price: number;
-  categoryId: number;
-  categoryName?: string;
-  imageURL?: string;
-  isActive: boolean;
-}
+import { menuItemService } from '@/services/menuItemService';
+import { storeService } from '@/services/storeService';
+import { dailyMenuService } from '@/services/dailyMenuService';
+import type { MenuItem } from '@/types/api.types';
 
 interface StoreLocation {
   id: number;
@@ -33,12 +26,19 @@ interface StoreLocation {
   isActive: boolean;
 }
 
-interface DailyMenu {
+interface DailyMenuDetail {
   id: number;
   menuDate: string;
-  storeId: number;
-  storeName?: string;
-  menuItems: MenuItem[];
+  createdAt?: string;
+  storeList: Array<{
+    storeId: number;
+    storeName: string;
+  }>;
+  categoryList: Array<{
+    categoryId: number;
+    categoryName: string;
+    items: MenuItem[];
+  }>;
 }
 
 interface ApiResponse<T> {
@@ -50,19 +50,19 @@ interface ApiResponse<T> {
 const DailyMenuBuilder: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [stores, setStores] = useState<StoreLocation[]>([]);
-  const [dailyMenus, setDailyMenus] = useState<DailyMenu[]>([]);
+  const [dailyMenus, setDailyMenus] = useState<DailyMenuDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(format(addDays(startOfToday(), 1), 'yyyy-MM-dd'));
   const [selectedStores, setSelectedStores] = useState<number[]>([]);
   const [selectedMenuItems, setSelectedMenuItems] = useState<number[]>([]);
-  const [editingMenu, setEditingMenu] = useState<DailyMenu | null>(null);
+  const [editingMenu, setEditingMenu] = useState<DailyMenuDetail | null>(null);
 
   // Fetch menu items
   const fetchMenuItems = async () => {
     try {
-      const response = await api.get<ApiResponse<MenuItem[]>>('/menu-items');
-      setMenuItems(response.data.data.filter(item => item.isActive));
+      const response = await menuItemService.getAll();
+      setMenuItems(response.filter((item: MenuItem) => item.isActive));
     } catch (error) {
       console.error('Error fetching menu items:', error);
       toast.error('Failed to load menu items');
@@ -72,8 +72,8 @@ const DailyMenuBuilder: React.FC = () => {
   // Fetch stores
   const fetchStores = async () => {
     try {
-      const response = await api.get<ApiResponse<StoreLocation[]>>('/store');
-      setStores(response.data.data.filter(store => store.isActive));
+      const response = await storeService.getAll();
+      setStores(response.filter((store: StoreLocation) => store.isActive));
     } catch (error) {
       console.error('Error fetching stores:', error);
       toast.error('Failed to load stores');
@@ -84,8 +84,58 @@ const DailyMenuBuilder: React.FC = () => {
   const fetchDailyMenus = async () => {
     try {
       setLoading(true);
-      const response = await api.get<ApiResponse<DailyMenu[]>>('/daily-menu');
-      setDailyMenus(response.data.data);
+      const menus = await dailyMenuService.getAllDailyMenus();
+      
+      // Fetch details for each menu
+      const detailedMenus = await Promise.all(
+        menus.map(async (menu) => {
+          const detail = await dailyMenuService.getDailyMenuById(menu.id);
+          if (!detail) return null;
+          
+          // Transform DailyMenuItem to DailyMenuDetail
+          const categoryList = new Map<number, { categoryId: number; categoryName: string; items: MenuItem[] }>();
+          
+          detail.itemList?.forEach((foodItem) => {
+            const catId = foodItem.category?.categoryId || 0;
+            const catName = foodItem.category?.name || 'Uncategorized';
+            
+            if (!categoryList.has(catId)) {
+              categoryList.set(catId, {
+                categoryId: catId,
+                categoryName: catName,
+                items: []
+              });
+            }
+            
+            // Convert DailyMenuFoodItem to MenuItem
+            const menuItem: MenuItem = {
+              id: foodItem.menuItemId,
+              name: foodItem.name,
+              price: foodItem.price || 0,
+              categoryId: catId,
+              categoryName: catName,
+              imageUrl: foodItem.imageUrl,
+              description: foodItem.description,
+              cal: foodItem.cal || 0,
+              isActive: true,
+            };
+            
+            categoryList.get(catId)?.items.push(menuItem);
+          });
+          
+          const transformed: DailyMenuDetail = {
+            id: detail.id,
+            menuDate: detail.menuDate,
+            createdAt: detail.createdAt,
+            storeList: detail.storeList || [],
+            categoryList: Array.from(categoryList.values())
+          };
+          
+          return transformed;
+        })
+      );
+      
+      setDailyMenus(detailedMenus.filter((m): m is DailyMenuDetail => m !== null));
     } catch (error) {
       console.error('Error fetching daily menus:', error);
       toast.error('Failed to load daily menus');
@@ -151,55 +201,47 @@ const DailyMenuBuilder: React.FC = () => {
         return;
       }
 
-      if (selectedStores.length === 0) {
-        toast.error('Please select at least one store');
-        return;
-      }
-
       if (selectedMenuItems.length === 0) {
         toast.error('Please select at least one menu item');
         return;
       }
 
-      // Create daily menu for each selected store
-      const promises = selectedStores.map(async (storeId) => {
-        const submitData = {
+      // Note: Backend automatically applies to all stores on create
+      // selectedStores is only for edit mode (update)
+      if (editingMenu) {
+        // Update mode - can update stores, items, or date
+        await dailyMenuService.update(editingMenu.id, {
           menuDate: selectedDate,
-          storeId: storeId,
+          storeIds: selectedStores.length > 0 ? selectedStores : undefined,
           menuItemIds: selectedMenuItems,
-        };
-
-        if (editingMenu) {
-          return api.put(`/daily-menu/${editingMenu.id}`, submitData);
-        } else {
-          return api.post('/daily-menu', submitData);
-        }
-      });
-
-      await Promise.all(promises);
-      
-      toast.success(editingMenu 
-        ? 'Daily menu updated successfully' 
-        : `Daily menu created for ${selectedStores.length} store(s)`
-      );
+        });
+        toast.success('Daily menu updated successfully');
+      } else {
+        // Create mode - backend auto-applies to all stores
+        await dailyMenuService.create({
+          menuDate: selectedDate,
+          menuItemIds: selectedMenuItems,
+        });
+        toast.success('Daily menu created successfully for all stores');
+      }
       
       fetchDailyMenus();
       handleCloseDialog();
     } catch (error: any) {
       console.error('Error saving daily menu:', error);
-      const message = error.response?.data?.message || 'Failed to save daily menu';
+      const message = error.response?.data?.message || error.message || 'Failed to save daily menu';
       toast.error(message);
     }
   };
 
   // Handle delete
-  const handleDelete = async (id: number, storeName: string, date: string) => {
-    if (!confirm(`Are you sure you want to delete daily menu for ${storeName} on ${formatDate(date)}?`)) {
+  const handleDelete = async (id: number, date: string, stores: string[]) => {
+    if (!confirm(`Are you sure you want to delete daily menu for ${formatDate(date)} (${stores.length} store(s))?`)) {
       return;
     }
 
     try {
-      await api.delete(`/daily-menu/${id}`);
+      await dailyMenuService.delete(id);
       toast.success('Daily menu deleted successfully');
       fetchDailyMenus();
     } catch (error) {
@@ -242,7 +284,7 @@ const DailyMenuBuilder: React.FC = () => {
     }
     acc[menu.menuDate].push(menu);
     return acc;
-  }, {} as Record<string, DailyMenu[]>);
+  }, {} as Record<string, DailyMenuDetail[]>);
 
   const sortedDates = Object.keys(menusByDate).sort((a, b) => 
     new Date(b).getTime() - new Date(a).getTime()
@@ -276,9 +318,10 @@ const DailyMenuBuilder: React.FC = () => {
               <p className="font-semibold text-purple-900">Business Rules</p>
               <ul className="text-sm text-purple-700 mt-2 space-y-1">
                 <li>• Daily menus can only be created for future dates (not today or past dates)</li>
-                <li>• Each store can have one daily menu per day</li>
+                <li>• Each date can have only ONE daily menu (unique per date)</li>
+                <li>• New daily menus are automatically applied to ALL active stores</li>
+                <li>• You can update store assignments later if needed</li>
                 <li>• Only active menu items can be added to daily menu</li>
-                <li>• Menu items must be categorized before adding to daily menu</li>
               </ul>
             </div>
           </div>
@@ -303,55 +346,66 @@ const DailyMenuBuilder: React.FC = () => {
           sortedDates.map((date) => (
             <Card key={date}>
               <CardHeader className="border-b bg-gray-50">
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-purple-600" />
-                  <span>{formatDate(date)}</span>
-                  <Badge variant="outline" className="ml-2">
-                    {menusByDate[date].length} store(s)
-                  </Badge>
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-purple-600" />
+                    <span>{formatDate(date)}</span>
+                  </CardTitle>
+                  {menusByDate[date][0] && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(
+                        menusByDate[date][0].id, 
+                        menusByDate[date][0].menuDate,
+                        menusByDate[date][0].storeList.map(s => s.storeName)
+                      )}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Menu
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="pt-6">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {menusByDate[date].map((menu) => (
-                    <Card key={menu.id} className="border-2 hover:shadow-md transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Store className="h-4 w-4 text-blue-600" />
-                            <span className="font-semibold">{menu.storeName || `Store #${menu.storeId}`}</span>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(menu.id, menu.storeName || `Store #${menu.storeId}`, menu.menuDate)}
-                            className="text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium text-gray-700">
-                            Menu Items ({menu.menuItems?.length || 0}):
-                          </p>
-                          <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {menu.menuItems?.map((item) => (
+                {menusByDate[date].map((menu) => (
+                  <div key={menu.id} className="space-y-4">
+                    {/* Stores Info */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-700">Applied to Stores:</p>
+                      {menu.storeList.map((store) => (
+                        <Badge key={store.storeId} variant="outline" className="flex items-center gap-1">
+                          <Store className="h-3 w-3" />
+                          {store.storeName}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    {/* Menu Items by Category */}
+                    <div className="space-y-4">
+                      <p className="text-sm font-semibold text-gray-700">
+                        Menu Items ({menu.categoryList.reduce((total, cat) => total + cat.items.length, 0)} items):
+                      </p>
+                      {menu.categoryList.map((category) => (
+                        <div key={category.categoryId} className="space-y-2">
+                          <h4 className="text-sm font-medium text-purple-600 flex items-center gap-2">
+                            <ChefHat className="h-4 w-4" />
+                            {category.categoryName} ({category.items.length})
+                          </h4>
+                          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                            {category.items.map((item: MenuItem) => (
                               <div key={item.id} className="flex items-center gap-2 text-sm p-2 rounded bg-gray-50">
-                                <ChefHat className="h-3 w-3 text-orange-600" />
                                 <span className="flex-1">{item.name}</span>
                                 <span className="text-green-600 font-medium">{formatVND(item.price)}</span>
                               </div>
-                            )) || (
-                              <p className="text-sm text-muted-foreground">No items</p>
-                            )}
+                            ))}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           ))
@@ -385,27 +439,41 @@ const DailyMenuBuilder: React.FC = () => {
               </p>
             </div>
 
-            {/* Store Selection */}
-            <div className="space-y-2">
-              <Label>Select Stores * ({selectedStores.length} selected)</Label>
-              <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg max-h-48 overflow-y-auto">
-                {stores.map((store) => (
-                  <div key={store.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`store-${store.id}`}
-                      checked={selectedStores.includes(store.id)}
-                      onCheckedChange={() => toggleStore(store.id)}
-                    />
-                    <label
-                      htmlFor={`store-${store.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {store.name}
-                    </label>
-                  </div>
-                ))}
+            {/* Store Info - Read only on create, editable on update */}
+            {editingMenu ? (
+              <div className="space-y-2">
+                <Label>Select Stores ({selectedStores.length} selected)</Label>
+                <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg max-h-48 overflow-y-auto">
+                  {stores.map((store) => (
+                    <div key={store.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`store-${store.id}`}
+                        checked={selectedStores.includes(store.id)}
+                        onCheckedChange={() => toggleStore(store.id)}
+                      />
+                      <label
+                        htmlFor={`store-${store.id}`}
+                        className="text-sm font-medium leading-none cursor-pointer"
+                      >
+                        {store.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                <div className="flex items-start gap-3">
+                  <Store className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-900">Auto-Apply to All Stores</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      This daily menu will be automatically applied to all active stores in the system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Menu Items Selection by Category */}
             <div className="space-y-2">
