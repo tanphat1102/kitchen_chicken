@@ -38,6 +38,9 @@ import Orders from "@/pages/manager/Orders";
 import Promotions from "@/pages/manager/Promotions";
 import Reports from "@/pages/manager/Reports";
 
+// Manager layout
+import ManagerLayout from "@/layouts/manager/ManagerLayout";
+
 // Member pages
 import MemberDashboard from "@/pages/member/MemberDashboard";
 
@@ -98,71 +101,48 @@ export function AppRoutes() {
         <Route path="payment-methods" element={<PaymentMethods />} />
       </Route>
 
-      {/* Manager routes */}
+      {/* Manager routes with layout */}
       <Route 
-        path={MANAGER_ROUTES.MANAGER_DASHBOARD} 
+        path="/manager" 
         element={
           <RoleBasedRoute allowedRoles={['admin']}>
-            <ManagerDashboard />
+            <ManagerLayout />
           </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_MENU_ITEMS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <MenuItems />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_CATEGORIES} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Categories />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_INGREDIENTS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Ingredients />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_DAILY_MENU} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <DailyMenu />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_ORDERS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Orders />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_PROMOTIONS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Promotions />
-          </RoleBasedRoute>
-        } 
-      />
-      <Route 
-        path={MANAGER_ROUTES.MANAGER_REPORTS} 
-        element={
-          <RoleBasedRoute allowedRoles={['admin']}>
-            <Reports />
-          </RoleBasedRoute>
-        } 
-      />
+        }
+      >
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_DASHBOARD} 
+          element={<ManagerDashboard />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_MENU_ITEMS} 
+          element={<MenuItems />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_CATEGORIES} 
+          element={<Categories />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_INGREDIENTS} 
+          element={<Ingredients />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_DAILY_MENU} 
+          element={<DailyMenu />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_ORDERS} 
+          element={<Orders />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_PROMOTIONS} 
+          element={<Promotions />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_REPORTS} 
+          element={<Reports />} 
+        />
+      </Route>
 
       {/* Member routes */}
       <Route 

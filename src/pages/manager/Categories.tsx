@@ -58,6 +58,11 @@ const Categories: React.FC = () => {
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Stats
+  const stats = {
+    total: categories.length,
+  };
+
   // Handle create/edit
   const handleSubmit = async () => {
     try {
@@ -149,16 +154,60 @@ const Categories: React.FC = () => {
         </Button>
       </div>
 
-      {/* Search & Filter */}
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Menu categories
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Display</CardTitle>
+            <Tag className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{filteredCategories.length}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Currently showing
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Search Results</CardTitle>
+            <Search className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {searchTerm ? filteredCategories.length : stats.total}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {searchTerm ? 'Filtered results' : 'All categories'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search Bar */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search categories..."
+              placeholder="Search categories by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+              className="pl-10"
             />
           </div>
         </CardContent>

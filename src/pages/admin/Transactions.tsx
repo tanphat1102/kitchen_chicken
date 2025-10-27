@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Receipt, Eye, DollarSign, CreditCard, Calendar } from 'lucide-react';
+import { Search, Receipt, Eye, DollarSign, CreditCard, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { transactionService, type Transaction } from '@/services/transactionService';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -26,6 +26,7 @@ const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'CREDIT' | 'DEBIT'>('all');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
@@ -48,15 +49,23 @@ const Transactions: React.FC = () => {
   }, []);
 
   // Filter transactions
-  const filteredTransactions = transactions.filter((trans) =>
-    trans.id.toString().includes(searchTerm) ||
-    trans.note?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTransactions = transactions.filter((trans) => {
+    const matchesSearch = trans.id.toString().includes(searchTerm) ||
+      trans.note?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = 
+      typeFilter === 'all' ? true :
+      trans.transactionType === typeFilter;
+    
+    return matchesSearch && matchesType;
+  });
 
   // Stats
   const stats = {
     total: transactions.length,
     totalAmount: transactions.reduce((sum, t) => sum + t.amount, 0),
+    creditCount: transactions.filter(t => t.transactionType === 'CREDIT').length,
+    debitCount: transactions.filter(t => t.transactionType === 'DEBIT').length,
     todayCount: transactions.filter(t => {
       if (!t.createAt) return false;
       const transDate = new Date(t.createAt);
@@ -102,10 +111,11 @@ const Transactions: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Transactions</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -114,37 +124,61 @@ const Transactions: React.FC = () => {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Today's Transactions</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Credit (Income)</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.todayCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">Transactions today</p>
+            <div className="text-2xl font-bold text-green-600">{stats.creditCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Money received</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Amount</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Debit (Expense)</CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatVND(stats.totalAmount)}</div>
+            <div className="text-2xl font-bold text-red-600">{stats.debitCount}</div>
+            <p className="text-xs text-muted-foreground mt-1">Money sent</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
+            <DollarSign className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{formatVND(stats.totalAmount)}</div>
             <p className="text-xs text-muted-foreground mt-1">All transactions</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by ID, description, or user name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by ID or note..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'CREDIT' | 'DEBIT')}
+              className="px-4 py-2 border rounded-md bg-background"
+            >
+              <option value="all">All Types</option>
+              <option value="CREDIT">Credit (Income)</option>
+              <option value="DEBIT">Debit (Expense)</option>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -203,8 +237,23 @@ const Transactions: React.FC = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={transaction.transactionType === 'CREDIT' ? 'default' : 'secondary'}>
-                        {transaction.transactionType}
+                      <Badge 
+                        className={transaction.transactionType === 'CREDIT' 
+                          ? 'bg-green-100 text-green-700 border-green-200' 
+                          : 'bg-red-100 text-red-700 border-red-200'
+                        }
+                      >
+                        {transaction.transactionType === 'CREDIT' ? (
+                          <>
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            CREDIT
+                          </>
+                        ) : (
+                          <>
+                            <TrendingDown className="h-3 w-3 mr-1" />
+                            DEBIT
+                          </>
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
@@ -266,8 +315,23 @@ const Transactions: React.FC = () => {
 
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">Transaction Type</p>
-                <Badge variant={selectedTransaction.transactionType === 'CREDIT' ? 'default' : 'secondary'}>
-                  {selectedTransaction.transactionType}
+                <Badge 
+                  className={selectedTransaction.transactionType === 'CREDIT' 
+                    ? 'bg-green-100 text-green-700 border-green-200' 
+                    : 'bg-red-100 text-red-700 border-red-200'
+                  }
+                >
+                  {selectedTransaction.transactionType === 'CREDIT' ? (
+                    <>
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      CREDIT (Income)
+                    </>
+                  ) : (
+                    <>
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                      DEBIT (Expense)
+                    </>
+                  )}
                 </Badge>
               </div>
 
