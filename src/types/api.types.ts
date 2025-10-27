@@ -181,14 +181,24 @@ export interface Ingredient {
 
 export interface CreateIngredientRequest {
   name: string;
+  description?: string;
+  baseUnit: 'G' | 'ML'; // UnitType enum from backend
   batchNumber: string;
-  baseUnit: 'G' | 'ML';
+  quantity: number;
+  storeIds: number[]; // Array of store IDs
+  imageUrl?: string;
+  createAt?: string; // ISO timestamp
+  isActive?: boolean;
 }
 
 export interface UpdateIngredientRequest {
-  name: string;
-  batchNumber: string;
-  baseUnit: 'G' | 'ML';
+  name?: string;
+  description?: string;
+  baseUnit?: 'G' | 'ML'; // UnitType enum from backend
+  batchNumber?: string;
+  quantity?: number;
+  imageUrl?: string;
+  isActive?: boolean;
 }
 
 // Promotion Types

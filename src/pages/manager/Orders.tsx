@@ -1,3 +1,16 @@
+/**
+ * ⚠️ PENDING - Waiting for Backend API
+ * 
+ * This component requires Manager Orders API endpoints that are not yet implemented:
+ * - GET /api/orders/manager - List all orders
+ * - GET /api/orders/manager/{id} - Get order detail
+ * - PATCH /api/orders/manager/{id}/status - Update order status
+ * 
+ * Current API endpoints (/api/orders) are for MEMBER role only, causing 401 errors.
+ * 
+ * TODO: Update this component once backend implements ManagerOrderController
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
