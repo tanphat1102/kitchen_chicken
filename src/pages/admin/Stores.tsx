@@ -259,10 +259,10 @@ export default function Stores() {
                     <CardTitle className="text-lg">{store.name}</CardTitle>
                     <Badge
                       variant={store.isActive ? 'default' : 'secondary'}
-                      className={`mt-2 ${
+                      className={`mt-2 transition-colors ${
                         store.isActive
-                          ? 'bg-black text-white hover:bg-black'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-white text-black border border-black hover:bg-black hover:text-white'
+                          : 'bg-white text-gray-700 border border-black hover:bg-black hover:text-white'
                       }`}
                     >
                       {store.isActive ? 'ACTIVE' : 'INACTIVE'}

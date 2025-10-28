@@ -216,11 +216,11 @@ const Users: React.FC = () => {
   // Get role badge color
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'ADMIN': return 'bg-white text-black border-black';
-      case 'MANAGER': return 'bg-white text-black border-black';
-      case 'EMPLOYEE': return 'bg-white text-black border-black';
-      case 'STORE': return 'bg-white text-black border-black';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'ADMIN': return 'bg-white text-black border-black hover:bg-black hover:text-white hover:border-black transition-colors';
+      case 'MANAGER': return 'bg-white text-black border-black hover:bg-black hover:text-white hover:border-black transition-colors';
+      case 'EMPLOYEE': return 'bg-white text-black border-black hover:bg-black hover:text-white hover:border-black transition-colors';
+      case 'STORE': return 'bg-white text-black border-black hover:bg-black hover:text-white hover:border-black transition-colors';
+      default: return 'bg-white text-gray-700 border-black hover:bg-black hover:text-white hover:border-black transition-colors';
     }
   };
 
@@ -379,7 +379,7 @@ const Users: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-hidden">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
@@ -393,7 +393,7 @@ const Users: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-gray-50 border-gray-200">
+                    <TableRow key={user.id} className="hover:bg-gray-50 border-gray-200" style={{ overflow: 'hidden' }}>
                       <TableCell className="text-gray-900">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
@@ -475,7 +475,11 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleToggleStatus(user)}
-                            className="bg-white text-gray-900 hover:bg-gray-100 border-gray-300"
+                            className={`bg-white border-gray-300 transition-colors ${
+                              user.isActive 
+                                ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
+                                : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
+                            }`}
                           >
                             {user.isActive ? (
                               <>
@@ -493,7 +497,7 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEdit(user)}
-                            className="bg-white text-gray-900 hover:bg-gray-100 border-gray-300"
+                            className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -501,7 +505,7 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(user.id, user.email)}
-                            className="bg-black text-white hover:bg-gray-800 border-black"
+                            className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

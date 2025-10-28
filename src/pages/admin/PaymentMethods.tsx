@@ -273,7 +273,8 @@ const PaymentMethods: React.FC = () => {
               {searchTerm ? 'No payment methods found' : 'No payment methods yet. Create your first one!'}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-hidden">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
@@ -299,7 +300,7 @@ const PaymentMethods: React.FC = () => {
                       {method.description || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`border ${method.isActive ? 'bg-black text-white border-black' : 'bg-gray-200 text-gray-700 border-gray-400'}`}>
+                      <Badge className={`border transition-colors ${method.isActive ? 'bg-white text-black border-black hover:bg-black hover:text-white' : 'bg-white text-gray-700 border-black hover:bg-black hover:text-white'}`}>
                         {method.isActive ? (
                           <>
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -319,7 +320,11 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(method)}
-                          className="hover:bg-gray-100"
+                          className={`bg-white border-gray-300 transition-colors ${
+                            method.isActive 
+                              ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
+                              : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
+                          }`}
                         >
                           {method.isActive ? 'Deactivate' : 'Activate'}
                         </Button>
@@ -327,7 +332,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(method)}
-                          className="hover:bg-gray-100"
+                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -335,7 +340,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(method.id, method.name)}
-                          className="bg-black text-white hover:bg-gray-800"
+                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -345,6 +350,7 @@ const PaymentMethods: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

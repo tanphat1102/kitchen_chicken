@@ -207,7 +207,8 @@ const Transactions: React.FC = () => {
               {searchTerm ? 'No transactions found' : 'No transactions yet'}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-hidden">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
@@ -247,10 +248,10 @@ const Transactions: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        className={transaction.transactionType === 'CREDIT' 
-                          ? 'bg-black text-white border-black' 
-                          : 'bg-gray-200 text-gray-700 border-gray-400'
-                        }
+                        className={`transition-colors ${transaction.transactionType === 'CREDIT' 
+                          ? 'bg-white text-black border border-black hover:bg-black hover:text-white' 
+                          : 'bg-white text-gray-700 border border-black hover:bg-black hover:text-white'
+                        }`}
                       >
                         {transaction.transactionType === 'CREDIT' ? (
                           <>
@@ -273,7 +274,7 @@ const Transactions: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewDetails(transaction)}
-                        className="hover:bg-gray-100"
+                        className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         View
@@ -283,6 +284,7 @@ const Transactions: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
