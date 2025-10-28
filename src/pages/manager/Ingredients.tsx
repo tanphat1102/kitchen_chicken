@@ -245,19 +245,19 @@ const Ingredients: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Package className="h-8 w-8 text-red-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <Package className="h-8 w-8 text-black" />
             <span>Ingredients Inventory</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage inventory across all stores with FIFO tracking
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Ingredient</span>
         </Button>

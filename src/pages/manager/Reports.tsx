@@ -230,15 +230,15 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <FileText className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <FileText className="h-8 w-8 text-black" />
             <span>Reports & Analytics</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Analyze business performance and trends
           </p>
         </div>
@@ -246,7 +246,7 @@ const Reports: React.FC = () => {
           <Button 
             variant="outline" 
             onClick={fetchReports}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 border-gray-300 hover:bg-gray-100"
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -254,7 +254,7 @@ const Reports: React.FC = () => {
           </Button>
           <Button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white"
           >
             <Download className="h-4 w-4" />
             <span>Export CSV</span>

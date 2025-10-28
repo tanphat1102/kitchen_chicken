@@ -22,10 +22,11 @@ interface SidebarData {
 interface AppSidebarProps {
   data: SidebarData
   className?: string
+  panelType?: "admin" | "manager"
 }
 
 const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
-  ({ data, className }, ref) => {
+  ({ data, className, panelType = "admin" }, ref) => {
     const location = useLocation()
     const [isCollapsed, setIsCollapsed] = React.useState(false)
     const [expandedItems, setExpandedItems] = React.useState<string[]>([])
@@ -75,7 +76,7 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
                 Chicken Kitchen
               </span>
               <span className="text-[10px] font-medium text-gray-600 tracking-wider uppercase">
-                Admin Panel
+                {panelType === "manager" ? "Manager Panel" : "Admin Panel"}
               </span>
             </div>
           )}

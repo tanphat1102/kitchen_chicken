@@ -291,19 +291,19 @@ const DailyMenuBuilder: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Calendar className="h-8 w-8 text-purple-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <Calendar className="h-8 w-8 text-black" />
             <span>Daily Menu Builder</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Create and manage daily menus for each store
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Create Daily Menu</span>
         </Button>
