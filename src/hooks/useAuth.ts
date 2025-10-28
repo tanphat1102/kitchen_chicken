@@ -5,6 +5,9 @@ import { AuthErrorHandler } from '@/utils/authErrorHandler';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+// Re-export useAuth from AuthContext for convenience
+export { useAuth } from '@/contexts/AuthContext';
+
 // Hook to get current user profile with caching
 export const useUserProfile = (uid?: string) => {
   const { currentUser } = useAuth();

@@ -1,7 +1,8 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Home, ChevronLeft, ChevronRight } from "lucide-react"
+import { Home, ChevronLeft } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
+import { Badge } from "@/components/ui/badge"
 import Logo from "@/assets/img/Logo.png"
 
 interface SidebarData {
@@ -9,6 +10,8 @@ interface SidebarData {
     title: string
     url: string
     icon?: React.ComponentType<any>
+    description?: string
+    badge?: string
     items?: Array<{
       title: string
       url: string
@@ -19,10 +22,11 @@ interface SidebarData {
 interface AppSidebarProps {
   data: SidebarData
   className?: string
+  panelType?: "admin" | "manager"
 }
 
 const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
-  ({ data, className }, ref) => {
+  ({ data, className, panelType = "admin" }, ref) => {
     const location = useLocation()
     const [isCollapsed, setIsCollapsed] = React.useState(false)
     const [expandedItems, setExpandedItems] = React.useState<string[]>([])
@@ -30,7 +34,7 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
     const toggleCollapse = () => {
       setIsCollapsed(!isCollapsed)
       if (!isCollapsed) {
-        setExpandedItems([]) // Collapse all sub-items when sidebar collapses
+        setExpandedItems([])
       }
     }
 
@@ -46,44 +50,56 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
       <div
         ref={ref}
         className={cn(
-          "flex h-full flex-col bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out",
+          "flex h-auto flex-col bg-white border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out",
           isCollapsed ? "w-20" : "w-64",
           className
         )}
       >
         {/* Sidebar Header */}
         <div className={cn(
-          "flex items-center gap-3 p-6 border-b border-gray-200 relative",
+          "flex items-center gap-3 p-6 border-b border-gray-200 relative bg-gray-50",
           isCollapsed && "justify-center p-4"
         )}>
-          <img 
-            src={Logo} 
-            alt="Chicken Kitchen" 
-            className={cn(
-              "object-contain transition-all duration-300",
-              isCollapsed ? "h-8 w-8" : "h-10 w-10"
-            )} 
-          />
+          <div className="relative">
+            <img 
+              src={Logo} 
+              alt="Chicken Kitchen" 
+              className={cn(
+                "object-contain transition-all duration-300",
+                isCollapsed ? "h-8 w-8" : "h-10 w-10"
+              )} 
+            />
+          </div>
           {!isCollapsed && (
-            <span className="text-xl font-bold text-gray-800 whitespace-nowrap overflow-hidden">
-              Chicken Kitchen
-            </span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
+                Chicken Kitchen
+              </span>
+              <span className="text-[10px] font-medium text-gray-600 tracking-wider uppercase">
+                {panelType === "manager" ? "Manager Panel" : "Admin Panel"}
+              </span>
+            </div>
           )}
           
           {/* Collapse Toggle Button */}
           <button
             onClick={toggleCollapse}
             className={cn(
-              "absolute -right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm",
+              "absolute -right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-black transition-all shadow-lg z-50",
               isCollapsed && "rotate-180"
             )}
           >
-            <ChevronLeft className="h-3 w-3 text-gray-600" />
+            <ChevronLeft className="h-3 w-3 text-gray-700" />
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-3 overflow-y-auto">
+        <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          {!isCollapsed && (
+            <p className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              Main Menu
+            </p>
+          )}
           <ul className="space-y-1">
             {data.navMain.map((item) => {
               const Icon = item.icon || Home
@@ -105,29 +121,33 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 relative overflow-hidden",
                         isActive
-                          ? "bg-black text-white shadow-sm"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                          ? "bg-black text-white shadow-lg"
+                          : "text-gray-700 hover:bg-gray-100 hover:text-black",
                         isCollapsed && "justify-center px-2"
                       )}
                     >
-                      {/* Active indicator */}
-                      {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-white rounded-r-full" />
-                      )}
-                      
                       <Icon className={cn(
-                        "shrink-0 transition-all",
+                        "shrink-0 transition-all relative z-10",
                         isCollapsed ? "h-5 w-5" : "h-4 w-4"
                       )} />
                       
                       {!isCollapsed && (
                         <>
-                          <span className="flex-1">{item.title}</span>
-                          {hasSubItems && (
-                            <ChevronRight className={cn(
-                              "h-4 w-4 transition-transform duration-200",
-                              isExpanded && "rotate-90"
-                            )} />
+                          <div className="flex-1 flex flex-col gap-0.5 relative z-10">
+                            <span className="leading-none">{item.title}</span>
+                            {item.description && !isActive && (
+                              <span className="text-[10px] text-gray-500 leading-none">
+                                {item.description}
+                              </span>
+                            )}
+                          </div>
+                          {item.badge && (
+                            <Badge 
+                              variant="secondary" 
+                              className="bg-black text-white text-[10px] px-1.5 py-0 h-4"
+                            >
+                              {item.badge}
+                            </Badge>
                           )}
                         </>
                       )}
@@ -135,56 +155,22 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
                     
                     {/* Tooltip for collapsed state */}
                     {isCollapsed && (
-                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                        {item.title}
-                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-3 py-2 bg-white border border-gray-300 text-gray-900 text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                        <div className="font-medium">{item.title}</div>
+                        {item.description && (
+                          <div className="text-[10px] text-gray-600 mt-0.5">
+                            {item.description}
+                          </div>
+                        )}
+                        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-white" />
                       </div>
                     )}
                   </div>
-                  
-                  {/* Sub-items */}
-                  {hasSubItems && !isCollapsed && isExpanded && (
-                    <ul className="ml-4 mt-1 space-y-1 border-l-2 border-gray-200 pl-4">
-                      {item.items!.map((subItem) => {
-                        const isSubActive = location.pathname === subItem.url
-                        return (
-                          <li key={subItem.url}>
-                            <Link
-                              to={subItem.url}
-                              className={cn(
-                                "block px-3 py-2 text-sm rounded-lg transition-all duration-200",
-                                isSubActive
-                                  ? "bg-gray-900 text-white font-medium shadow-sm"
-                                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                              )}
-                            >
-                              {subItem.title}
-                            </Link>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
                 </li>
               )
             })}
           </ul>
         </nav>
-
-        {/* Footer - User info or additional actions */}
-        {!isCollapsed && (
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-              <div className="h-8 w-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-medium">
-                AD
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-                <p className="text-xs text-gray-500 truncate">admin@chickenkitchen.com</p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     )
   }

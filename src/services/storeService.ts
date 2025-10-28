@@ -16,14 +16,14 @@ export interface CreateStoreDto {
   address: string;
   phone: string;
   createAt: string;
-  isActive?: boolean;
+  isActive: boolean; // Required, default false in backend
 }
 
 export interface UpdateStoreDto {
   name?: string;
   address?: string;
   phone?: string;
-  isActive?: boolean;
+  isActive: boolean; // Required in backend (not nullable)
 }
 
 interface ApiResponse<T> {

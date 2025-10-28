@@ -1,3 +1,16 @@
+/**
+ * ⚠️ PENDING - Waiting for Backend API
+ * 
+ * This component requires Manager Orders API endpoints that are not yet implemented:
+ * - GET /api/orders/manager - List all orders
+ * - GET /api/orders/manager/{id} - Get order detail
+ * - PATCH /api/orders/manager/{id}/status - Update order status
+ * 
+ * Current API endpoints (/api/orders) are for MEMBER role only, causing 401 errors.
+ * 
+ * TODO: Update this component once backend implements ManagerOrderController
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -217,19 +230,19 @@ const Orders: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <ShoppingCart className="h-8 w-8 text-blue-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <ShoppingCart className="h-8 w-8 text-black" />
             <span>Orders Dashboard</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Monitor and manage customer orders in real-time
           </p>
         </div>
-        <Button onClick={fetchOrders} variant="outline">
+        <Button onClick={fetchOrders} variant="outline" className="border-gray-300 hover:bg-gray-100">
           Refresh Orders
         </Button>
       </div>

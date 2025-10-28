@@ -1,4 +1,6 @@
 import api from '@/config/axios';
+import type { CreateDailyMenuRequest, UpdateDailyMenuRequest } from '@/types/api.types';
+
 interface Store {
   storeId: number;
   storeName: string;
@@ -245,6 +247,58 @@ class DailyMenuService {
 
   clearCache(): void {
     this.cache.clear();
+  }
+
+  // CREATE - Create new daily menu
+  async create(data: CreateDailyMenuRequest, token?: string): Promise<any> {
+    try {
+      const { data: result } = await api.post<any>(
+        API_ENDPOINTS.DAILY_MENU,
+        data,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+      this.clearCache(); // Clear cache after creating
+      return (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+    } catch (error: any) {
+      console.error('Error creating daily menu:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
+      throw this.handleApiError(error);
+    }
+  }
+
+  // UPDATE - Update existing daily menu
+  async update(id: number, data: UpdateDailyMenuRequest, token?: string): Promise<any> {
+    try {
+      const { data: result } = await api.put<any>(
+        API_ENDPOINTS.DAILY_MENU_DETAIL(id),
+        data,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+      this.clearCache(); // Clear cache after updating
+      return (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+    } catch (error: any) {
+      console.error('Error updating daily menu:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
+      throw this.handleApiError(error);
+    }
+  }
+
+  // DELETE - Delete daily menu
+  async delete(id: number, token?: string): Promise<void> {
+    try {
+      await api.delete<any>(
+        API_ENDPOINTS.DAILY_MENU_DETAIL(id),
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+      this.clearCache(); // Clear cache after deleting
+    } catch (error: any) {
+      console.error('Error deleting daily menu:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
+      throw this.handleApiError(error);
+    }
   }
 
   private getFromCache(key: string): DailyMenuItem[] | null {

@@ -4,6 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -27,11 +35,13 @@ const PaymentMethods: React.FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    isActive: false,
   });
 
   // Fetch payment methods
@@ -53,9 +63,15 @@ const PaymentMethods: React.FC = () => {
   }, []);
 
   // Filter payment methods
-  const filteredMethods = paymentMethods.filter((method) =>
-    method.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMethods = paymentMethods.filter((method) => {
+    const matchesSearch = method.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'ALL' ? true :
+      statusFilter === 'ACTIVE' ? method.isActive :
+      !method.isActive;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   // Stats
   const stats = {
@@ -72,13 +88,26 @@ const PaymentMethods: React.FC = () => {
         return;
       }
 
+      if (!formData.description.trim()) {
+        toast.error('Payment method description is required');
+        return;
+      }
+
       if (editingMethod) {
         // Update
-        await paymentMethodService.update(editingMethod.id, formData);
+        await paymentMethodService.update(editingMethod.id, {
+          name: formData.name,
+          description: formData.description,
+          isActive: formData.isActive,
+        });
         toast.success('Payment method updated successfully');
       } else {
         // Create
-        await paymentMethodService.create(formData);
+        await paymentMethodService.create({
+          name: formData.name,
+          description: formData.description,
+          isActive: formData.isActive,
+        });
         toast.success('Payment method created successfully');
       }
 
@@ -125,6 +154,7 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: method.name,
       description: method.description || '',
+      isActive: method.isActive,
     });
     setDialogOpen(true);
   };
@@ -135,6 +165,7 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: '',
       description: '',
+      isActive: false,
     });
     setDialogOpen(true);
   };
@@ -146,31 +177,32 @@ const PaymentMethods: React.FC = () => {
     setFormData({
       name: '',
       description: '',
+      isActive: false,
     });
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <CreditCard className="h-8 w-8 text-green-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <CreditCard className="h-8 w-8 text-black" />
             <span>Payment Methods</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage payment options for customers
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Payment Method</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-3 card-grid">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Methods</CardTitle>
           </CardHeader>
@@ -179,16 +211,16 @@ const PaymentMethods: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-black">{stats.active}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Inactive</CardTitle>
           </CardHeader>
@@ -198,17 +230,30 @@ const PaymentMethods: React.FC = () => {
         </Card>
       </div>
 
-      {/* Search */}
-      <Card>
+      {/* Search & Filters */}
+      <Card className="animate-card-delayed">
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search payment methods..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search payment methods..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="ACTIVE">Active Only</SelectItem>
+                <SelectItem value="INACTIVE">Inactive Only</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -228,7 +273,8 @@ const PaymentMethods: React.FC = () => {
               {searchTerm ? 'No payment methods found' : 'No payment methods yet. Create your first one!'}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-hidden">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
@@ -244,8 +290,8 @@ const PaymentMethods: React.FC = () => {
                     <TableCell className="font-medium">#{method.id}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
-                          <CreditCard className="h-4 w-4 text-green-600" />
+                        <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <CreditCard className="h-4 w-4 text-black" />
                         </div>
                         <span className="font-semibold">{method.name}</span>
                       </div>
@@ -254,7 +300,7 @@ const PaymentMethods: React.FC = () => {
                       {method.description || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`border ${method.isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                      <Badge className={`border transition-colors ${method.isActive ? 'bg-white text-black border-black hover:bg-black hover:text-white' : 'bg-white text-gray-700 border-black hover:bg-black hover:text-white'}`}>
                         {method.isActive ? (
                           <>
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -274,7 +320,11 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(method)}
-                          className={method.isActive ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}
+                          className={`bg-white border-gray-300 transition-colors ${
+                            method.isActive 
+                              ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
+                              : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
+                          }`}
                         >
                           {method.isActive ? 'Deactivate' : 'Activate'}
                         </Button>
@@ -282,6 +332,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(method)}
+                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -289,7 +340,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(method.id, method.name)}
-                          className="text-red-600 hover:bg-red-50"
+                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -299,6 +350,7 @@ const PaymentMethods: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -324,21 +376,35 @@ const PaymentMethods: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description *</Label>
               <Input
                 id="description"
-                placeholder="Optional description..."
+                placeholder="Enter payment method description..."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between space-x-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="status">Active Status</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable this payment method for customers
+                </p>
+              </div>
+              <Switch
+                id="status"
+                checked={formData.isActive}
+                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>
+            <Button variant="outline" onClick={handleCloseDialog} className="border-gray-300">
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button onClick={handleSubmit} className="bg-black hover:bg-gray-800 text-white">
               {editingMethod ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>

@@ -11,12 +11,14 @@ export interface PaymentMethod {
 
 export interface CreatePaymentMethodRequest {
   name: string;
-  description?: string;
+  description: string;
+  isActive?: boolean;
 }
 
 export interface UpdatePaymentMethodRequest {
   name?: string;
   description?: string;
+  isActive: boolean;
 }
 
 export const paymentMethodService = {
@@ -36,8 +38,8 @@ export const paymentMethodService = {
   create: async (data: CreatePaymentMethodRequest): Promise<PaymentMethod> => {
     const response = await api.post<ApiResponse<PaymentMethod>>('/transaction/payment-method', {
       name: data.name,
-      description: data.description || '',
-      isActive: true, // Default to active
+      description: data.description,
+      isActive: data.isActive ?? false, // Default to false to match backend
     });
     return response.data.data;
   },
@@ -47,7 +49,7 @@ export const paymentMethodService = {
     const response = await api.put<ApiResponse<PaymentMethod>>(`/transaction/payment-method/${id}`, {
       name: data.name,
       description: data.description,
-      isActive: true, // Backend requires this field
+      isActive: data.isActive, // Required by backend
     });
     return response.data.data;
   },

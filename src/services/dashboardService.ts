@@ -36,6 +36,44 @@ export interface RecentSale {
 }
 
 /**
+ * Revenue Trend Data (for line/area charts)
+ */
+export interface RevenueTrendData {
+  date: string; // Format: "Oct 22" or full date
+  revenue: number;
+  transactions: number;
+}
+
+/**
+ * Store Performance Data
+ */
+export interface StorePerformanceData {
+  storeId: number;
+  storeName: string;
+  revenue: number;
+  transactions: number;
+  growth: number; // Percentage
+}
+
+/**
+ * User Growth Data
+ */
+export interface UserGrowthData {
+  month: string;
+  newUsers: number;
+  totalUsers: number;
+}
+
+/**
+ * User Distribution by Role
+ */
+export interface UserDistribution {
+  role: string;
+  count: number;
+  percentage: number;
+}
+
+/**
  * Dashboard Service
  */
 class DashboardService extends BaseApiService {
@@ -128,6 +166,80 @@ class DashboardService extends BaseApiService {
         initials: 'SD',
         createdAt: new Date(),
       },
+    ];
+  }
+
+  /**
+   * Get revenue trend data for charts (7 or 30 days)
+   */
+  async getRevenueTrend(days: number = 7): Promise<RevenueTrendData[]> {
+    // TODO: Replace with actual API call
+    // For now, generate mock data based on current date
+    const data: RevenueTrendData[] = [];
+    const today = new Date();
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      
+      // Mock data with some variation
+      const baseRevenue = 50000 + Math.random() * 30000;
+      const baseTx = 15 + Math.floor(Math.random() * 25);
+      
+      data.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        revenue: Math.floor(baseRevenue),
+        transactions: baseTx,
+      });
+    }
+    
+    return data;
+  }
+
+  /**
+   * Get store performance data
+   */
+  async getStorePerformance(): Promise<StorePerformanceData[]> {
+    // TODO: Replace with actual API call
+    // For now, return mock data
+    return [
+      { storeId: 1, storeName: 'District 1 Store', revenue: 185000, transactions: 245, growth: 12.5 },
+      { storeId: 2, storeName: 'District 3 Store', revenue: 156000, transactions: 198, growth: 8.3 },
+      { storeId: 3, storeName: 'Binh Thanh Store', revenue: 142000, transactions: 187, growth: 15.7 },
+      { storeId: 4, storeName: 'Thu Duc Store', revenue: 128000, transactions: 165, growth: 5.2 },
+      { storeId: 5, storeName: 'Tan Binh Store', revenue: 119000, transactions: 152, growth: -2.1 },
+    ];
+  }
+
+  /**
+   * Get user growth data (last 6 months)
+   */
+  async getUserGrowth(): Promise<UserGrowthData[]> {
+    // TODO: Replace with actual API call
+    const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+    let totalUsers = 100;
+    
+    return months.map((month) => {
+      const newUsers = Math.floor(Math.random() * 30) + 10;
+      totalUsers += newUsers;
+      return {
+        month,
+        newUsers,
+        totalUsers,
+      };
+    });
+  }
+
+  /**
+   * Get user distribution by role
+   */
+  async getUserDistribution(): Promise<UserDistribution[]> {
+    // TODO: Replace with actual API call
+    return [
+      { role: 'Customers', count: 245, percentage: 68 },
+      { role: 'Employees', count: 85, percentage: 24 },
+      { role: 'Managers', count: 22, percentage: 6 },
+      { role: 'Admins', count: 8, percentage: 2 },
     ];
   }
 }

@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, MoreVertical, MapPin, Phone, Clock, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, MapPin, Phone, Edit, Trash2, Store as StoreIcon, CheckCircle, XCircle, MoreVertical, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +31,7 @@ import { StoreDialog } from "@/components/admin/StoreDialog";
 export default function Stores() {
   const [stores, setStores] = useState<Store[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
@@ -46,11 +54,19 @@ export default function Stores() {
     fetchStores();
   }, []);
 
-  // Filter stores based on search
-  const filteredStores = stores.filter((store) =>
-    store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter stores based on search and status
+  const filteredStores = stores.filter((store) => {
+    const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.phone.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = 
+      statusFilter === "ALL" ? true :
+      statusFilter === "ACTIVE" ? store.isActive :
+      !store.isActive;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   // Toggle store status
   const handleToggleStatus = async (id: number) => {
@@ -112,55 +128,61 @@ export default function Stores() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Store Management</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <StoreIcon className="h-8 w-8 text-black" />
+            <span>Store Management</span>
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
             Manage your restaurant locations and their information
           </p>
         </div>
-        <Button className="bg-black hover:bg-black/90" onClick={handleAddStore}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Store
+        <Button className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white" onClick={handleAddStore}>
+          <Plus className="h-4 w-4" />
+          <span>Add New Store</span>
         </Button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-4 card-grid">
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Stores</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Stores</CardTitle>
+            <StoreIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stores.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Across all locations
+              All registered locations
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Active Stores</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Stores</CardTitle>
+            <CheckCircle className="h-4 w-4 text-black" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-black">
               {stores.filter(s => s.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Currently operational
+              Currently operating
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Inactive Stores</CardTitle>
+            <CardTitle className="text-sm font-medium">Inactive Stores</CardTitle>
+            <XCircle className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-400">
+            <div className="text-2xl font-bold text-gray-600">
               {stores.filter(s => !s.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -168,19 +190,52 @@ export default function Stores() {
             </p>
           </CardContent>
         </Card>
+
+        <Card className="hover-lift animate-card">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Recent Additions</CardTitle>
+            <StoreIcon className="h-4 w-4 text-black" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-black">
+              {stores.filter((s) => {
+                const daysDiff = Math.floor(
+                  (Date.now() - new Date(s.createAt).getTime()) / (1000 * 60 * 60 * 24)
+                );
+                return daysDiff <= 7;
+              }).length}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              In the last 7 days
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Search Bar */}
-      <Card>
+      {/* Search & Filters */}
+      <Card className="animate-card-delayed">
         <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search stores by name or address..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search stores by name, address, or phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-sm"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="ACTIVE">Active Only</SelectItem>
+                <SelectItem value="INACTIVE">Inactive Only</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -197,17 +252,17 @@ export default function Stores() {
           </div>
         ) : (
           filteredStores.map((store) => (
-            <Card key={store.id} className="hover:shadow-md transition-shadow">
+            <Card key={store.id} className="hover:shadow-md">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg">{store.name}</CardTitle>
                     <Badge
                       variant={store.isActive ? 'default' : 'secondary'}
-                      className={`mt-2 ${
+                      className={`mt-2 transition-colors ${
                         store.isActive
-                          ? 'bg-green-100 text-green-700 hover:bg-green-100'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                          ? 'bg-white text-black border border-black hover:bg-black hover:text-white'
+                          : 'bg-white text-gray-700 border border-black hover:bg-black hover:text-white'
                       }`}
                     >
                       {store.isActive ? 'ACTIVE' : 'INACTIVE'}

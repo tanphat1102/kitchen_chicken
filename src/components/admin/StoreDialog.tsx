@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CheckCircle, XCircle } from "lucide-react";
 import type { Store, CreateStoreDto } from "@/services/storeService";
 
 interface StoreDialogProps {
@@ -25,10 +33,31 @@ export function StoreDialog({ open, onClose, onSave, store }: StoreDialogProps) 
     address: store?.address || "",
     phone: store?.phone || "",
     createAt: new Date().toISOString(),
-    isActive: store?.isActive ?? true,
+    isActive: store?.isActive ?? false, // Match backend default (false)
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form when store prop changes
+  useEffect(() => {
+    if (store) {
+      setFormData({
+        name: store.name,
+        address: store.address,
+        phone: store.phone,
+        createAt: store.createAt,
+        isActive: store.isActive,
+      });
+    } else {
+      setFormData({
+        name: "",
+        address: "",
+        phone: "",
+        createAt: new Date().toISOString(),
+        isActive: false, // Default to inactive as per backend
+      });
+    }
+  }, [store]);
 
   const handleChange = (field: keyof CreateStoreDto, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -130,6 +159,38 @@ export function StoreDialog({ open, onClose, onSave, store }: StoreDialogProps) 
             {errors.phone && (
               <p className="text-xs text-red-500">{errors.phone}</p>
             )}
+          </div>
+
+          {/* Status */}
+          <div className="space-y-2">
+            <Label htmlFor="isActive">
+              Status <span className="text-red-500">*</span>
+            </Label>
+            <Select 
+              value={formData.isActive ? 'true' : 'false'} 
+              onValueChange={(value) => handleChange('isActive', value === 'true')}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="true">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span>Active - Store is operational</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="false">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-gray-600" />
+                    <span>Inactive - Store is closed</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {!store && "New stores are inactive by default"}
+            </p>
           </div>
 
           {/* Actions */}

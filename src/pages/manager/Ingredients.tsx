@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search, Package, AlertTriangle, Store, TrendingDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Package, Store } from 'lucide-react';
 import { storeService, type Store as StoreLocation } from '@/services/storeService';
 import { ingredientService, type Ingredient } from '@/services/ingredientService';
 import toast from 'react-hot-toast';
@@ -39,18 +39,17 @@ const Ingredients: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStore, setFilterStore] = useState<string>('all');
-  const [filterStock, setFilterStock] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     quantity: '',
-    unit: '',
-    minimumStock: '',
+    baseUnit: 'G' as 'G' | 'ML', // UnitType enum: G or ML
     batchNumber: '',
-    expiryDate: '',
-    storeId: '',
+    storeIds: [] as number[], // Array of store IDs
+    imageUrl: '',
+    isActive: true,
   });
 
   // Fetch ingredients
@@ -88,18 +87,15 @@ const Ingredients: React.FC = () => {
     const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ingredient.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStore = filterStore === 'all' || ingredient.storeId?.toString() === filterStore;
-    const isLowStock = ingredient.minimumStock ? ingredient.quantity <= ingredient.minimumStock : false;
-    const matchesStock = filterStock === 'all' || 
-                        (filterStock === 'low' && isLowStock) ||
-                        (filterStock === 'normal' && !isLowStock);
-    return matchesSearch && matchesStore && matchesStock;
+    // Note: Backend doesn't provide minimumStock, so stock level filtering is not available
+    return matchesSearch && matchesStore;
   });
 
   // Stats
   const stats = {
     total: ingredients.length,
-    lowStock: ingredients.filter(i => i.minimumStock && i.quantity <= i.minimumStock).length,
-    critical: ingredients.filter(i => i.minimumStock && i.quantity <= i.minimumStock * 0.5).length,
+    lowStock: 0, // Backend doesn't provide minimumStock field
+    critical: 0, // Backend doesn't provide minimumStock field
     stores: new Set(ingredients.map(i => i.storeId).filter(Boolean)).size,
   };
 
@@ -113,13 +109,15 @@ const Ingredients: React.FC = () => {
   };
 
   // Check if ingredient is low stock
+  // Note: Backend doesn't provide minimumStock, so we can't determine this
   const isLowStock = (ingredient: Ingredient) => {
-    return ingredient.minimumStock ? ingredient.quantity <= ingredient.minimumStock : false;
+    return false; // Backend doesn't provide minimumStock field
   };
 
   // Check if ingredient is critical
+  // Note: Backend doesn't provide minimumStock, so we can't determine this
   const isCritical = (ingredient: Ingredient) => {
-    return ingredient.minimumStock ? ingredient.quantity <= ingredient.minimumStock * 0.5 : false;
+    return false; // Backend doesn't provide minimumStock field
   };
 
   // Handle create/edit
@@ -133,42 +131,43 @@ const Ingredients: React.FC = () => {
         toast.error('Valid quantity is required');
         return;
       }
-      if (!formData.unit.trim()) {
-        toast.error('Unit is required');
+      if (!formData.baseUnit) {
+        toast.error('Base unit is required (G or ML)');
         return;
       }
-      if (!formData.minimumStock || parseFloat(formData.minimumStock) < 0) {
-        toast.error('Valid minimum stock is required');
+      if (!formData.batchNumber.trim()) {
+        toast.error('Batch number is required');
         return;
       }
-      if (!formData.storeId) {
-        toast.error('Store is required');
+      if (!editingIngredient && formData.storeIds.length === 0) {
+        toast.error('At least one store is required');
         return;
       }
-
-      const submitData = {
-        name: formData.name,
-        description: formData.description || undefined,
-        quantity: parseFloat(formData.quantity),
-        baseUnit: formData.unit, // Map 'unit' to 'baseUnit'
-        batchNumber: formData.batchNumber || '',
-        storeIds: [parseInt(formData.storeId)], // Single store wrapped in array
-        imageUrl: undefined, // Optional
-      };
 
       if (editingIngredient) {
-        // Update - needs different structure
+        // Update
         await ingredientService.update(editingIngredient.id, {
           name: formData.name,
           description: formData.description || undefined,
           quantity: parseFloat(formData.quantity),
-          baseUnit: formData.unit,
-          batchNumber: formData.batchNumber || undefined,
+          baseUnit: formData.baseUnit,
+          batchNumber: formData.batchNumber,
+          imageUrl: formData.imageUrl || undefined,
+          isActive: formData.isActive,
         });
         toast.success('Ingredient updated successfully');
       } else {
         // Create
-        await ingredientService.create(submitData);
+        await ingredientService.create({
+          name: formData.name,
+          description: formData.description || undefined,
+          quantity: parseFloat(formData.quantity),
+          baseUnit: formData.baseUnit,
+          batchNumber: formData.batchNumber,
+          storeIds: formData.storeIds,
+          imageUrl: formData.imageUrl || undefined,
+          isActive: formData.isActive,
+        });
         toast.success('Ingredient created successfully');
       }
 
@@ -204,11 +203,11 @@ const Ingredients: React.FC = () => {
       name: ingredient.name,
       description: ingredient.description || '',
       quantity: ingredient.quantity.toString(),
-      unit: ingredient.unit || ingredient.baseUnit,
-      minimumStock: ingredient.minimumStock?.toString() || '0',
+      baseUnit: (ingredient.baseUnit as 'G' | 'ML') || 'G',
       batchNumber: ingredient.batchNumber || '',
-      expiryDate: ingredient.expiryDate || '',
-      storeId: ingredient.storeId?.toString() || '',
+      storeIds: ingredient.storeId ? [ingredient.storeId] : [],
+      imageUrl: ingredient.imageUrl || '',
+      isActive: ingredient.isActive ?? true,
     });
     setDialogOpen(true);
   };
@@ -220,11 +219,11 @@ const Ingredients: React.FC = () => {
       name: '',
       description: '',
       quantity: '',
-      unit: '',
-      minimumStock: '',
+      baseUnit: 'G',
       batchNumber: '',
-      expiryDate: '',
-      storeId: '',
+      storeIds: [],
+      imageUrl: '',
+      isActive: true,
     });
     setDialogOpen(true);
   };
@@ -237,28 +236,28 @@ const Ingredients: React.FC = () => {
       name: '',
       description: '',
       quantity: '',
-      unit: '',
-      minimumStock: '',
+      baseUnit: 'G',
       batchNumber: '',
-      expiryDate: '',
-      storeId: '',
+      storeIds: [],
+      imageUrl: '',
+      isActive: true,
     });
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Package className="h-8 w-8 text-red-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <Package className="h-8 w-8 text-black" />
             <span>Ingredients Inventory</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage inventory across all stores with FIFO tracking
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Ingredient</span>
         </Button>
@@ -307,21 +306,6 @@ const Ingredients: React.FC = () => {
         </Card>
       </div>
 
-      {/* Business Rules Info */}
-      <Card className="border-l-4 border-l-purple-500 bg-purple-50">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-purple-600 mt-0.5" />
-            <div>
-              <p className="font-semibold text-purple-900">FIFO Inventory Management (BR-38, BR-41)</p>
-              <p className="text-sm text-purple-700 mt-1">
-                First-In-First-Out principle: Use oldest batches first. Track batch numbers and expiry dates to ensure food safety.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Filters */}
       <Card>
         <CardContent className="pt-6">
@@ -349,16 +333,7 @@ const Ingredients: React.FC = () => {
               </SelectContent>
             </Select>
 
-            <Select value={filterStock} onValueChange={setFilterStock}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by stock level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="low">Low Stock</SelectItem>
-                <SelectItem value="normal">Normal Stock</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Note: Stock level filtering removed - backend doesn't provide minimumStock field */}
           </div>
         </CardContent>
       </Card>
@@ -375,7 +350,7 @@ const Ingredients: React.FC = () => {
             </div>
           ) : filteredIngredients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm || filterStore !== 'all' || filterStock !== 'all' 
+              {searchTerm || filterStore !== 'all'
                 ? 'No ingredients found' 
                 : 'No ingredients yet. Create your first one!'}
             </div>
@@ -386,9 +361,7 @@ const Ingredients: React.FC = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Store</TableHead>
                   <TableHead>Quantity</TableHead>
-                  <TableHead>Min. Stock</TableHead>
                   <TableHead>Batch #</TableHead>
-                  <TableHead>Expiry</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -397,13 +370,13 @@ const Ingredients: React.FC = () => {
                 {filteredIngredients.map((ingredient) => (
                   <TableRow 
                     key={ingredient.id}
-                    className={isCritical(ingredient) ? 'bg-red-50' : isLowStock(ingredient) ? 'bg-orange-50' : ''}
+                    className={!ingredient.isActive ? 'opacity-50' : ''}
                   >
                     <TableCell>
                       <div>
-                        <p className="font-semibold">{ingredient.name}</p>
+                        <p className="font-semibold text-gray-900">{ingredient.name}</p>
                         {ingredient.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
+                          <p className="text-sm text-gray-600 line-clamp-1">
                             {ingredient.description}
                           </p>
                         )}
@@ -412,19 +385,13 @@ const Ingredients: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Store className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm">{ingredient.storeName || `Store #${ingredient.storeId}`}</span>
+                        <span className="text-sm text-gray-900">{ingredient.storeName || `Store #${ingredient.storeId}`}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-lg">{ingredient.quantity}</span>
-                        <span className="text-sm text-muted-foreground">{ingredient.unit || ingredient.baseUnit}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <TrendingDown className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{ingredient.minimumStock || 0} {ingredient.unit || ingredient.baseUnit}</span>
+                        <span className="font-bold text-lg text-gray-900">{ingredient.quantity}</span>
+                        <span className="text-sm text-gray-600 uppercase font-medium">{ingredient.baseUnit}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -432,23 +399,14 @@ const Ingredients: React.FC = () => {
                         {ingredient.batchNumber || 'N/A'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {formatDate(ingredient.expiryDate)}
-                    </TableCell>
                     <TableCell>
-                      {isCritical(ingredient) ? (
-                        <Badge className="bg-red-600 text-white">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Critical
-                        </Badge>
-                      ) : isLowStock(ingredient) ? (
-                        <Badge className="bg-orange-500 text-white">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Low Stock
+                      {ingredient.isActive ? (
+                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                          Active
                         </Badge>
                       ) : (
-                        <Badge className="bg-green-100 text-green-700 border-green-200">
-                          Normal
+                        <Badge variant="outline" className="text-gray-500">
+                          Inactive
                         </Badge>
                       )}
                     </TableCell>
@@ -524,35 +482,40 @@ const Ingredients: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit *</Label>
-                <Input
-                  id="unit"
-                  placeholder="kg, liters, pieces, etc."
-                  value={formData.unit}
-                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="minimumStock">Minimum Stock Level *</Label>
-                <Input
-                  id="minimumStock"
-                  type="number"
-                  step="0.01"
-                  placeholder="10"
-                  value={formData.minimumStock}
-                  onChange={(e) => setFormData({ ...formData, minimumStock: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="store">Store *</Label>
+                <Label htmlFor="baseUnit">Base Unit *</Label>
                 <Select 
-                  value={formData.storeId} 
-                  onValueChange={(value) => setFormData({ ...formData, storeId: value })}
+                  value={formData.baseUnit} 
+                  onValueChange={(value: 'G' | 'ML') => setFormData({ ...formData, baseUnit: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select store" />
+                    <SelectValue placeholder="Select unit type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="G">G (Grams)</SelectItem>
+                    <SelectItem value="ML">ML (Milliliters)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="batchNumber">Batch Number *</Label>
+                <Input
+                  id="batchNumber"
+                  placeholder="BATCH-2025-001"
+                  value={formData.batchNumber}
+                  onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="stores">Stores * {!editingIngredient && '(Select multiple)'}</Label>
+                <Select 
+                  value={formData.storeIds[0]?.toString() || ''} 
+                  onValueChange={(value) => setFormData({ ...formData, storeIds: [parseInt(value)] })}
+                  disabled={editingIngredient !== null}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select store(s)" />
                   </SelectTrigger>
                   <SelectContent>
                     {stores.map((store) => (
@@ -562,26 +525,35 @@ const Ingredients: React.FC = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {!editingIngredient && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Note: Multiple stores supported in backend, UI shows single selection
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="batchNumber">Batch Number (FIFO Tracking)</Label>
+                <Label htmlFor="imageUrl">Image URL (Optional)</Label>
                 <Input
-                  id="batchNumber"
-                  placeholder="BATCH-2025-001"
-                  value={formData.batchNumber}
-                  onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
+                  id="imageUrl"
+                  type="url"
+                  placeholder="https://example.com/image.jpg"
+                  value={formData.imageUrl}
+                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="expiryDate">Expiry Date (FIFO Tracking)</Label>
-                <Input
-                  id="expiryDate"
-                  type="date"
-                  value={formData.expiryDate}
-                  onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                />
+                <Label htmlFor="isActive" className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  Is Active
+                </Label>
               </div>
             </div>
           </div>

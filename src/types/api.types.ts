@@ -86,12 +86,14 @@ export interface CreateMenuItemRequest {
 }
 
 export interface UpdateMenuItemRequest {
-  name: string;
-  price: number;
-  description?: string;
+  isActive?: boolean;
   imageUrl?: string;
-  cal: number;
-  categoryId: number;
+  categoryId?: number;
+  price?: number;
+  cal?: number;
+  description?: string;
+  nutrients?: Array<{ nutrientId: number; quantity: number }>;
+  // Note: Backend does not allow updating name (immutable)
 }
 
 // Daily Menu Types
@@ -118,15 +120,15 @@ export interface DailyMenuByStoreResponse {
 }
 
 export interface CreateDailyMenuRequest {
-  menuDate: string;
-  storeIds: number[];
+  menuDate: string; // Timestamp format
   menuItemIds: number[];
+  // Note: Backend automatically applies to all stores, no storeIds needed
 }
 
 export interface UpdateDailyMenuRequest {
-  menuDate: string;
-  storeIds: number[];
-  menuItemIds: number[];
+  menuDate?: string; // Timestamp format
+  storeIds?: number[];
+  menuItemIds?: number[];
 }
 
 // Order Types
@@ -179,14 +181,24 @@ export interface Ingredient {
 
 export interface CreateIngredientRequest {
   name: string;
+  description?: string;
+  baseUnit: 'G' | 'ML'; // UnitType enum from backend
   batchNumber: string;
-  baseUnit: 'G' | 'ML';
+  quantity: number;
+  storeIds: number[]; // Array of store IDs
+  imageUrl?: string;
+  createAt?: string; // ISO timestamp
+  isActive?: boolean;
 }
 
 export interface UpdateIngredientRequest {
-  name: string;
-  batchNumber: string;
-  baseUnit: 'G' | 'ML';
+  name?: string;
+  description?: string;
+  baseUnit?: 'G' | 'ML'; // UnitType enum from backend
+  batchNumber?: string;
+  quantity?: number;
+  imageUrl?: string;
+  isActive?: boolean;
 }
 
 // Promotion Types
@@ -238,13 +250,15 @@ export interface CreateUserRequest {
   email: string;
   displayName?: string;
   role: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
-  phone?: string;
-  address?: string;
+  isActive?: boolean;
+  birthday?: string | null;
+  imageURL?: string | null;
 }
 
 export interface UpdateUserRequest {
   displayName?: string;
-  phone?: string;
-  address?: string;
-  avatar?: string;
+  role?: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
+  isActive?: boolean;
+  birthday?: string | null;
+  imageURL?: string | null;
 }

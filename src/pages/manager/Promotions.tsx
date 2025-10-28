@@ -43,11 +43,12 @@ const Promotions: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    code: '', // Promotion code for customers
     discountType: 'PERCENT' as DiscountType,
     discountValue: '',
     startDate: '',
     endDate: '',
-    quantityLimit: '',
+    quantity: '', // Changed from quantityLimit to match backend
   });
 
   // Fetch promotions
@@ -152,11 +153,12 @@ const Promotions: React.FC = () => {
       const submitData = {
         name: formData.name,
         description: formData.description || undefined,
+        code: formData.code || undefined,
         discountType: formData.discountType,
         discountValue: parseFloat(formData.discountValue),
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        quantity: formData.quantityLimit ? parseInt(formData.quantityLimit) : 0,
+        startDate: formData.startDate, // Backend will parse LocalDateTime
+        endDate: formData.endDate, // Backend will parse LocalDateTime
+        quantity: formData.quantity ? parseInt(formData.quantity) : 0,
       };
 
       if (editingPromotion) {
@@ -212,11 +214,12 @@ const Promotions: React.FC = () => {
     setFormData({
       name: promo.name,
       description: promo.description || '',
+      code: promo.code || '',
       discountType: promo.discountType,
       discountValue: promo.discountValue.toString(),
       startDate: promo.startDate,
       endDate: promo.endDate,
-      quantityLimit: (promo.quantityLimit || promo.quantity)?.toString() || '',
+      quantity: promo.quantity?.toString() || '',
     });
     setDialogOpen(true);
   };
@@ -227,11 +230,12 @@ const Promotions: React.FC = () => {
     setFormData({
       name: '',
       description: '',
+      code: '',
       discountType: 'PERCENT',
       discountValue: '',
       startDate: '',
       endDate: '',
-      quantityLimit: '',
+      quantity: '',
     });
     setDialogOpen(true);
   };
@@ -243,28 +247,29 @@ const Promotions: React.FC = () => {
     setFormData({
       name: '',
       description: '',
+      code: '',
       discountType: 'PERCENT',
       discountValue: '',
       startDate: '',
       endDate: '',
-      quantityLimit: '',
+      quantity: '',
     });
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <TrendingUp className="h-8 w-8 text-green-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <TrendingUp className="h-8 w-8 text-black" />
             <span>Promotions</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Create and manage promotional campaigns
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2 bg-green-600 hover:bg-green-700">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Create Promotion</span>
         </Button>
@@ -508,6 +513,19 @@ const Promotions: React.FC = () => {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="code">Promotion Code (Optional)</Label>
+              <Input
+                id="code"
+                placeholder="e.g., SUMMER2025, BLACKFRIDAY"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Unique code that customers can use to apply this promotion
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="discountType">Discount Type *</Label>
@@ -563,13 +581,13 @@ const Promotions: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="quantityLimit">Quantity Limit (Optional)</Label>
+              <Label htmlFor="quantity">Quantity Limit (Optional)</Label>
               <Input
-                id="quantityLimit"
+                id="quantity"
                 type="number"
                 placeholder="Leave empty for unlimited"
-                value={formData.quantityLimit}
-                onChange={(e) => setFormData({ ...formData, quantityLimit: e.target.value })}
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
                 Maximum number of times this promotion can be used
