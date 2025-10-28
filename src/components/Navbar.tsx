@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router';
-import { useNavigate } from 'react-router-dom';
-import { FaSearch, FaShoppingCart, FaGoogle, FaDiscord , FaFacebook, FaUserAlt } from "react-icons/fa";
-import { Modal } from '../components/ui/modal';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FaSearch, FaShoppingCart, FaUserAlt, FaSignInAlt } from "react-icons/fa";
+import LoginModal from '@/components/shared/LoginModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 import {
     DropdownMenu,
@@ -24,13 +25,12 @@ const navLinks = [
 export const Navbar: React.FC = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState('');
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { currentUser, signOut } = useAuth();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [loginService, setLoginService] = useState("");
-
-    const [user, setUser] = useState<{ name: string } | null>(null);
 
     const [showNav, setShowNav] = useState(true);
     const lastScrollY = useRef(0);
@@ -59,19 +59,23 @@ export const Navbar: React.FC = () => {
 }, [isSearchOpen]);
 
 
-const handleProceedLogin = () => {
-        setUser({ name: "Paw Pasta" }); 
-        setIsModalOpen(false);
-    };
+// Open the central LoginModal
+const openLogin = () => setIsModalOpen(true);
 
-const handleLoginClick = (service: string) => {
-        setLoginService(service);
-        setIsModalOpen(true);
-    };
-
-const handleLogout = () => {
-        setUser(null);
-    };
+const handleLogout = async () => {
+    try {
+        await signOut();
+        
+        // Only redirect to home if user is on a protected route (admin/member)
+        const currentPath = location.pathname;
+        if (currentPath.startsWith('/admin') || currentPath.startsWith('/member')) {
+            navigate('/');
+        }
+        // Otherwise stay on the current public page
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+};
 
      return (
     <>
@@ -165,60 +169,59 @@ const handleLogout = () => {
         </motion.div>
 
         <div className="w-px h-6 bg-gray-300"></div>
-            {user ? (
+            {currentUser ? (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-md"
+                            className="flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-md border border-gray-200"
                         >
-                        <FaUserAlt className="text-gray-700" size={20} />
-                        <span className="font-semibold text-gray-800">{user.name}</span>
+                            {currentUser.photoURL ? (
+                                <img 
+                                    src={currentUser.photoURL} 
+                                    alt={currentUser.displayName || 'User'}
+                                    className="w-6 h-6 rounded-full"
+                                />
+                            ) : (
+                                <FaUserAlt className="text-gray-700" size={20} />
+                            )}
+                            <span className="font-semibold text-gray-800">
+                                {currentUser.displayName || currentUser.email || 'User'}
+                            </span>
                         </motion.button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-48 border-gray-300">
-                            <DropdownMenuItem>Profile</DropdownMenuItem>
-                            <div className="h-px bg-gray-200 my-1 -mx-1" />
-                            <DropdownMenuItem>Payment</DropdownMenuItem>
-                            <div className="h-px bg-gray-200 my-1 -mx-1" />
-                            <DropdownMenuItem>Orders</DropdownMenuItem>
-                            <div className="h-px bg-gray-200 my-1 -mx-1" />
-                            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    ) : (
-                        <div className="flex items-center space-x-5">
-                           <motion.div onClick={() => handleLoginClick('Google')} whileHover={{ scale: 1.2 }} className="cursor-pointer text-gray-700">
-                                <FaGoogle size={20} />
-                            </motion.div>
-                            <motion.div onClick={() => handleLoginClick('Discord')} whileHover={{ scale: 1.2 }} className="cursor-pointer text-gray-700">
-                                <FaDiscord size={20} />
-                            </motion.div>
-                            <motion.div onClick={() => handleLoginClick('Facebook')} whileHover={{ scale: 1.2 }} className="cursor-pointer text-gray-700">
-                                <FaFacebook size={20} />
-                            </motion.div>
-                        </div>
-                    )
-            }
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-48 border-gray-300">
+                        <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                            Profile
+                        </DropdownMenuItem>
+                        <div className="h-px bg-gray-200 my-1 -mx-1" />
+                        <DropdownMenuItem>Payment</DropdownMenuItem>
+                        <div className="h-px bg-gray-200 my-1 -mx-1" />
+                        <DropdownMenuItem>Orders</DropdownMenuItem>
+                        <div className="h-px bg-gray-200 my-1 -mx-1" />
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                            Logout
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            ) : (
+                <motion.button
+                    onClick={openLogin}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full shadow-md transition-colors"
+                >
+                    <FaSignInAlt size={18} />
+                    <span className="font-medium">Login</span>
+                </motion.button>
+            )
+        }
       </div>
       </div>
     </motion.header>
 
-    <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Login</h2>
-            <p className="text-gray-600">
-                You are about to log in with <span className="font-bold text-red-500">{loginService}</span>.
-            </p>
-            <button 
-                onClick={handleProceedLogin}
-                className="mt-6 bg-red-500 text-white px-6 py-2 rounded-full hover:bg-red-600 transition-colors"
-            >
-            Proceed
-            </button>
-        </div>
-    </Modal>
+  <LoginModal open={isModalOpen} onOpenChange={setIsModalOpen} />
     </>
   );
 };
