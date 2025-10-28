@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { authService } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthErrorHandler } from "@/utils/authErrorHandler";
@@ -23,50 +23,66 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
+  const location = useLocation();
+  const { currentUser, refreshUser } = useAuth();
 
-  // Helper function to redirect based on role
-  const redirectByRole = (role: string) => {
-    switch (role) {
-      case 'admin':
-        navigate("/admin/dashboard");
-        break;
-      case 'member':
-        navigate("/member/dashboard");
-        break;
-      default:
-        navigate("/");
-        break;
+  // Get the current page path to redirect back after login
+  const currentPath = location.pathname + location.search;
+
+  // Helper function to redirect after login - only redirect if accessing wrong area
+  const redirectAfterLogin = (role: string) => {
+    // Only redirect if user is trying to access area they shouldn't be in
+    // Member trying to access admin area -> redirect to member dashboard
+    if (role === 'member' && currentPath.startsWith('/admin')) {
+      navigate("/");
     }
+    // Admin trying to access member area -> redirect to admin dashboard
+    else if (role === 'admin' && currentPath.startsWith('/member')) {
+      navigate("/admin/dashboard");
+    }
+    // Otherwise, stay on current page (public pages, or already in correct area)
   };
 
   // Close modal if already logged in
   React.useEffect(() => {
     if (currentUser) {
       onOpenChange(false);
-      redirectByRole(currentUser.role);
+      redirectAfterLogin(currentUser.role);
     }
-  }, [currentUser, navigate, onOpenChange]);
+  }, [currentUser, onOpenChange]);
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với Google...");
 
     try {
-      await AuthErrorHandler.retryOperation(
-        () => authService.loginWithGoogle(),
-        2,
-        1000
-      );
+      await authService.loginWithGoogle();
       
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
       
-      // Force reload to refresh auth state
-      window.location.reload();
+      // Refresh user data in AuthContext to trigger immediate UI update
+      await refreshUser();
+      
+      // Close modal and let AuthContext handle the redirect
+      onOpenChange(false);
     } catch (err: any) {
+      // Dismiss loading toast immediately
       AuthErrorHandler.dismissToast(loadingToast);
-      AuthErrorHandler.showErrorToast(err);
+      
+      // Check if user cancelled the popup (closed the window)
+      const errorCode = err?.code || err?.message || '';
+      const isCancelled = 
+        errorCode.includes('popup-closed-by-user') || 
+        errorCode.includes('cancelled-popup-request') ||
+        errorCode.includes('popup_closed_by_user') ||
+        errorCode === 'auth/popup-closed-by-user' ||
+        errorCode === 'auth/cancelled-popup-request';
+      
+      // Only show error if user didn't cancel
+      if (!isCancelled) {
+        AuthErrorHandler.showErrorToast(err);
+      }
     } finally {
       setLoading(false);
     }
@@ -77,48 +93,38 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
     const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với GitHub...");
 
     try {
-      await AuthErrorHandler.retryOperation(
-        () => authService.loginWithGithub(),
-        2,
-        1000
-      );
+      await authService.loginWithGithub();
       
       AuthErrorHandler.dismissToast(loadingToast);
       AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
       
-      // Force reload to refresh auth state
-      window.location.reload();
+      // Refresh user data in AuthContext to trigger immediate UI update
+      await refreshUser();
+      
+      // Close modal and let AuthContext handle the redirect
+      onOpenChange(false);
     } catch (err: any) {
+      // Dismiss loading toast immediately
       AuthErrorHandler.dismissToast(loadingToast);
-      AuthErrorHandler.showErrorToast(err);
+      
+      // Check if user cancelled the popup (closed the window)
+      const errorCode = err?.code || err?.message || '';
+      const isCancelled = 
+        errorCode.includes('popup-closed-by-user') || 
+        errorCode.includes('cancelled-popup-request') ||
+        errorCode.includes('popup_closed_by_user') ||
+        errorCode === 'auth/popup-closed-by-user' ||
+        errorCode === 'auth/cancelled-popup-request';
+      
+      // Only show error if user didn't cancel
+      if (!isCancelled) {
+        AuthErrorHandler.showErrorToast(err);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDiscordLogin = async () => {
-    setLoading(true);
-    const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với Discord...");
-
-    try {
-      await AuthErrorHandler.retryOperation(
-        () => authService.loginWithDiscord(),
-        2,
-        1000
-      );
-      
-      AuthErrorHandler.dismissToast(loadingToast);
-      AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
-      
-      // Force reload to refresh auth state
-      window.location.reload();
-    } catch (err: any) {
-      AuthErrorHandler.dismissToast(loadingToast);
-      AuthErrorHandler.showErrorToast(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -187,22 +193,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
             Đăng nhập với GitHub
           </Button>
 
-          <Button
-            type="button"
-            variant="outline" 
-            className="w-full"
-            onClick={handleDiscordLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419-.0188 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9460 2.4189-2.1568 2.4189Z"/>
-              </svg>
-            )}
-            Đăng nhập với Discord
-          </Button>
 
           <div className="text-center text-sm text-gray-600">
             Chưa có tài khoản?{" "}
