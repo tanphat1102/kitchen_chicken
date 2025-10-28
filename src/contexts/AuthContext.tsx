@@ -46,6 +46,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load user from localStorage on init
+  const loadUserFromStorage = (): AuthUser | null => {
+    try {
+      const storedUser = localStorage.getItem('userInfo');
+      const accessToken = localStorage.getItem('accessToken');
+      
+      if (!storedUser || !accessToken) {
+        return null;
+      }
+
+      const userData = JSON.parse(storedUser);
+      
+      // Decode JWT to get role
+      let role: UserRole = 'guest';
+      try {
+        const payload = JSON.parse(atob(accessToken.split('.')[1]));
+        const roleFromToken = payload.role;
+        
+        if (roleFromToken === 'ADMIN') {
+          role = 'admin';
+        } else if (roleFromToken === 'MANAGER' || roleFromToken === 'USER') {
+          role = 'member';
+        } else {
+          role = 'guest';
+        }
+      } catch (decodeError) {
+        console.error('❌ Error decoding JWT token:', decodeError);
+      }
+
+      const authUser: AuthUser = {
+        uid: userData.uid || userData.localId || '',
+        email: userData.email || null,
+        displayName: userData.displayName || null,
+        photoURL: userData.photoURL || userData.photoUrl || null,
+        emailVerified: userData.emailVerified || false,
+        role
+      };
+      
+      return authUser;
+    } catch (error) {
+      console.error('❌ Error loading user from storage:', error);
+      return null;
+    }
+  };
+
   // Convert Firebase User to AuthUser
   const convertFirebaseUser = async (user: User | null): Promise<AuthUser | null> => {
     if (!user) {
@@ -71,8 +116,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           } else {
             role = 'guest';
           }
-          
-          console.log('🔑 User role:', role, '(from JWT:', roleFromToken + ')');
         } catch (decodeError) {
           console.error('❌ Error decoding JWT token:', decodeError);
         }
@@ -105,7 +148,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Sign out function
   const signOut = async () => {
     try {
+      // Clear localStorage
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userInfo');
+      localStorage.removeItem('tokenExpiry');
+      
+      // Sign out from Firebase
       await firebaseSignOut(auth);
+      
+      // Clear current user
+      setCurrentUser(null);
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;
@@ -118,19 +171,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (currentFirebaseUser) {
       const authUser = await convertFirebaseUser(currentFirebaseUser);
       setCurrentUser(authUser);
+    } else {
+      // Try loading from storage if Firebase user is not available
+      const storedUser = loadUserFromStorage();
+      setCurrentUser(storedUser);
     }
   };
 
+  // Initialize user from localStorage or Firebase
   useEffect(() => {
+    // First, try to load from localStorage for instant UI
+    const storedUser = loadUserFromStorage();
+    if (storedUser) {
+      setCurrentUser(storedUser);
+      setLoading(false);
+    }
+
+    // Then set up Firebase listener for real-time updates
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       const authUser = await convertFirebaseUser(user);
       setCurrentUser(authUser);
-      setLoading(false);
+      
+      // Only set loading to false if we didn't already load from storage
+      if (!storedUser) {
+        setLoading(false);
+      }
     });
 
     // Cleanup subscription on unmount
     return unsubscribe;
-  }, [convertFirebaseUser]);
+  }, []);
 
   const value: AuthContextType = {
     currentUser,
