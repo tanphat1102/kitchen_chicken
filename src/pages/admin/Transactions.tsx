@@ -4,6 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -26,7 +33,7 @@ const Transactions: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'CREDIT' | 'DEBIT'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
@@ -54,7 +61,7 @@ const Transactions: React.FC = () => {
       trans.note?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesType = 
-      typeFilter === 'all' ? true :
+      typeFilter === 'ALL' ? true :
       trans.transactionType === typeFilter;
     
     return matchesSearch && matchesType;
@@ -96,23 +103,23 @@ const Transactions: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Receipt className="h-8 w-8 text-orange-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <Receipt className="h-8 w-8 text-black" />
             <span>Transactions</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             View and manage all financial transactions
           </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-4 card-grid">
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
@@ -123,62 +130,64 @@ const Transactions: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Credit (Income)</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-black" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.creditCount}</div>
+            <div className="text-2xl font-bold text-black">{stats.creditCount}</div>
             <p className="text-xs text-muted-foreground mt-1">Money received</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Debit (Expense)</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <TrendingDown className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.debitCount}</div>
+            <div className="text-2xl font-bold text-gray-600">{stats.debitCount}</div>
             <p className="text-xs text-muted-foreground mt-1">Money sent</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
+            <DollarSign className="h-4 w-4 text-black" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatVND(stats.totalAmount)}</div>
+            <div className="text-2xl font-bold text-black">{formatVND(stats.totalAmount)}</div>
             <p className="text-xs text-muted-foreground mt-1">All transactions</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <Card>
+      {/* Search & Filters */}
+      <Card className="animate-card-delayed">
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by ID or note..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="max-w-sm"
               />
             </div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as 'all' | 'CREDIT' | 'DEBIT')}
-              className="px-4 py-2 border rounded-md bg-background"
-            >
-              <option value="all">All Types</option>
-              <option value="CREDIT">Credit (Income)</option>
-              <option value="DEBIT">Debit (Expense)</option>
-            </select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Types</SelectItem>
+                <SelectItem value="CREDIT">Credit (Income)</SelectItem>
+                <SelectItem value="DEBIT">Debit (Expense)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -222,15 +231,15 @@ const Transactions: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-600" />
-                        <span className="font-bold text-green-600">
+                        <DollarSign className="h-4 w-4 text-black" />
+                        <span className="font-bold text-black">
                           {formatVND(transaction.amount)}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-blue-600" />
+                        <CreditCard className="h-4 w-4 text-black" />
                         <Badge variant="outline">
                           {transaction.paymentMethodId ? `Payment #${transaction.paymentMethodId}` : 'N/A'}
                         </Badge>
@@ -239,8 +248,8 @@ const Transactions: React.FC = () => {
                     <TableCell>
                       <Badge 
                         className={transaction.transactionType === 'CREDIT' 
-                          ? 'bg-green-100 text-green-700 border-green-200' 
-                          : 'bg-red-100 text-red-700 border-red-200'
+                          ? 'bg-black text-white border-black' 
+                          : 'bg-gray-200 text-gray-700 border-gray-400'
                         }
                       >
                         {transaction.transactionType === 'CREDIT' ? (
@@ -264,6 +273,7 @@ const Transactions: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewDetails(transaction)}
+                        className="hover:bg-gray-100"
                       >
                         <Eye className="h-4 w-4 mr-2" />
                         View
@@ -281,8 +291,8 @@ const Transactions: React.FC = () => {
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-orange-600" />
+            <DialogTitle className="flex items-center gap-2 text-gray-900">
+              <Receipt className="h-5 w-5 text-black" />
               Transaction Details - #{selectedTransaction?.id}
             </DialogTitle>
           </DialogHeader>
@@ -296,7 +306,7 @@ const Transactions: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Amount</p>
-                  <p className="text-lg font-bold text-green-600">{formatVND(selectedTransaction.amount)}</p>
+                  <p className="text-lg font-bold text-black">{formatVND(selectedTransaction.amount)}</p>
                 </div>
               </div>
 
@@ -317,8 +327,8 @@ const Transactions: React.FC = () => {
                 <p className="text-sm font-medium text-muted-foreground">Transaction Type</p>
                 <Badge 
                   className={selectedTransaction.transactionType === 'CREDIT' 
-                    ? 'bg-green-100 text-green-700 border-green-200' 
-                    : 'bg-red-100 text-red-700 border-red-200'
+                    ? 'bg-black text-white border-black' 
+                    : 'bg-gray-200 text-gray-700 border-gray-400'
                   }
                 >
                   {selectedTransaction.transactionType === 'CREDIT' ? (

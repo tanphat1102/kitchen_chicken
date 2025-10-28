@@ -6,6 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -28,7 +35,7 @@ const PaymentMethods: React.FC = () => {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [formData, setFormData] = useState({
@@ -59,8 +66,8 @@ const PaymentMethods: React.FC = () => {
   const filteredMethods = paymentMethods.filter((method) => {
     const matchesSearch = method.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
-      statusFilter === 'all' ? true :
-      statusFilter === 'active' ? method.isActive :
+      statusFilter === 'ALL' ? true :
+      statusFilter === 'ACTIVE' ? method.isActive :
       !method.isActive;
     
     return matchesSearch && matchesStatus;
@@ -175,27 +182,27 @@ const PaymentMethods: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <CreditCard className="h-8 w-8 text-green-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <CreditCard className="h-8 w-8 text-black" />
             <span>Payment Methods</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage payment options for customers
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Payment Method</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-3 card-grid">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Methods</CardTitle>
           </CardHeader>
@@ -204,16 +211,16 @@ const PaymentMethods: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-black">{stats.active}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Inactive</CardTitle>
           </CardHeader>
@@ -223,28 +230,30 @@ const PaymentMethods: React.FC = () => {
         </Card>
       </div>
 
-      {/* Search and Filter */}
-      <Card>
+      {/* Search & Filters */}
+      <Card className="animate-card-delayed">
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search payment methods..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="max-w-sm"
               />
             </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-              className="px-4 py-2 border rounded-md bg-background"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active Only</option>
-              <option value="inactive">Inactive Only</option>
-            </select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Status</SelectItem>
+                <SelectItem value="ACTIVE">Active Only</SelectItem>
+                <SelectItem value="INACTIVE">Inactive Only</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -280,8 +289,8 @@ const PaymentMethods: React.FC = () => {
                     <TableCell className="font-medium">#{method.id}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center">
-                          <CreditCard className="h-4 w-4 text-green-600" />
+                        <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <CreditCard className="h-4 w-4 text-black" />
                         </div>
                         <span className="font-semibold">{method.name}</span>
                       </div>
@@ -290,7 +299,7 @@ const PaymentMethods: React.FC = () => {
                       {method.description || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge className={`border ${method.isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                      <Badge className={`border ${method.isActive ? 'bg-black text-white border-black' : 'bg-gray-200 text-gray-700 border-gray-400'}`}>
                         {method.isActive ? (
                           <>
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -310,7 +319,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(method)}
-                          className={method.isActive ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}
+                          className="hover:bg-gray-100"
                         >
                           {method.isActive ? 'Deactivate' : 'Activate'}
                         </Button>
@@ -318,6 +327,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(method)}
+                          className="hover:bg-gray-100"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -325,7 +335,7 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(method.id, method.name)}
-                          className="text-red-600 hover:bg-red-50"
+                          className="bg-black text-white hover:bg-gray-800"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -385,10 +395,10 @@ const PaymentMethods: React.FC = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>
+            <Button variant="outline" onClick={handleCloseDialog} className="border-gray-300">
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>
+            <Button onClick={handleSubmit} className="bg-black hover:bg-gray-800 text-white">
               {editingMethod ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>

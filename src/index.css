@@ -1,4 +1,21 @@
 @import "tailwindcss";
+@import "./styles/animations.css";
+
+/* CRITICAL: Disable ALL animations for Select dropdown */
+[data-radix-select-content] {
+  animation: none !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition: none !important;
+  transition-duration: 0s !important;
+}
+
+/* Override Tailwind animate-in utilities */
+[data-radix-select-content][data-state="open"],
+[data-radix-select-content][data-state="closed"] {
+  animation: none !important;
+  animation-duration: 0s !important;
+}
 
 @keyframes float {
   0% {

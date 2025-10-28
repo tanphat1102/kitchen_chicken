@@ -216,36 +216,36 @@ const Users: React.FC = () => {
   // Get role badge color
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'ADMIN': return 'bg-red-100 text-red-700 border-red-200';
-      case 'MANAGER': return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'EMPLOYEE': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'STORE': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'ADMIN': return 'bg-white text-black border-black';
+      case 'MANAGER': return 'bg-white text-black border-black';
+      case 'EMPLOYEE': return 'bg-white text-black border-black';
+      case 'STORE': return 'bg-white text-black border-black';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <UsersIcon className="h-8 w-8 text-indigo-600" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
+            <UsersIcon className="h-8 w-8 text-black" />
             <span>User Management</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage system users, roles, and permissions
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add User</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 card-grid">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Users</CardTitle>
           </CardHeader>
@@ -254,43 +254,43 @@ const Users: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-black">{stats.active}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Admins</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.admins}</div>
+            <div className="text-2xl font-bold text-black">{stats.admins}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Managers</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats.managers}</div>
+            <div className="text-2xl font-bold text-black">{stats.managers}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Employees</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.employees}</div>
+            <div className="text-2xl font-bold text-black">{stats.employees}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Customers</CardTitle>
           </CardHeader>
@@ -301,7 +301,7 @@ const Users: React.FC = () => {
       </div>
 
       {/* Search & Filters */}
-      <Card>
+      <Card className="animate-card-delayed">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex items-center gap-2 flex-1">
@@ -343,11 +343,11 @@ const Users: React.FC = () => {
       </Card>
 
       {/* Users Table */}
-      <Card>
-        <CardHeader className="border-b bg-gray-50">
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">All Users ({filteredUsers.length})</CardTitle>
-            <div className="text-sm text-muted-foreground">
+            <CardTitle className="text-xl text-gray-900">All Users ({filteredUsers.length})</CardTitle>
+            <div className="text-sm text-gray-600">
               Showing {filteredUsers.length} of {users.length} users
             </div>
           </div>
@@ -355,24 +355,24 @@ const Users: React.FC = () => {
         <CardContent className="p-0">
           {loading ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading users...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading users...</p>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-12">
-              <UsersIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-lg font-medium text-gray-900 mb-2">
                 {searchTerm || roleFilter !== 'ALL' || statusFilter !== 'ALL' 
                   ? 'No users found' 
                   : 'No users yet'}
               </p>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-gray-600 mb-4">
                 {searchTerm || roleFilter !== 'ALL' || statusFilter !== 'ALL' 
                   ? 'Try adjusting your search or filters' 
                   : 'Get started by creating your first user'}
               </p>
               {!searchTerm && roleFilter === 'ALL' && statusFilter === 'ALL' && (
-                <Button onClick={handleCreate}>
+                <Button onClick={handleCreate} className="bg-black text-white hover:bg-gray-800">
                   <Plus className="h-4 w-4 mr-2" />
                   Create First User
                 </Button>
@@ -382,21 +382,21 @@ const Users: React.FC = () => {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50 hover:bg-gray-50">
-                    <TableHead className="font-semibold">User</TableHead>
-                    <TableHead className="font-semibold">Contact</TableHead>
-                    <TableHead className="font-semibold">Role</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Verified</TableHead>
-                    <TableHead className="text-right font-semibold">Actions</TableHead>
+                  <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
+                    <TableHead className="font-semibold text-gray-700">User</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Contact</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Role</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Verified</TableHead>
+                    <TableHead className="text-right font-semibold text-gray-700">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-gray-50">
-                      <TableCell>
+                    <TableRow key={user.id} className="hover:bg-gray-50 border-gray-200">
+                      <TableCell className="text-gray-900">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
                             {user.avatar ? (
                               <img src={user.avatar} alt={user.displayName || user.email} className="h-10 w-10 rounded-full object-cover" />
                             ) : (
@@ -409,42 +409,42 @@ const Users: React.FC = () => {
                             <div className="font-semibold text-gray-900 truncate">
                               {user.displayName || 'No name'}
                             </div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                            <div className="text-sm text-gray-600 flex items-center gap-1 truncate">
                               <Mail className="h-3 w-3 flex-shrink-0" />
                               {user.email}
                             </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-gray-900">
                         <div className="space-y-1 text-sm">
                           {user.phone ? (
                             <div className="flex items-center gap-1 text-gray-700">
-                              <Phone className="h-3 w-3 text-gray-400" />
+                              <Phone className="h-3 w-3 text-gray-500" />
                               {user.phone}
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1 text-muted-foreground">
+                            <div className="flex items-center gap-1 text-gray-500">
                               <Phone className="h-3 w-3" />
                               <span className="italic">Not provided</span>
                             </div>
                           )}
                           {user.address && (
                             <div className="flex items-center gap-1 text-gray-700">
-                              <MapPin className="h-3 w-3 text-gray-400" />
+                              <MapPin className="h-3 w-3 text-gray-500" />
                               <span className="truncate max-w-[200px]">{user.address}</span>
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-gray-900">
                         <Badge className={`border ${getRoleBadgeColor(user.role)}`}>
                           <Shield className="h-3 w-3 mr-1" />
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={`border ${user.isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                      <TableCell className="text-gray-900">
+                        <Badge className={`border ${user.isActive ? 'bg-white text-black border-black' : 'bg-gray-200 text-gray-700 border-gray-400'}`}>
                           {user.isActive ? (
                             <>
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -458,9 +458,9 @@ const Users: React.FC = () => {
                           )}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-gray-900">
                         {user.isVerified ? (
-                          <div className="flex items-center gap-1 text-green-600">
+                          <div className="flex items-center gap-1 text-black">
                             <CheckCircle className="h-5 w-5" />
                           </div>
                         ) : (
@@ -475,7 +475,7 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleToggleStatus(user)}
-                            className={`${user.isActive ? 'text-orange-600 hover:bg-orange-50 hover:border-orange-300' : 'text-green-600 hover:bg-green-50 hover:border-green-300'}`}
+                            className="bg-white text-gray-900 hover:bg-gray-100 border-gray-300"
                           >
                             {user.isActive ? (
                               <>
@@ -493,7 +493,7 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEdit(user)}
-                            className="hover:bg-blue-50 hover:border-blue-300"
+                            className="bg-white text-gray-900 hover:bg-gray-100 border-gray-300"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -501,7 +501,7 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleDelete(user.id, user.email)}
-                            className="text-red-600 hover:bg-red-50 hover:border-red-300"
+                            className="bg-black text-white hover:bg-gray-800 border-black"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -518,9 +518,9 @@ const Users: React.FC = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border-gray-200 text-gray-900">
+          <DialogHeader className="border-b border-gray-200">
+            <DialogTitle className="text-2xl text-gray-900">
               {editingUser ? 'Edit User' : 'Create New User'}
             </DialogTitle>
           </DialogHeader>
@@ -530,15 +530,15 @@ const Users: React.FC = () => {
             {!editingUser && (
               <>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="h-8 w-1 bg-indigo-600 rounded"></div>
-                    <h3 className="text-lg font-semibold">Basic Information</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-black rounded"></div>
+                    <h3 className="text-lg font-semibold text-gray-900">Basic Information</h3>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="email">
-                        Email Address <span className="text-red-500">*</span>
+                      <Label htmlFor="email" className="text-gray-300">
+                        Email Address <span className="text-red-400">*</span>
                       </Label>
                       <Input
                         id="email"
@@ -546,18 +546,20 @@ const Users: React.FC = () => {
                         placeholder="user@example.com"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="displayName">
-                        Full Name <span className="text-red-500">*</span>
+                      <Label htmlFor="displayName" className="text-gray-700">
+                        Full Name <span className="text-black">*</span>
                       </Label>
                       <Input
                         id="displayName"
                         placeholder="John Doe"
                         value={formData.displayName}
                         onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                        className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                       />
                     </div>
                   </div>
@@ -577,25 +579,25 @@ const Users: React.FC = () => {
                         <SelectContent>
                           <SelectItem value="USER">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-gray-500"></div>
+                              <div className="h-2 w-2 rounded-full bg-black"></div>
                               Customer
                             </div>
                           </SelectItem>
                           <SelectItem value="EMPLOYEE">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <div className="h-2 w-2 rounded-full bg-black"></div>
                               Employee
                             </div>
                           </SelectItem>
                           <SelectItem value="STORE">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                              <div className="h-2 w-2 rounded-full bg-black"></div>
                               Store Manager
                             </div>
                           </SelectItem>
                           <SelectItem value="MANAGER">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                              <div className="h-2 w-2 rounded-full bg-black"></div>
                               Manager
                             </div>
                           </SelectItem>
@@ -620,7 +622,7 @@ const Users: React.FC = () => {
                         <SelectContent>
                           <SelectItem value="true">
                             <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-black" />
                               Active
                             </div>
                           </SelectItem>
@@ -635,9 +637,9 @@ const Users: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pb-2 border-b mt-6">
-                    <div className="h-8 w-1 bg-green-600 rounded"></div>
-                    <h3 className="text-lg font-semibold">Additional Information (Optional)</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200 mt-6">
+                    <div className="h-8 w-1 bg-black rounded"></div>
+                    <h3 className="text-lg font-semibold text-gray-900">Additional Information (Optional)</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -690,9 +692,9 @@ const Users: React.FC = () => {
             {editingUser && (
               <>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="h-8 w-1 bg-indigo-600 rounded"></div>
-                    <h3 className="text-lg font-semibold">User Information</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-black rounded"></div>
+                    <h3 className="text-lg font-semibold text-gray-900">User Information</h3>
                   </div>
 
                   <div className="space-y-2">
@@ -711,9 +713,9 @@ const Users: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="h-8 w-1 bg-green-600 rounded"></div>
-                    <h3 className="text-lg font-semibold">Editable Details</h3>
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200">
+                    <div className="h-8 w-1 bg-black rounded"></div>
+                    <h3 className="text-lg font-semibold text-gray-900">Editable Details</h3>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -762,7 +764,7 @@ const Users: React.FC = () => {
                         <SelectContent>
                           <SelectItem value="true">
                             <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <CheckCircle className="h-4 w-4 text-black" />
                               Active
                             </div>
                           </SelectItem>
@@ -809,10 +811,10 @@ const Users: React.FC = () => {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleCloseDialog}>
+            <Button variant="outline" onClick={handleCloseDialog} className="border-gray-300">
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="bg-indigo-600 hover:bg-indigo-700">
+            <Button onClick={handleSubmit} className="bg-black hover:bg-gray-800 text-white">
               {editingUser ? 'Update User' : 'Create User'}
             </Button>
           </DialogFooter>

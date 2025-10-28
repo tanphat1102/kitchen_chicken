@@ -1,0 +1,205 @@
+/* Smooth Animations for Admin Panel */
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide in from left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale in */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Card animations */
+.animate-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-card-delayed {
+  animation: fadeIn 0.4s ease-out 0.1s backwards;
+}
+
+/* Button hover effects */
+button, a {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Smooth hover for cards */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Dialog animations */
+[data-state="open"]:not([data-radix-select-content]) {
+  animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Table animations */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Table row animations */
+tbody tr {
+  animation: slideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+tbody tr:hover {
+  transform: scale(1.005);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+  position: relative;
+}
+
+/* Stagger animation for list items */
+tbody tr:nth-child(1) { animation-delay: 0s; }
+tbody tr:nth-child(2) { animation-delay: 0.05s; }
+tbody tr:nth-child(3) { animation-delay: 0.1s; }
+tbody tr:nth-child(4) { animation-delay: 0.15s; }
+tbody tr:nth-child(5) { animation-delay: 0.2s; }
+tbody tr:nth-child(6) { animation-delay: 0.25s; }
+tbody tr:nth-child(7) { animation-delay: 0.3s; }
+tbody tr:nth-child(8) { animation-delay: 0.35s; }
+tbody tr:nth-child(9) { animation-delay: 0.4s; }
+tbody tr:nth-child(10) { animation-delay: 0.45s; }
+
+/* Loading spinner - KEEP FOR FUNCTIONALITY */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Smooth page transitions */
+.page-enter {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badge pulse animation - KEEP */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Input focus animation */
+input:focus, 
+textarea:focus,
+select:focus {
+  transform: scale(1.01);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badge animation */
+.badge-enter {
+  animation: scaleIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badge animation - DISABLED */
+
+/* Notification badge pulse */
+.notification-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Card grid stagger */
+.card-grid > *:nth-child(1) { animation-delay: 0s; }
+.card-grid > *:nth-child(2) { animation-delay: 0.05s; }
+.card-grid > *:nth-child(3) { animation-delay: 0.1s; }
+.card-grid > *:nth-child(4) { animation-delay: 0.15s; }
+.card-grid > *:nth-child(5) { animation-delay: 0.2s; }
+.card-grid > *:nth-child(6) { animation-delay: 0.25s; }
+
+/* Smooth icon rotation */
+.rotate-icon {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rotate-icon:hover {
+  transform: rotate(180deg);
+}
+
+/* Smooth icon rotation - DISABLED */
+
+/* Skeleton loading animation */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, #f0f0f0 4%, #e0e0e0 25%, #f0f0f0 36%);
+  background-size: 1000px 100%;
+}
