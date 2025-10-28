@@ -8,7 +8,6 @@ import {
 } from "@/routes/route.constants";
 import RoleBasedRoute from "@/components/shared/RoleBasedRoute";
 import LoginModal from "@/components/shared/LoginModal";
-import Login from '@/pages/authentication/Login';
 import Register from "@/pages/authentication/Register";
 import Dashboard from "@/pages/Dashboard";
 import HomePage from '@/pages/Homepage/HomePage';
@@ -66,14 +65,7 @@ export function AppRoutes() {
           </RoleBasedRoute>
         } 
       />
-      <Route
-        path="/login"
-        element={
-          <RoleBasedRoute allowedRoles={['guest']}>
-            <Login />
-          </RoleBasedRoute>
-        }
-      />
+      {/* Login handled via modal (LoginModal) - no separate /login page */}
 
       {/* LocalStorage test route - test token persistence */}
       <Route path={AUTH_ROUTES.STORAGE_TEST} element={<LocalStorageTest />} />
