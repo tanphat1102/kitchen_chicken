@@ -56,11 +56,11 @@ export function AppRoutes() {
   <Route path={APP_ROUTES.HOME} element={<HomePage />} />
   <Route path={APP_ROUTES.MENU} element={<MenuPage />} />
   {/* Menu detail */}
-  <Route path="/menu/:id" element={<MenuDetailPage />} />
+  <Route path={APP_ROUTES.MENU_DETAIL} element={<MenuDetailPage />} />
   {/* Restaurants / store locator */}
-  <Route path="/restaurants" element={<Restaurants />} />
+  <Route path={APP_ROUTES.RESTAURANTS} element={<Restaurants />} />
   {/* Custom order builder */}
-  <Route path="/custom-order" element={<CustomOrder />} />
+  <Route path={APP_ROUTES.CUSTOM_ORDER} element={<CustomOrder />} />
       
       {/* Auth routes - accessible to guests only */}
       <Route 
