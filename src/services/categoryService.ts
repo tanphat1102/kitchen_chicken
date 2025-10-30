@@ -1,4 +1,4 @@
-import api from '@/config/axios';
+import { api } from './api';
 
 export interface Category {
   id: number;
@@ -29,7 +29,7 @@ interface CategoryResponse {
 }
 
 const API_ENDPOINTS = {
-  CATEGORIES: '/api/categories',
+  CATEGORIES: '/categories',
 };
 
 class CategoryService {

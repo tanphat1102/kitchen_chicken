@@ -1,4 +1,4 @@
-import api from '@/config/axios';
+import { api } from './api';
 
 // Store interface matching backend StoreResponse
 export interface Store {
@@ -33,7 +33,7 @@ interface ApiResponse<T> {
 }
 
 const API_ENDPOINTS = {
-  STORE: '/api/store',
+  STORE: '/store',
 };
 
 class StoreService {

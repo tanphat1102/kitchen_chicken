@@ -1,4 +1,4 @@
-import api from '@/config/axios';
+import { api } from './api';
 import type { CreateDailyMenuRequest, UpdateDailyMenuRequest } from '@/types/api.types';
 
 interface Store {
@@ -36,9 +36,9 @@ export interface DailyMenuResponse {
 }
 
 const API_ENDPOINTS = {
-  DAILY_MENU: '/api/daily-menu',
-  DAILY_MENU_DETAIL: (id: number) => `/api/daily-menu/${id}`,
-  DAILY_MENU_BY_STORE: (storeId: number) => `/api/daily-menu/store/${storeId}`,
+  DAILY_MENU: '/daily-menu',
+  DAILY_MENU_DETAIL: (id: number) => `/daily-menu/${id}`,
+  DAILY_MENU_BY_STORE: (storeId: number) => `/daily-menu/store/${storeId}`,
 };
 
 class DailyMenuService {
