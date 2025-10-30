@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaSearch, FaShoppingCart, FaUserAlt, FaSignInAlt } from "react-icons/fa";
 import LoginModal from '@/components/shared/LoginModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { APP_ROUTES } from '@/routes/route.constants';
 
 import {
     DropdownMenu,
@@ -57,6 +58,21 @@ export const Navbar: React.FC = () => {
       searchInputRef.current?.focus();
     }
 }, [isSearchOpen]);
+
+    // Listen for auth:login-required event
+    useEffect(() => {
+      const handleLoginRequired = () => {
+        setIsModalOpen(true);
+      };
+      
+      window.addEventListener('auth:login-required', handleLoginRequired);
+      window.addEventListener('auth:unauthorized', handleLoginRequired);
+      
+      return () => {
+        window.removeEventListener('auth:login-required', handleLoginRequired);
+        window.removeEventListener('auth:unauthorized', handleLoginRequired);
+      };
+    }, []);
 
 
 // Open the central LoginModal
@@ -164,7 +180,11 @@ const handleLogout = async () => {
                 )}
             </AnimatePresence>
         </motion.div>
-        <motion.div whileHover={{ scale: 1.2 }} className="cursor-pointer text-gray-700">
+        <motion.div 
+            whileHover={{ scale: 1.2 }} 
+            className="cursor-pointer text-gray-700 relative"
+            onClick={() => navigate(APP_ROUTES.CART)}
+        >
             <FaShoppingCart size={20} />
         </motion.div>
 
