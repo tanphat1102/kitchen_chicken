@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getCategoryMetaByName } from '@/constants/categoryMeta';
 import type { MenuItem } from '@/services/menuItemsService';
+import { useAddDishToCurrentOrder } from '@/hooks/useOrderCustomer';
 
 interface MenuItemDetail extends MenuItem {
   calories: number;
@@ -9,6 +10,7 @@ interface MenuItemDetail extends MenuItem {
 
 interface MenuItemCardProps {
   item: MenuItemDetail;
+  storeId?: number;
 }
 
 const StarIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -92,13 +94,45 @@ function getCategoryMeta(name?: string) {
 const formatVND = (value: number) =>
   value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 
-const MenuItemCard: React.FC<MenuItemCardProps> = ({ item }) => {
+const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
   const { color, Icon } = useMemo(() => getCategoryMeta(item.categoryName), [item.categoryName]);
+  const addDish = useAddDishToCurrentOrder(storeId);
 
   const description = useMemo(() => {
     // if (item.description) return item.description; //API chưa có
     return '';
   }, []);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to detail page
+    e.stopPropagation();
+    
+    addDish.mutate(
+      {
+        storeId: storeId,
+        note: '',
+        selections: [], // No selections for regular menu items
+      },
+      {
+        onSuccess: () => {
+          // Optional: Show toast notification
+          console.log('Added to cart:', item.name);
+        },
+        onError: (error: any) => {
+          console.error('Failed to add to cart:', error);
+          
+          // Handle 401 Unauthorized
+          if (error.response?.status === 401) {
+            alert('Please login to add items to cart');
+            // Optional: Open login modal
+            window.dispatchEvent(new CustomEvent('auth:login-required'));
+          } else {
+            alert('Failed to add to cart. Please try again.');
+          }
+        },
+      }
+    );
+  };
 
   return (
     <div className="group relative animate-fade-up" role="listitem" aria-label={item.name}>
@@ -147,10 +181,19 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item }) => {
             <p className="text-gray-900 font-extrabold text-lg sm:text-xl">{formatVND(item.price)}</p>
             <button
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:scale-110 active:scale-95"
+              onClick={handleAddToCart}
+              disabled={addDish.isPending}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Add to cart"
             >
-              <PlusIcon className="w-5 h-5" />
+              {addDish.isPending ? (
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <PlusIcon className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>

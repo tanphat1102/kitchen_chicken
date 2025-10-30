@@ -5,6 +5,9 @@ import { builderService } from '@/services/builderService';
 import { storeService, type Store } from '@/services/storeService';
 import useEmblaCarousel from 'embla-carousel-react';
 import { CustomOrderSummary } from '@/components/CustomOrderSummary';
+import { useAddDishToCurrentOrder } from '@/hooks/useOrderCustomer';
+import { useNavigate } from 'react-router-dom';
+import { APP_ROUTES } from '@/routes/route.constants';
 
 interface Option {
   id: number;
@@ -38,6 +41,7 @@ const currencyFormat = (v: number, currency: string) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: currency === 'USD' ? 'USD' : 'VND' }).format(v);
 
 const CustomOrder: React.FC = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState<BuilderData | null>(null);
   const [current, setCurrent] = useState(0);
   const [selection, setSelection] = useState<SelectionMap>({});
@@ -45,6 +49,9 @@ const CustomOrder: React.FC = () => {
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  
+  // Order customer mutation
+  const addDish = useAddDishToCurrentOrder(selectedStoreId || 0);
   
   // Embla carousel with smooth animations
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
@@ -215,13 +222,57 @@ const CustomOrder: React.FC = () => {
   };
 
   const placeOrder = () => {
-    console.log('Custom order payload', {
-      items: selection,
-      total,
-      currency: data?.currency || 'VND',
+    if (!data || !selectedStoreId) return;
+
+    // Convert selection to API format
+    const selectionsMap = new Map<number, { menuItemId: number; quantity: number }[]>();
+    
+    Object.entries(selection).forEach(([stepId, picks]) => {
+      const items = picks.map((pick: { optionId: number; quantity: number }) => ({
+        menuItemId: pick.optionId, // optionId is the menuItemId in selections
+        quantity: pick.quantity || 1,
+      }));
+      selectionsMap.set(Number(stepId), items);
     });
-    alert('Order placed (demo)');
-    setShowSummary(false);
+
+    const selections = Array.from(selectionsMap.entries()).map(([stepId, items]) => ({
+      stepId,
+      items,
+    }));
+
+    // Add custom bowl to order
+    addDish.mutate(
+      {
+        storeId: selectedStoreId,
+        note: 'Custom bowl',
+        selections,
+      },
+      {
+        onSuccess: () => {
+          setShowSummary(false);
+          // Reset builder
+          setSelection({});
+          setCurrent(0);
+          // Navigate to cart or show success message
+          alert('Custom bowl added to order!');
+          // Optionally navigate to menu or cart
+          // navigate(APP_ROUTES.MENU);
+        },
+        onError: (error: any) => {
+          console.error('Failed to add custom bowl:', error);
+          
+          // Handle 401 Unauthorized
+          if (error.response?.status === 401) {
+            alert('Please login to add items to cart');
+            setShowSummary(false);
+            // Optional: Trigger login modal
+            window.dispatchEvent(new CustomEvent('auth:login-required'));
+          } else {
+            alert('Failed to add to order. Please try again.');
+          }
+        },
+      }
+    );
   };
 
   return (

@@ -33,6 +33,7 @@ const MenuPage: React.FC = () => {
   const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStoreId, setSelectedStoreId] = useState<number>(1); // Track selected store
   
   const [currentPage, setCurrentPage] = useState<number>(1);
   useEffect(() => {
@@ -57,8 +58,13 @@ const MenuPage: React.FC = () => {
       setDailyMenuItems([]);
       setFilteredItems([]);
 
-  const selectedStoreId = currentFilters.selectedStore ? parseInt(currentFilters.selectedStore, 10) : undefined;
+  const storeId = currentFilters.selectedStore ? parseInt(currentFilters.selectedStore, 10) : undefined;
   const selectedDate = currentFilters.selectedDate || getTodayDateString();
+      
+      // Update state for order customer hook
+      if (storeId) {
+        setSelectedStoreId(storeId);
+      }
       
       try {
         let todayMenu: DailyMenuItem | null = null;
@@ -68,7 +74,7 @@ const MenuPage: React.FC = () => {
         const summary = allDailyMenus.find((menu) => (menu.menuDate || '').startsWith(todayStr));
 
         if (!summary) {
-          const storeMsg = selectedStoreId ? `for selected store` : ``;
+          const storeMsg = storeId ? `for selected store` : ``;
           setError(`No menu found ${storeMsg} for date (${todayStr}).`);
           setLoading(false);
           return;
@@ -82,9 +88,9 @@ const MenuPage: React.FC = () => {
           return;
         }
 
-        if (selectedStoreId) {
+        if (storeId) {
           const hasStore = Array.isArray(todayMenu.storeList)
-            ? todayMenu.storeList.some((s) => s.storeId === selectedStoreId)
+            ? todayMenu.storeList.some((s) => s.storeId === storeId)
             : true;
           if (!hasStore) {
             setError(`No menu found for selected store for date (${todayStr}).`);
@@ -203,7 +209,7 @@ const MenuPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-20 gap-x-8 mt-20">
               {paginatedItems.length > 0 ? (
                 paginatedItems.map((item) => (
-                  <MenuItemCard key={item.id} item={item} />
+                  <MenuItemCard key={item.id} item={item} storeId={selectedStoreId} />
                 ))
               ) : (
                 <p className="col-span-full text-center text-gray-500 mt-10">
