@@ -246,7 +246,7 @@ const Reports: React.FC = () => {
           <Button 
             variant="outline" 
             onClick={fetchReports}
-            className="flex items-center gap-2 border-gray-300 hover:bg-gray-100"
+            className="flex items-center gap-2 border-gray-900 text-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -315,51 +315,51 @@ const Reports: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
+              <DollarSign className="h-4 w-4 text-gray-900" />
               Total Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatVND(summary.totalRevenue)}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatVND(summary.totalRevenue)}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <ShoppingBag className="h-4 w-4" />
+              <ShoppingBag className="h-4 w-4 text-gray-900" />
               Total Orders
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatNumber(summary.totalOrders)}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatNumber(summary.totalOrders)}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+              <TrendingUp className="h-4 w-4 text-gray-900" />
               Avg. Order Value
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{formatVND(summary.averageOrderValue)}</div>
+            <div className="text-2xl font-bold text-gray-900">{formatVND(summary.averageOrderValue)}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-              <Award className="h-4 w-4" />
+              <Award className="h-4 w-4 text-gray-900" />
               Top Item
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold text-orange-600">{summary.topItem}</div>
+            <div className="text-lg font-bold text-gray-900">{summary.topItem}</div>
           </CardContent>
         </Card>
       </div>
@@ -368,16 +368,16 @@ const Reports: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-green-600" />
+            <TrendingUp className="h-5 w-5 text-gray-900" />
             Revenue Trend
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={revenueData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="date" stroke="#6b7280" />
+              <YAxis stroke="#6b7280" />
               <Tooltip 
                 formatter={(value: any) => formatVND(value)}
                 labelStyle={{ color: '#000' }}
@@ -386,7 +386,7 @@ const Reports: React.FC = () => {
               <Line 
                 type="monotone" 
                 dataKey="revenue" 
-                stroke="#10b981" 
+                stroke="#1f2937" 
                 strokeWidth={2}
                 name="Revenue (VND)"
               />
@@ -400,22 +400,22 @@ const Reports: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart className="h-5 w-5 text-blue-600" />
+              <BarChart className="h-5 w-5 text-gray-900" />
               Store Performance
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={storePerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="storeName" />
-                <YAxis />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="storeName" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
                 <Tooltip 
                   formatter={(value: any) => formatVND(value)}
                   labelStyle={{ color: '#000' }}
                 />
                 <Legend />
-                <Bar dataKey="revenue" fill="#3b82f6" name="Revenue (VND)" />
+                <Bar dataKey="revenue" fill="#1f2937" name="Revenue (VND)" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -424,7 +424,7 @@ const Reports: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5 text-purple-600" />
+              <PieChart className="h-5 w-5 text-gray-900" />
               Category Distribution
             </CardTitle>
           </CardHeader>

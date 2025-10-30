@@ -360,7 +360,7 @@ const DailyMenuBuilder: React.FC = () => {
                         menusByDate[date][0].menuDate,
                         menusByDate[date][0].storeList.map(s => s.storeName)
                       )}
-                      className="text-red-600 hover:bg-red-50"
+                      className="text-gray-900 border-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete Menu
