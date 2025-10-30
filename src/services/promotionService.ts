@@ -1,7 +1,7 @@
-import { api } from './api';
-import type { ApiResponse } from '@/types/api.types';
+import type { ApiResponse } from "@/types/api.types";
+import { api } from "./api";
 
-export type DiscountType = 'PERCENT' | 'AMOUNT';
+export type DiscountType = "PERCENT" | "AMOUNT";
 
 export interface Promotion {
   id: number;
@@ -44,25 +44,27 @@ export interface UpdatePromotionRequest {
 export const promotionService = {
   // Get all promotions (Manager view)
   getAll: async (): Promise<Promotion[]> => {
-    const response = await api.get<ApiResponse<Promotion[]>>('/promotion');
+    const response = await api.get<ApiResponse<Promotion[]>>("/api/promotion");
     return response.data.data;
   },
 
   // Get all public promotions (Customer view) - Same endpoint for now
   getAllPublic: async (): Promise<Promotion[]> => {
-    const response = await api.get<ApiResponse<Promotion[]>>('/promotion');
+    const response = await api.get<ApiResponse<Promotion[]>>("/api/promotion");
     return response.data.data;
   },
 
   // Get promotion by ID
   getById: async (id: number): Promise<Promotion> => {
-    const response = await api.get<ApiResponse<Promotion>>(`/promotion/${id}`);
+    const response = await api.get<ApiResponse<Promotion>>(
+      `/api/promotion/${id}`,
+    );
     return response.data.data;
   },
 
   // Create new promotion (Manager only)
   create: async (data: CreatePromotionRequest): Promise<Promotion> => {
-    const response = await api.post<ApiResponse<Promotion>>('/promotion', {
+    const response = await api.post<ApiResponse<Promotion>>("/api/promotion", {
       name: data.name,
       description: data.description || null,
       code: data.code || null,
@@ -77,27 +79,35 @@ export const promotionService = {
   },
 
   // Update promotion (Manager only)
-  update: async (id: number, data: UpdatePromotionRequest): Promise<Promotion> => {
-    const response = await api.put<ApiResponse<Promotion>>(`/promotion/${id}`, {
-      name: data.name,
-      description: data.description,
-      code: data.code,
-      discountValue: data.discountValue,
-      endDate: data.endDate,
-      isActive: data.isActive,
-      quantity: data.quantity,
-    });
+  update: async (
+    id: number,
+    data: UpdatePromotionRequest,
+  ): Promise<Promotion> => {
+    const response = await api.put<ApiResponse<Promotion>>(
+      `/api/promotion/${id}`,
+      {
+        name: data.name,
+        description: data.description,
+        code: data.code,
+        discountValue: data.discountValue,
+        endDate: data.endDate,
+        isActive: data.isActive,
+        quantity: data.quantity,
+      },
+    );
     return response.data.data;
   },
 
   // Toggle promotion status (Manager only)
   toggleStatus: async (id: number): Promise<Promotion> => {
-    const response = await api.patch<ApiResponse<Promotion>>(`/promotion/${id}`);
+    const response = await api.patch<ApiResponse<Promotion>>(
+      `/api/promotion/${id}`,
+    );
     return response.data.data;
   },
 
   // Delete promotion (Manager only)
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/promotion/${id}`);
+    await api.delete(`/api/promotion/${id}`);
   },
 };
