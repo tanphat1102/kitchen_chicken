@@ -11,7 +11,7 @@ export const api: AxiosInstance = axios.create({
 	withCredentials: false,
 });
 
-const AUTH_TOKEN_KEY = 'authToken';
+const AUTH_TOKEN_KEY = 'accessToken';
 
 export function setAuthToken(token?: string) {
 	if (token) {
