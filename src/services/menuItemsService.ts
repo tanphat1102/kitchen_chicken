@@ -1,4 +1,4 @@
-import { api } from './api';
+import api from '@/config/axios';
 export interface Nutrient {
   id: number;
   name: string;
@@ -27,7 +27,7 @@ export interface MenuItemResponse {
 }
 
 const API_ENDPOINTS = {
-  MENU_ITEMS: '/menu-items',
+  MENU_ITEMS: '/api/menu-items',
 };
 
 class MenuItemsService {

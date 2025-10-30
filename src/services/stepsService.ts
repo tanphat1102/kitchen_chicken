@@ -1,4 +1,4 @@
-import { api } from './api';
+import api from '@/config/axios';
 
 export interface Step {
   id: number;
@@ -10,7 +10,7 @@ export interface Step {
   isActive: boolean;
 }
 
-const ENDPOINT = '/steps';
+const ENDPOINT = '/api/steps';
 
 class StepsService {
   async getAllSteps(token?: string): Promise<Step[]> {
