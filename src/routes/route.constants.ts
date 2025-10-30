@@ -15,6 +15,7 @@ export const APP_ROUTES = {
   MENU_DETAIL: "/menu/:id",
   RESTAURANTS: "/restaurants",
   CUSTOM_ORDER: "/custom-order",
+  CART: "/cart",
 } as const;
 
 // Admin routes

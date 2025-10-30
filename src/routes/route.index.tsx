@@ -15,6 +15,7 @@ import MenuPage from '@/pages/Menu/Menu';
 import MenuDetailPage from '@/pages/Menu/MenuDetail';
 import Restaurants from '@/pages/Restaurants/Restaurants';
 import CustomOrder from '@/pages/Custom/CustomOrder';
+import CartPage from '@/pages/Cart/Cart';
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -61,6 +62,8 @@ export function AppRoutes() {
   <Route path={APP_ROUTES.RESTAURANTS} element={<Restaurants />} />
   {/* Custom order builder */}
   <Route path={APP_ROUTES.CUSTOM_ORDER} element={<CustomOrder />} />
+  {/* Cart */}
+  <Route path={APP_ROUTES.CART} element={<CartPage />} />
       
       {/* Auth routes - accessible to guests only */}
       <Route 
