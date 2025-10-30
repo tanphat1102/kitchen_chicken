@@ -1,12 +1,13 @@
-
-import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
-import { auth } from '@/config/firebase';
+import { auth } from "@/config/firebase";
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+} from "axios";
 
 // API Base URL
 // Use proxy in development (to avoid CORS), direct URL in production
-const API_BASE_URL = import.meta.env.DEV 
-  ? '/api'  // Proxy to backend via Vite dev server
-  : import.meta.env.VITE_API_BASE_URL || 'https://chickenkitchen.milize-lena.space/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 /**
  * Create Axios instance with default config
@@ -16,7 +17,7 @@ const createAxiosInstance = (): AxiosInstance => {
     baseURL: API_BASE_URL,
     timeout: 30000,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
@@ -32,14 +33,14 @@ const createAxiosInstance = (): AxiosInstance => {
           config.headers.Authorization = `Bearer ${token}`;
         }
       } catch (error) {
-        console.error('Error getting auth token:', error);
+        console.error("Error getting auth token:", error);
         // Don't block request if auth fails
       }
       return config;
     },
     (error) => {
       return Promise.reject(error);
-    }
+    },
   );
 
   // Response interceptor - Handle errors
@@ -62,13 +63,13 @@ const createAxiosInstance = (): AxiosInstance => {
           }
         } catch (refreshError) {
           // Redirect to login if refresh fails
-          window.location.href = '/login';
+          window.location.href = "/login";
           return Promise.reject(refreshError);
         }
       }
 
       return Promise.reject(error);
-    }
+    },
   );
 
   return instance;
@@ -113,19 +114,19 @@ export const handleApiError = (error: any): ApiError => {
   if (error.response) {
     // Server responded with error
     return {
-      message: error.response.data?.message || 'Đã xảy ra lỗi',
+      message: error.response.data?.message || "Đã xảy ra lỗi",
       status: error.response.status,
       errors: error.response.data?.errors,
     };
   } else if (error.request) {
     // Request made but no response
     return {
-      message: 'Không thể kết nối đến server',
+      message: "Không thể kết nối đến server",
     };
   } else {
     // Other errors
     return {
-      message: error.message || 'Đã xảy ra lỗi không xác định',
+      message: error.message || "Đã xảy ra lỗi không xác định",
     };
   }
 };
@@ -143,40 +144,70 @@ export class BaseApiService {
   /**
    * GET request
    */
-  async get<T>(path: string = '', config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await api.get(`${this.endpoint}${path}`, config);
+  async get<T>(path: string = "", config?: AxiosRequestConfig): Promise<T> {
+    const response: AxiosResponse<T> = await api.get(
+      `${this.endpoint}${path}`,
+      config,
+    );
     return response.data;
   }
 
   /**
    * POST request
    */
-  async post<T, D = any>(path: string = '', data?: D, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await api.post(`${this.endpoint}${path}`, data, config);
+  async post<T, D = any>(
+    path: string = "",
+    data?: D,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    const response: AxiosResponse<T> = await api.post(
+      `${this.endpoint}${path}`,
+      data,
+      config,
+    );
     return response.data;
   }
 
   /**
    * PUT request
    */
-  async put<T, D = any>(path: string = '', data?: D, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await api.put(`${this.endpoint}${path}`, data, config);
+  async put<T, D = any>(
+    path: string = "",
+    data?: D,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    const response: AxiosResponse<T> = await api.put(
+      `${this.endpoint}${path}`,
+      data,
+      config,
+    );
     return response.data;
   }
 
   /**
    * PATCH request
    */
-  async patch<T, D = any>(path: string = '', data?: D, config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await api.patch(`${this.endpoint}${path}`, data, config);
+  async patch<T, D = any>(
+    path: string = "",
+    data?: D,
+    config?: AxiosRequestConfig,
+  ): Promise<T> {
+    const response: AxiosResponse<T> = await api.patch(
+      `${this.endpoint}${path}`,
+      data,
+      config,
+    );
     return response.data;
   }
 
   /**
    * DELETE request
    */
-  async delete<T>(path: string = '', config?: AxiosRequestConfig): Promise<T> {
-    const response: AxiosResponse<T> = await api.delete(`${this.endpoint}${path}`, config);
+  async delete<T>(path: string = "", config?: AxiosRequestConfig): Promise<T> {
+    const response: AxiosResponse<T> = await api.delete(
+      `${this.endpoint}${path}`,
+      config,
+    );
     return response.data;
   }
 }
