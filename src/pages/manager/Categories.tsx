@@ -138,60 +138,60 @@ const Categories: React.FC = () => {
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
-            <Tag className="h-8 w-8 text-black" />
+            <Tag className="h-8 w-8 text-gray-900" />
             <span>Category Management</span>
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             Manage menu item categories
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Category</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-3 card-grid">
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
-            <Tag className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-gray-600">Total Categories</CardTitle>
+            <Tag className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            <p className="text-xs text-gray-500 mt-1">
               Menu categories
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Display</CardTitle>
-            <Tag className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-gray-600">Active Display</CardTitle>
+            <Tag className="h-4 w-4 text-gray-900" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{filteredCategories.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl font-bold text-gray-900">{filteredCategories.length}</div>
+            <p className="text-xs text-gray-500 mt-1">
               Currently showing
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Search Results</CardTitle>
-            <Search className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-gray-600">Search Results</CardTitle>
+            <Search className="h-4 w-4 text-gray-900" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-gray-900">
               {searchTerm ? filteredCategories.length : stats.total}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               {searchTerm ? 'Filtered results' : 'All categories'}
             </p>
           </CardContent>
@@ -199,10 +199,10 @@ const Categories: React.FC = () => {
       </div>
 
       {/* Search Bar */}
-      <Card>
+      <Card className="animate-card-delayed bg-white border-gray-200">
         <CardContent className="pt-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               placeholder="Search categories by name..."
               value={searchTerm}
@@ -214,42 +214,42 @@ const Categories: React.FC = () => {
       </Card>
 
       {/* Categories Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Categories ({filteredCategories.length})</CardTitle>
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-100">
+          <CardTitle className="text-gray-900">All Categories ({filteredCategories.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-gray-500">
               Loading categories...
             </div>
           ) : filteredCategories.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-gray-500">
               {searchTerm ? 'No categories found' : 'No categories yet. Create your first one!'}
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="hover:bg-gray-50">
+                  <TableHead className="text-gray-700">ID</TableHead>
+                  <TableHead className="text-gray-700">Name</TableHead>
+                  <TableHead className="text-gray-700">Description</TableHead>
+                  <TableHead className="text-right text-gray-700">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCategories.map((category) => (
-                  <TableRow key={category.id}>
-                    <TableCell className="font-medium">#{category.id}</TableCell>
+                  <TableRow key={category.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium text-gray-900">#{category.id}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                          <Tag className="h-4 w-4 text-orange-600" />
+                        <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                          <Tag className="h-4 w-4 text-gray-900" />
                         </div>
-                        <span className="font-semibold">{category.name}</span>
+                        <span className="font-semibold text-gray-900">{category.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-gray-600">
                       {category.description || '-'}
                     </TableCell>
                     <TableCell className="text-right">
@@ -258,6 +258,7 @@ const Categories: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(category)}
+                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -265,7 +266,7 @@ const Categories: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(category.id, category.name)}
-                          className="text-red-600 hover:bg-red-50"
+                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -247,61 +247,61 @@ const Ingredients: React.FC = () => {
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
-            <Package className="h-8 w-8 text-black" />
+            <Package className="h-8 w-8 text-gray-900" />
             <span>Ingredients Inventory</span>
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             Manage inventory across all stores with FIFO tracking
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Ingredient</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-4 card-grid">
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">Across {stats.stores} stores</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            <p className="text-xs text-gray-500 mt-1">Across {stats.stores} stores</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-l-4 border-l-gray-900 hover-lift animate-card bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Low Stock</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.lowStock}</div>
-            <p className="text-xs text-muted-foreground mt-1">Below minimum</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.lowStock}</div>
+            <p className="text-xs text-gray-500 mt-1">Below minimum</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500">
+        <Card className="border-l-4 border-l-gray-900 hover-lift animate-card bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Critical</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.critical}</div>
-            <p className="text-xs text-muted-foreground mt-1">Urgent restock needed</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.critical}</div>
+            <p className="text-xs text-gray-500 mt-1">Urgent restock needed</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-gray-900 hover-lift animate-card bg-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Stores</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.stores}</div>
-            <p className="text-xs text-muted-foreground mt-1">Locations tracked</p>
+            <div className="text-2xl font-bold text-gray-900">{stats.stores}</div>
+            <p className="text-xs text-gray-500 mt-1">Locations tracked</p>
           </CardContent>
         </Card>
       </div>
@@ -416,6 +416,7 @@ const Ingredients: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(ingredient)}
+                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -423,7 +424,7 @@ const Ingredients: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(ingredient.id, ingredient.name)}
-                          className="text-red-600 hover:bg-red-50"
+                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

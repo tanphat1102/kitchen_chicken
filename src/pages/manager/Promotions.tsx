@@ -453,7 +453,9 @@ const Promotions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(promo)}
-                          className={promo.isActive ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}
+                          className={promo.isActive 
+                            ? 'text-gray-900 border-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors' 
+                            : 'text-gray-900 border-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500 transition-colors'}
                         >
                           {promo.isActive ? 'Deactivate' : 'Activate'}
                         </Button>
@@ -461,6 +463,7 @@ const Promotions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(promo)}
+                          className="text-gray-900 border-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -468,7 +471,7 @@ const Promotions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(promo.id, promo.name)}
-                          className="text-red-600 hover:bg-red-50"
+                          className="text-gray-900 border-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
