@@ -236,29 +236,29 @@ export interface UpdatePromotionRequest {
 export interface User {
   id: string; // uid from Firebase
   email: string;
-  displayName?: string;
+  displayName: string; // ✅ Required (backend's fullName is required)
   role: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
   isActive: boolean;
   isVerified: boolean;
-  phone?: string;
-  address?: string;
-  avatar?: string;
+  phone?: string; // ⚠️ Note: Backend doesn't return this in UserResponse
+  address?: string; // ⚠️ Note: Backend doesn't return this in UserResponse
+  avatar?: string; // Maps to backend's imageURL
   createdAt?: string;
 }
 
 export interface CreateUserRequest {
   email: string;
-  displayName?: string;
+  displayName: string; // ✅ Required to match backend's fullName (non-nullable)
   role: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
-  isActive?: boolean;
-  birthday?: string | null;
+  isActive?: boolean; // Backend default: true
+  birthday?: string | null; // ISO date string, backend converts to LocalDate
   imageURL?: string | null;
 }
 
 export interface UpdateUserRequest {
-  displayName?: string;
+  displayName?: string; // Maps to backend's fullName
   role?: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
   isActive?: boolean;
-  birthday?: string | null;
+  birthday?: string | null; // ISO date string, backend converts to LocalDate
   imageURL?: string | null;
 }

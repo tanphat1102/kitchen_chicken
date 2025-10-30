@@ -44,17 +44,17 @@ class StoreService {
     this.cache = new Map();
   }
 
-  // Get all stores
-  async getAll(token?: string): Promise<Store[]> {
+  // Get all stores with pagination support
+  async getAll(pageNumber: number = 1, pageSize: number = 10, token?: string): Promise<Store[]> {
     try {
-      const cacheKey = 'all-stores';
+      const cacheKey = `stores-${pageNumber}-${pageSize}`;
       const cached = this.getFromCache(cacheKey);
       if (cached) {
         return cached;
       }
 
       const { data: result } = await api.get<ApiResponse<Store[]>>(
-        API_ENDPOINTS.STORE,
+        `${API_ENDPOINTS.STORE}?size=${pageSize}&pageNumber=${pageNumber}`,
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
 
@@ -167,6 +167,50 @@ class StoreService {
     }
   }
 
+  // Get ALL stores (no pagination) for stats calculation
+  async getAllForStats(token?: string): Promise<Store[]> {
+    try {
+      const cacheKey = 'all-stores-stats';
+      const cached = this.getFromCache(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      const { data: result } = await api.get<ApiResponse<Store[]>>(
+        `${API_ENDPOINTS.STORE}?size=1000&pageNumber=1`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      if (result.statusCode === 200) {
+        this.setCache(cacheKey, result.data);
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to fetch stores');
+      }
+    } catch (error: any) {
+      console.error('Error fetching all stores:', error);
+      throw error;
+    }
+  }
+
+  // Get total count of stores
+  async getCount(): Promise<number> {
+    try {
+      const { data: result } = await api.get<ApiResponse<{ total: number }>>(
+        `${API_ENDPOINTS.STORE}/counts`
+      );
+
+      if (result.statusCode === 200) {
+        return result.data.total;
+      } else {
+        throw new Error(result.message || 'Failed to fetch store count');
+      }
+    } catch (error: any) {
+      console.error('Error fetching store count:', error);
+      throw error;
+    }
+  }
+
   private getFromCache(key: string): Store[] | null {
     const cached = this.cache.get(key);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
@@ -186,11 +230,14 @@ class StoreService {
 export const storeService = new StoreService();
 
 // Export individual functions for backward compatibility
-export const getAllStores = (token?: string) => storeService.getAll(token);
+export const getAllStores = (pageNumber?: number, pageSize?: number, token?: string) => 
+  storeService.getAll(pageNumber, pageSize, token);
+export const getAllStoresForStats = (token?: string) => storeService.getAllForStats(token);
 export const getStoreById = (id: number) => storeService.getById(id);
 export const createStore = (data: CreateStoreDto) => storeService.create(data);
 export const updateStore = (id: number, data: UpdateStoreDto) => storeService.update(id, data);
 export const toggleStoreStatus = (id: number) => storeService.toggleStatus(id);
 export const deleteStore = (id: number) => storeService.delete(id);
+export const getStoreCount = () => storeService.getCount();
 
 export default storeService;
