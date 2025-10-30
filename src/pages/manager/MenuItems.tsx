@@ -260,43 +260,43 @@ const MenuItems: React.FC = () => {
   return (
     <div className="flex flex-1 flex-col gap-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
-            <ChefHat className="h-8 w-8 text-black" />
+            <ChefHat className="h-8 w-8 text-gray-900" />
             <span>Menu Items</span>
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             Manage your restaurant menu items
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Add Menu Item</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-3 card-grid">
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.active}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="hover-lift animate-card bg-white border-gray-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Inactive</CardTitle>
           </CardHeader>
@@ -307,11 +307,11 @@ const MenuItems: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="animate-card-delayed bg-white border-gray-200">
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
+              <Search className="h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search menu items..."
                 value={searchTerm}
@@ -348,17 +348,17 @@ const MenuItems: React.FC = () => {
       </Card>
 
       {/* Menu Items Grid */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Menu Items ({filteredItems.length})</CardTitle>
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-100">
+          <CardTitle className="text-gray-900">All Menu Items ({filteredItems.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-gray-500">
               Loading menu items...
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-gray-500">
               {searchTerm || filterCategory !== 'all' || filterStatus !== 'all' 
                 ? 'No menu items found' 
                 : 'No menu items yet. Create your first one!'}
@@ -366,18 +366,18 @@ const MenuItems: React.FC = () => {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="hover:bg-gray-50">
+                  <TableHead className="text-gray-700">Image</TableHead>
+                  <TableHead className="text-gray-700">Name</TableHead>
+                  <TableHead className="text-gray-700">Category</TableHead>
+                  <TableHead className="text-gray-700">Price</TableHead>
+                  <TableHead className="text-gray-700">Status</TableHead>
+                  <TableHead className="text-right text-gray-700">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.id} className="hover:bg-gray-50">
                     <TableCell>
                       {item.imageUrl ? (
                         <img 
@@ -393,22 +393,22 @@ const MenuItems: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-semibold">{item.name}</p>
+                        <p className="font-semibold text-gray-900">{item.name}</p>
                         {item.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1">
+                          <p className="text-sm text-gray-600 line-clamp-1">
                             {item.description}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{item.categoryName || `Cat #${item.categoryId}`}</Badge>
+                      <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">{item.categoryName || `Cat #${item.categoryId}`}</Badge>
                     </TableCell>
                     <TableCell>
-                      <span className="font-bold text-green-600">{formatVND(item.price)}</span>
+                      <span className="font-bold text-gray-900">{formatVND(item.price)}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`border ${item.isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                      <Badge className={`border ${item.isActive ? 'bg-gray-100 text-gray-900 border-gray-300' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
                         {item.isActive ? (
                           <>
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -428,7 +428,11 @@ const MenuItems: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(item)}
-                          className={item.isActive ? 'text-orange-600 hover:bg-orange-50' : 'text-green-600 hover:bg-green-50'}
+                          className={`bg-white border-gray-300 transition-colors ${
+                            item.isActive 
+                              ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
+                              : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
+                          }`}
                         >
                           {item.isActive ? 'Deactivate' : 'Activate'}
                         </Button>
@@ -436,6 +440,7 @@ const MenuItems: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(item)}
+                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -443,7 +448,7 @@ const MenuItems: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(item.id, item.name)}
-                          className="text-red-600 hover:bg-red-50"
+                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

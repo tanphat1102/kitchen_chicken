@@ -242,46 +242,46 @@ const Orders: React.FC = () => {
             Monitor and manage customer orders in real-time
           </p>
         </div>
-        <Button onClick={fetchOrders} variant="outline" className="border-gray-300 hover:bg-gray-100">
+        <Button onClick={fetchOrders} variant="outline" className="border-gray-900 text-gray-900 hover:bg-gray-800 hover:text-white transition-colors">
           Refresh Orders
         </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">New Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.new}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.new}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Processing</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats.processing}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.processing}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.completed}</div>
           </CardContent>
         </Card>
       </div>
@@ -399,7 +399,7 @@ const Orders: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleStatusUpdate(order, getNextStatus(order.status)!)}
-                            className="text-blue-600 hover:bg-blue-50"
+                            className="text-gray-900 border-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
                           >
                             → {getNextStatus(order.status)}
                           </Button>
@@ -408,6 +408,7 @@ const Orders: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewDetails(order)}
+                          className="text-gray-900 border-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
