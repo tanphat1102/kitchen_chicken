@@ -126,6 +126,44 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
   };
 
 
+  const handleTwitterLogin = async () => {
+    setLoading(true);
+    const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với X...");
+
+    try {
+      await authService.loginWithTwitter();
+      
+      AuthErrorHandler.dismissToast(loadingToast);
+      AuthErrorHandler.showSuccessToast("Đăng nhập thành công!");
+      
+      // Refresh user data in AuthContext to trigger immediate UI update
+      await refreshUser();
+      
+      // Close modal and let AuthContext handle the redirect
+      onOpenChange(false);
+    } catch (err: any) {
+      // Dismiss loading toast immediately
+      AuthErrorHandler.dismissToast(loadingToast);
+      
+      // Check if user cancelled the popup (closed the window)
+      const errorCode = err?.code || err?.message || '';
+      const isCancelled = 
+        errorCode.includes('popup-closed-by-user') || 
+        errorCode.includes('cancelled-popup-request') ||
+        errorCode.includes('popup_closed_by_user') ||
+        errorCode === 'auth/popup-closed-by-user' ||
+        errorCode === 'auth/cancelled-popup-request';
+      
+      // Only show error if user didn't cancel
+      if (!isCancelled) {
+        AuthErrorHandler.showErrorToast(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -174,6 +212,23 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
               </svg>
             )}
             Đăng nhập với Google
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleTwitterLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M23 3.01c-.8.36-1.66.6-2.56.71.92-.55 1.62-1.43 1.95-2.47-.86.51-1.81.88-2.82 1.08C18.76 1.6 17.32 1 15.78 1c-2.62 0-4.74 2.12-4.74 4.74 0 .37.04.73.12 1.08C6.88 6.6 3.64 4.77 1.64 1.96c-.41.7-.64 1.51-.64 2.37 0 1.63.83 3.07 2.09 3.91-.77-.03-1.5-.24-2.14-.59v.06c0 2.28 1.62 4.18 3.77 4.62-.39.11-.8.17-1.22.17-.3 0-.6-.03-.89-.08.6 1.87 2.36 3.23 4.44 3.27-1.63 1.28-3.69 2.04-5.93 2.04-.38 0-.75-.02-1.12-.06 2.11 1.35 4.62 2.14 7.32 2.14 8.78 0 13.58-7.27 13.58-13.57 0-.21 0-.42-.01-.63.93-.67 1.73-1.51 2.36-2.47z" />
+              </svg>
+            )}
+            Đăng nhập với X
           </Button>
 
           <Button

@@ -4,7 +4,7 @@ import {
   getIdToken
 } from 'firebase/auth';
 // import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, googleProvider, githubProvider, discordProvider } from '@/config/firebase';
+import { auth, googleProvider, githubProvider, discordProvider, twitterProvider } from '@/config/firebase';
 import { AuthErrorHandler, AuthError } from '@/utils/authErrorHandler';
 // import { FirestoreConnectionManager } from '@/utils/firestoreConnectionManager';
 
@@ -18,7 +18,7 @@ export interface UserProfile {
   photoURL?: string;
   createdAt: Date;
   role: UserRole;
-  provider: 'google' | 'github' | 'discord';
+  provider: 'google' | 'github' | 'discord' | 'twitter';
   preferences?: {
     theme?: 'light' | 'dark';
     notifications?: boolean;
@@ -28,7 +28,7 @@ export interface UserProfile {
 // Backend API Types
 export interface FirebaseLoginRequest {
   idToken: string;
-  provider: 'google' | 'github' | 'discord';
+  provider: 'google' | 'github' | 'discord' | 'twitter';
 }
 
 export interface TokenRefreshRequest {
@@ -229,7 +229,7 @@ class AuthService {
   }
 
   // Login with Firebase provider and authenticate with backend
-  private async loginWithProvider(provider: 'google' | 'github' | 'discord'): Promise<User> {
+  private async loginWithProvider(provider: 'google' | 'github' | 'discord' | 'twitter'): Promise<User> {
     try {
       console.log(`🚀 Starting ${provider} login...`);
       
@@ -249,6 +249,9 @@ class AuthService {
           break;
         case 'discord':
           authProvider = discordProvider;
+          break;
+        case 'twitter':
+          authProvider = twitterProvider;
           break;
         default:
           throw new Error('Invalid provider');
@@ -404,6 +407,11 @@ class AuthService {
   // Login with Discord
   async loginWithDiscord(): Promise<User> {
     return this.loginWithProvider('discord');
+  }
+
+  // Login with Twitter (X)
+  async loginWithTwitter(): Promise<User> {
+    return this.loginWithProvider('twitter');
   }
 
   // Refresh JWT token
