@@ -82,9 +82,9 @@ const handleLogout = async () => {
     try {
         await signOut();
         
-        // Only redirect to home if user is on a protected route (admin/member)
+        // Only redirect to home if user is on a protected route (admin/manager/member)
         const currentPath = location.pathname;
-        if (currentPath.startsWith('/admin') || currentPath.startsWith('/member')) {
+        if (currentPath.startsWith('/admin') || currentPath.startsWith('/manager') || currentPath.startsWith('/member')) {
             navigate('/');
         }
         // Otherwise stay on the current public page

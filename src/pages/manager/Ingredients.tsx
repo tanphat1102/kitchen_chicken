@@ -34,11 +34,15 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 const Ingredients: React.FC = () => {
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]); // Current page
+  const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]); // All for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStore, setFilterStore] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [formData, setFormData] = useState({
@@ -52,12 +56,18 @@ const Ingredients: React.FC = () => {
     isActive: true,
   });
 
-  // Fetch ingredients
+  // Fetch ingredients with pagination and stats
   const fetchIngredients = async () => {
     try {
       setLoading(true);
-      const data = await ingredientService.getAll();
+      const [data, allData, count] = await Promise.all([
+        ingredientService.getAll(currentPage, pageSize),
+        ingredientService.getAllForStats(),
+        ingredientService.getCount(),
+      ]);
       setIngredients(data);
+      setAllIngredients(allData);
+      setTotalCount(count);
     } catch (error) {
       console.error('Error fetching ingredients:', error);
       toast.error('Failed to load ingredients');
@@ -69,7 +79,7 @@ const Ingredients: React.FC = () => {
   // Fetch stores
   const fetchStores = async () => {
     try {
-      const data = await storeService.getAll();
+      const data = await storeService.getAllForStats();
       setStores(data.filter((store: StoreLocation) => store.isActive));
     } catch (error) {
       console.error('Error fetching stores:', error);
@@ -80,24 +90,33 @@ const Ingredients: React.FC = () => {
   useEffect(() => {
     fetchIngredients();
     fetchStores();
-  }, []);
+  }, [currentPage]);
 
-  // Filter ingredients
+  // Filter ingredients (only from current page)
   const filteredIngredients = ingredients.filter((ingredient) => {
     const matchesSearch = ingredient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ingredient.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStore = filterStore === 'all' || ingredient.storeId?.toString() === filterStore;
-    // Note: Backend doesn't provide minimumStock, so stock level filtering is not available
     return matchesSearch && matchesStore;
   });
 
-  // Stats
+  // Stats calculated from ALL ingredients
   const stats = {
-    total: ingredients.length,
+    total: allIngredients.length,
     lowStock: 0, // Backend doesn't provide minimumStock field
     critical: 0, // Backend doesn't provide minimumStock field
-    stores: new Set(ingredients.map(i => i.storeId).filter(Boolean)).size,
+    stores: new Set(allIngredients.map(i => i.storeId).filter(Boolean)).size,
   };
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    if ((searchTerm || filterStore !== 'all') && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, filterStore]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
@@ -341,7 +360,10 @@ const Ingredients: React.FC = () => {
       {/* Ingredients Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Ingredients ({filteredIngredients.length})</CardTitle>
+          <CardTitle>All Ingredients ({allIngredients.length})</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Showing {ingredients.length} of {allIngredients.length} ingredients (Page {currentPage})
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -436,6 +458,34 @@ const Ingredients: React.FC = () => {
             </Table>
           )}
         </CardContent>
+        {/* Pagination */}
+        {!loading && filteredIngredients.length > 0 && (
+          <CardContent className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {ingredients.length} of {allIngredients.length} ingredients (Page {currentPage} of {totalPages})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Create/Edit Dialog */}

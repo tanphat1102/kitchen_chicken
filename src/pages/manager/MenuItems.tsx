@@ -35,12 +35,16 @@ import toast from 'react-hot-toast';
 import { uploadToCloudinary } from '@/utils/cloudinary';
 
 const MenuItems: React.FC = () => {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]); // Current page
+  const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]); // All for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -54,12 +58,18 @@ const MenuItems: React.FC = () => {
     isActive: true,
   });
 
-  // Fetch menu items
+  // Fetch menu items with pagination and stats
   const fetchMenuItems = async () => {
     try {
       setLoading(true);
-      const data = await menuItemService.getAll();
+      const [data, allData, count] = await Promise.all([
+        menuItemService.getAll(currentPage, pageSize),
+        menuItemService.getAllForStats(),
+        menuItemService.getCount(),
+      ]);
       setMenuItems(data);
+      setAllMenuItems(allData);
+      setTotalCount(count);
     } catch (error) {
       console.error('Error fetching menu items:', error);
       toast.error('Failed to load menu items');
@@ -71,7 +81,7 @@ const MenuItems: React.FC = () => {
   // Fetch categories
   const fetchCategories = async () => {
     try {
-      const data = await categoryService.getAll();
+      const data = await categoryService.getAllForStats();
       setCategories(data);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -82,9 +92,9 @@ const MenuItems: React.FC = () => {
   useEffect(() => {
     fetchMenuItems();
     fetchCategories();
-  }, []);
+  }, [currentPage]);
 
-  // Filter menu items
+  // Filter menu items (only from current page)
   const filteredItems = menuItems.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -95,12 +105,22 @@ const MenuItems: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  // Stats
+  // Stats calculated from ALL menu items
   const stats = {
-    total: menuItems.length,
-    active: menuItems.filter(item => item.isActive).length,
-    inactive: menuItems.filter(item => !item.isActive).length,
+    total: allMenuItems.length,
+    active: allMenuItems.filter(item => item.isActive).length,
+    inactive: allMenuItems.filter(item => !item.isActive).length,
   };
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    if ((searchTerm || filterCategory !== 'all' || filterStatus !== 'all') && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, filterCategory, filterStatus]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const formatVND = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -350,7 +370,10 @@ const MenuItems: React.FC = () => {
       {/* Menu Items Grid */}
       <Card className="bg-white border-gray-200">
         <CardHeader className="border-b border-gray-100">
-          <CardTitle className="text-gray-900">All Menu Items ({filteredItems.length})</CardTitle>
+          <CardTitle className="text-gray-900">All Menu Items ({allMenuItems.length})</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Showing {menuItems.length} of {allMenuItems.length} menu items (Page {currentPage})
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -460,6 +483,34 @@ const MenuItems: React.FC = () => {
             </Table>
           )}
         </CardContent>
+        {/* Pagination */}
+        {!loading && filteredItems.length > 0 && (
+          <CardContent className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {menuItems.length} of {allMenuItems.length} menu items (Page {currentPage} of {totalPages})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Create/Edit Dialog */}

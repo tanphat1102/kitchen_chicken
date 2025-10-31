@@ -41,21 +41,37 @@ export interface UpdateIngredientRequest {
 }
 
 export const ingredientService = {
-  // Get all ingredients
-  getAll: async (): Promise<Ingredient[]> => {
-    const response = await api.get<ApiResponse<Ingredient[]>>('/ingredient');
+  // Get all ingredients with pagination
+  getAll: async (pageNumber: number = 1, size: number = 10): Promise<Ingredient[]> => {
+    const response = await api.get<ApiResponse<Ingredient[]>>('/api/ingredient', {
+      params: { pageNumber, size }
+    });
     return response.data.data;
+  },
+
+  // Get all ingredients for stats (no pagination)
+  getAllForStats: async (): Promise<Ingredient[]> => {
+    const response = await api.get<ApiResponse<Ingredient[]>>('/api/ingredient', {
+      params: { pageNumber: 1, size: 1000 }
+    });
+    return response.data.data;
+  },
+
+  // Get total count
+  getCount: async (): Promise<number> => {
+    const response = await api.get<ApiResponse<{ total: number }>>('/api/ingredient/counts');
+    return response.data.data.total;
   },
 
   // Get ingredient by ID (Manager only)
   getById: async (id: number): Promise<Ingredient> => {
-    const response = await api.get<ApiResponse<Ingredient>>(`/ingredient/${id}`);
+    const response = await api.get<ApiResponse<Ingredient>>(`/api/ingredient/${id}`);
     return response.data.data;
   },
 
   // Create new ingredient (Manager only)
   create: async (data: CreateIngredientRequest): Promise<Ingredient> => {
-    const response = await api.post<ApiResponse<Ingredient>>('/ingredient', {
+    const response = await api.post<ApiResponse<Ingredient>>('/api/ingredient', {
       name: data.name,
       description: data.description || null,
       baseUnit: data.baseUnit,
@@ -71,7 +87,7 @@ export const ingredientService = {
 
   // Update ingredient (Manager only)
   update: async (id: number, data: UpdateIngredientRequest): Promise<Ingredient> => {
-    const response = await api.put<ApiResponse<Ingredient>>(`/ingredient/${id}`, {
+    const response = await api.put<ApiResponse<Ingredient>>(`/api/ingredient/${id}`, {
       name: data.name,
       description: data.description,
       imageUrl: data.imageUrl,
@@ -85,12 +101,12 @@ export const ingredientService = {
 
   // Toggle ingredient status (Manager only)
   toggleStatus: async (id: number): Promise<Ingredient> => {
-    const response = await api.patch<ApiResponse<Ingredient>>(`/ingredient/${id}`);
+    const response = await api.patch<ApiResponse<Ingredient>>(`/api/ingredient/${id}`);
     return response.data.data;
   },
 
   // Delete ingredient (Manager only)
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/ingredient/${id}`);
+    await api.delete(`/api/ingredient/${id}`);
   },
 };

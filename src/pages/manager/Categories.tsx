@@ -25,9 +25,13 @@ import type { Category } from '@/types/api.types';
 import toast from 'react-hot-toast';
 
 const Categories: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]); // Current page
+  const [allCategories, setAllCategories] = useState<Category[]>([]); // All for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
@@ -35,12 +39,18 @@ const Categories: React.FC = () => {
     description: '',
   });
 
-  // Fetch categories
+  // Fetch categories with pagination and stats
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const data = await categoryService.getAll();
+      const [data, allData, count] = await Promise.all([
+        categoryService.getAll(currentPage, pageSize),
+        categoryService.getAllForStats(),
+        categoryService.getCount(),
+      ]);
       setCategories(data);
+      setAllCategories(allData);
+      setTotalCount(count);
     } catch (error) {
       console.error('Error fetching categories:', error);
       toast.error('Failed to load categories');
@@ -51,17 +61,27 @@ const Categories: React.FC = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [currentPage]);
 
-  // Filter categories
+  // Filter categories (only from current page)
   const filteredCategories = categories.filter((category) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Stats
+  // Stats calculated from ALL categories
   const stats = {
-    total: categories.length,
+    total: allCategories.length,
   };
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    if (searchTerm && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   // Handle create/edit
   const handleSubmit = async () => {
@@ -216,7 +236,10 @@ const Categories: React.FC = () => {
       {/* Categories Table */}
       <Card className="bg-white border-gray-200">
         <CardHeader className="border-b border-gray-100">
-          <CardTitle className="text-gray-900">All Categories ({filteredCategories.length})</CardTitle>
+          <CardTitle className="text-gray-900">All Categories ({allCategories.length})</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Showing {categories.length} of {allCategories.length} categories (Page {currentPage})
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -278,6 +301,34 @@ const Categories: React.FC = () => {
             </Table>
           )}
         </CardContent>
+        {/* Pagination */}
+        {!loading && filteredCategories.length > 0 && (
+          <CardContent className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {categories.length} of {allCategories.length} categories (Page {currentPage} of {totalPages})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Create/Edit Dialog */}

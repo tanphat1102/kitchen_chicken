@@ -40,20 +40,18 @@ class CategoryService {
     this.cache = new Map();
   }
 
-  // Get all categories
-  async getAll(token?: string): Promise<Category[]> {
-    const cacheKey = 'all-categories';
-    const cached = this.getFromCache(cacheKey);
-    if (cached) return cached;
-
+  // Get all categories with pagination
+  async getAll(pageNumber: number = 1, size: number = 10, token?: string): Promise<Category[]> {
     try {
       const { data: result } = await api.get<CategoriesResponse>(
         API_ENDPOINTS.CATEGORIES,
-        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        {
+          params: { pageNumber, size },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        }
       );
 
       if (result.statusCode === 200) {
-        this.setCache(cacheKey, result.data);
         return result.data;
       } else {
         throw new Error(result.message || 'Failed to fetch categories');
@@ -66,9 +64,57 @@ class CategoryService {
     }
   }
 
-  // Alias for backward compatibility
+  // Get all categories for stats (no pagination, fetch max)
+  async getAllForStats(token?: string): Promise<Category[]> {
+    const cacheKey = 'all-categories-stats';
+    const cached = this.getFromCache(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const { data: result } = await api.get<CategoriesResponse>(
+        API_ENDPOINTS.CATEGORIES,
+        {
+          params: { pageNumber: 1, size: 1000 },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        }
+      );
+
+      if (result.statusCode === 200) {
+        this.setCache(cacheKey, result.data);
+        return result.data;
+      } else {
+        throw new Error(result.message || 'Failed to fetch categories');
+      }
+    } catch (error: any) {
+      console.error('Error fetching categories for stats:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw new Error(`HTTP Error: ${status}`);
+      throw error;
+    }
+  }
+
+  // Get total count
+  async getCount(token?: string): Promise<number> {
+    try {
+      const { data: result } = await api.get<{ statusCode: number; message: string; data: { total: number } }>(
+        `${API_ENDPOINTS.CATEGORIES}/counts`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      if (result.statusCode === 200) {
+        return result.data.total;
+      } else {
+        throw new Error(result.message || 'Failed to fetch category count');
+      }
+    } catch (error: any) {
+      console.error('Error fetching category count:', error);
+      throw error;
+    }
+  }
+
+  // Alias for backward compatibility (for stats/non-paginated use)
   async getAllCategories(token?: string): Promise<Category[]> {
-    return this.getAll(token);
+    return this.getAllForStats(token);
   }
 
   // Get category by ID

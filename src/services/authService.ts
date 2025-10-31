@@ -9,7 +9,7 @@ import { AuthErrorHandler, AuthError } from '@/utils/authErrorHandler';
 // import { FirestoreConnectionManager } from '@/utils/firestoreConnectionManager';
 
 // Types
-export type UserRole = 'guest' | 'member' | 'admin';
+export type UserRole = 'guest' | 'member' | 'manager' | 'admin';
 
 export interface UserProfile {
   uid: string;
