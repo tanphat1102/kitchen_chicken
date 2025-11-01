@@ -32,11 +32,15 @@ import type { User } from '@/types/api.types';
 import toast from 'react-hot-toast';
 
 const Users: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>([]); // Current page users
+  const [allUsers, setAllUsers] = useState<User[]>([]); // All users for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -46,19 +50,24 @@ const Users: React.FC = () => {
     isActive: true,
     birthday: '',
     imageURL: '',
-    phone: '',
-    address: '',
+    // Note: phone and address removed - backend doesn't support these fields yet
   });
 
-  // Fetch users
+  // Fetch users, all users for stats, and total count
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const data = await userService.getAll();
+      const [data, allData, count] = await Promise.all([
+        userService.getAll(currentPage, pageSize), // Paginated data
+        userService.getAllForStats(), // All users for stats
+        userService.getCount(), // Total count
+      ]);
       setUsers(data);
+      setAllUsers(allData);
+      setTotalCount(count);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      console.error("Error fetching users:", error);
+      toast.error("Failed to load users. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +75,14 @@ const Users: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, roleFilter, statusFilter]);
 
   // Filter users
   const filteredUsers = users.filter((user) => {
@@ -82,14 +98,14 @@ const Users: React.FC = () => {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  // Stats
+  // Stats calculated from ALL users (not just current page)
   const stats = {
-    total: users.length,
-    active: users.filter(u => u.isActive).length,
-    admins: users.filter(u => u.role === 'ADMIN').length,
-    managers: users.filter(u => u.role === 'MANAGER').length,
-    employees: users.filter(u => u.role === 'EMPLOYEE').length,
-    customers: users.filter(u => u.role === 'USER').length,
+    total: allUsers.length,
+    active: allUsers.filter(u => u.isActive).length,
+    admins: allUsers.filter(u => u.role === 'ADMIN').length,
+    managers: allUsers.filter(u => u.role === 'MANAGER').length,
+    employees: allUsers.filter(u => u.role === 'EMPLOYEE').length,
+    customers: allUsers.filter(u => u.role === 'USER').length,
   };
 
   // Handle create/edit
@@ -175,8 +191,6 @@ const Users: React.FC = () => {
       isActive: user.isActive,
       birthday: '',
       imageURL: user.avatar || '',
-      phone: user.phone || '',
-      address: user.address || '',
     });
     setDialogOpen(true);
   };
@@ -191,8 +205,6 @@ const Users: React.FC = () => {
       isActive: true,
       birthday: '',
       imageURL: '',
-      phone: '',
-      address: '',
     });
     setDialogOpen(true);
   };
@@ -208,8 +220,6 @@ const Users: React.FC = () => {
       isActive: true,
       birthday: '',
       imageURL: '',
-      phone: '',
-      address: '',
     });
   };
 
@@ -346,9 +356,9 @@ const Users: React.FC = () => {
       <Card className="bg-white border-gray-200">
         <CardHeader className="border-b border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl text-gray-900">All Users ({filteredUsers.length})</CardTitle>
+            <CardTitle className="text-xl text-gray-900">All Users ({allUsers.length})</CardTitle>
             <div className="text-sm text-gray-600">
-              Showing {filteredUsers.length} of {users.length} users
+              Showing {users.length} of {allUsers.length} users (Page {currentPage})
             </div>
           </div>
         </CardHeader>
@@ -417,24 +427,17 @@ const Users: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-gray-900">
+                        {/* Note: Backend UserResponse doesn't include phone/address fields yet */}
+                        {/* These will always show "Not provided" until backend adds these fields */}
                         <div className="space-y-1 text-sm">
-                          {user.phone ? (
-                            <div className="flex items-center gap-1 text-gray-700">
-                              <Phone className="h-3 w-3 text-gray-500" />
-                              {user.phone}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1 text-gray-500">
-                              <Phone className="h-3 w-3" />
-                              <span className="italic">Not provided</span>
-                            </div>
-                          )}
-                          {user.address && (
-                            <div className="flex items-center gap-1 text-gray-700">
-                              <MapPin className="h-3 w-3 text-gray-500" />
-                              <span className="truncate max-w-[200px]">{user.address}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <Phone className="h-3 w-3" />
+                            <span className="italic">Not available</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <MapPin className="h-3 w-3" />
+                            <span className="italic">Not available</span>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-gray-900">
@@ -519,6 +522,68 @@ const Users: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {!loading && filteredUsers.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing page {currentPage} of {Math.ceil(totalCount / pageSize)} 
+                <span className="ml-2">({totalCount} total users)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="border-gray-300"
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, Math.ceil(totalCount / pageSize)) }, (_, i) => {
+                    const totalPages = Math.ceil(totalCount / pageSize);
+                    let pageNum;
+                    
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={currentPage === pageNum ? "bg-black text-white" : "border-gray-300"}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
+                  disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                  className="border-gray-300"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -675,7 +740,7 @@ const Users: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  {/* <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex gap-3">
                       <div className="text-blue-600 mt-0.5">ℹ️</div>
                       <div className="space-y-1">
@@ -687,7 +752,7 @@ const Users: React.FC = () => {
                         </ul>
                       </div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </>
             )}

@@ -29,18 +29,24 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
   // Get the current page path to redirect back after login
   const currentPath = location.pathname + location.search;
 
-  // Helper function to redirect after login - only redirect if accessing wrong area
+  // Helper function to redirect after login based on user role
   const redirectAfterLogin = (role: string) => {
-    // Only redirect if user is trying to access area they shouldn't be in
-    // Member trying to access admin area -> redirect to member dashboard
-    if (role === 'member' && currentPath.startsWith('/admin')) {
-      navigate("/");
-    }
-    // Admin trying to access member area -> redirect to admin dashboard
-    else if (role === 'admin' && currentPath.startsWith('/member')) {
+    if (role === 'admin') {
+      // Admin always goes to admin dashboard
       navigate("/admin/dashboard");
+    } else if (role === 'manager') {
+      // Manager goes to manager dashboard
+      navigate("/manager/dashboard");
+    } else if (role === 'member') {
+      // Member goes to member dashboard
+      navigate("/member/dashboard");
+    } else {
+      // Guest stays on current page or goes to home
+      if (currentPath.startsWith('/admin') || currentPath.startsWith('/manager') || currentPath.startsWith('/member')) {
+        navigate("/");
+      }
+      // Otherwise stay on current page (public pages)
     }
-    // Otherwise, stay on current page (public pages, or already in correct area)
   };
 
   // Close modal if already logged in

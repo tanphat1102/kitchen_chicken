@@ -49,9 +49,41 @@ class DailyMenuService {
     this.cache = new Map();
   }
 
-  async getAllDailyMenus(token?: string): Promise<DailyMenuItem[]> {
+  // Get all daily menus with pagination
+  async getAllDailyMenus(pageNumber: number = 1, size: number = 10, token?: string): Promise<DailyMenuItem[]> {
     try {
-      const cacheKey = `daily-all-${token || 'public'}`;
+      const { data: result } = await api.get<any>(
+        API_ENDPOINTS.DAILY_MENU,
+        {
+          params: { pageNumber, size },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        }
+      );
+
+      const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+      const arr: any[] = Array.isArray(raw) ? raw : [];
+
+      const transformed: DailyMenuItem[] = arr.map((m: any) => ({
+        id: m?.id,
+        menuDate: m?.menuDate,
+        createdAt: m?.createdAt ?? '',
+        storeList: [],
+        itemList: [],
+      }));
+
+      return transformed;
+    } catch (error: any) {
+      console.error('Error fetching daily menus:', error);
+      const status = error?.response?.status ?? error?.status;
+      if (status) throw this.handleHttpError(status);
+      throw this.handleApiError(error);
+    }
+  }
+
+  // Get all daily menus for stats (no pagination)
+  async getAllDailyMenusForStats(token?: string): Promise<DailyMenuItem[]> {
+    try {
+      const cacheKey = `daily-all-stats-${token || 'public'}`;
       const cached = this.getFromCache(cacheKey);
       if (cached) {
         return cached;
@@ -59,7 +91,10 @@ class DailyMenuService {
 
       const { data: result } = await api.get<any>(
         API_ENDPOINTS.DAILY_MENU,
-        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+        {
+          params: { pageNumber: 1, size: 1000 },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {})
+        }
       );
 
       const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
@@ -76,9 +111,25 @@ class DailyMenuService {
       this.setCache(cacheKey, transformed);
       return transformed;
     } catch (error: any) {
-      console.error('Error fetching daily menus:', error);
+      console.error('Error fetching daily menus for stats:', error);
       const status = error?.response?.status ?? error?.status;
       if (status) throw this.handleHttpError(status);
+      throw this.handleApiError(error);
+    }
+  }
+
+  // Get total count
+  async getCount(token?: string): Promise<number> {
+    try {
+      const { data: result } = await api.get<any>(
+        `${API_ENDPOINTS.DAILY_MENU}/counts`,
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      );
+
+      const data = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
+      return data?.total ?? 0;
+    } catch (error: any) {
+      console.error('Error fetching daily menu count:', error);
       throw this.handleApiError(error);
     }
   }
@@ -131,7 +182,7 @@ class DailyMenuService {
 
   async getDailyMenuByDate(date: Date | string, token?: string): Promise<DailyMenuItem | null> {
     try {
-      const allMenus = await this.getAllDailyMenus(token);
+      const allMenus = await this.getAllDailyMenusForStats(token);
 
       let targetDate: string;
       if (date instanceof Date) {

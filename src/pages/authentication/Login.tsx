@@ -14,17 +14,26 @@ const Login: React.FC = () => {
   const googleLoginMutation = useGoogleLogin();
   const githubLoginMutation = useGithubLogin();
 
-  // Redirect if already logged in
+  // Redirect if already logged in based on role
   React.useEffect(() => {
     if (currentUser) {
-      navigate("/dashboard");
+      if (currentUser.role === 'admin') {
+        navigate("/admin/dashboard");
+      } else if (currentUser.role === 'manager') {
+        navigate("/manager/dashboard");
+      } else if (currentUser.role === 'member') {
+        navigate("/member/dashboard");
+      } else {
+        navigate("/");
+      }
     }
   }, [currentUser, navigate]);
 
   const handleGoogleLogin = async () => {
     googleLoginMutation.mutate(undefined, {
       onSuccess: () => {
-        navigate("/dashboard");
+        // Redirect will be handled by useEffect when currentUser updates
+        // Role is determined by AuthContext after login
       }
     });
   };
@@ -32,7 +41,8 @@ const Login: React.FC = () => {
   const handleGithubLogin = async () => {
     githubLoginMutation.mutate(undefined, {
       onSuccess: () => {
-        navigate("/dashboard");
+        // Redirect will be handled by useEffect when currentUser updates
+        // Role is determined by AuthContext after login
       }
     });
   };

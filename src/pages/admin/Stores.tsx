@@ -19,29 +19,41 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { 
   getAllStores,
+  getAllStoresForStats,
   createStore,
   updateStore,
   toggleStoreStatus,
   deleteStore,
+  getStoreCount,
   type Store, 
   type CreateStoreDto 
 } from "@/services/storeService";
 import { StoreDialog } from "@/components/admin/StoreDialog";
 
 export default function Stores() {
-  const [stores, setStores] = useState<Store[]>([]);
+  const [stores, setStores] = useState<Store[]>([]); // Current page stores
+  const [allStores, setAllStores] = useState<Store[]>([]); // All stores for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(9); // 9 stores per page (3x3 grid)
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
 
-  // Fetch stores
+  // Fetch stores, all stores for stats, and total count
   const fetchStores = async () => {
     try {
       setIsLoading(true);
-      const data = await getAllStores();
+      const [data, allData, count] = await Promise.all([
+        getAllStores(currentPage, pageSize), // Paginated data
+        getAllStoresForStats(), // All stores for stats
+        getStoreCount(), // Total count
+      ]);
       setStores(data);
+      setAllStores(allData);
+      setTotalCount(count);
     } catch (error) {
       console.error("Error fetching stores:", error);
       alert("Failed to load stores. Please try again.");
@@ -52,7 +64,14 @@ export default function Stores() {
 
   useEffect(() => {
     fetchStores();
-  }, []);
+  }, [currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchQuery, statusFilter]);
 
   // Filter stores based on search and status
   const filteredStores = stores.filter((store) => {
@@ -154,9 +173,9 @@ export default function Stores() {
             <StoreIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stores.length}</div>
+            <div className="text-2xl font-bold">{allStores.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              All registered locations
+              All registered locations in database
             </p>
           </CardContent>
         </Card>
@@ -168,7 +187,7 @@ export default function Stores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-black">
-              {stores.filter(s => s.isActive).length}
+              {allStores.filter(s => s.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Currently operating
@@ -183,7 +202,7 @@ export default function Stores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
-              {stores.filter(s => !s.isActive).length}
+              {allStores.filter(s => !s.isActive).length}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Temporarily closed
@@ -198,7 +217,7 @@ export default function Stores() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-black">
-              {stores.filter((s) => {
+              {allStores.filter((s) => {
                 const daysDiff = Math.floor(
                   (Date.now() - new Date(s.createAt).getTime()) / (1000 * 60 * 60 * 24)
                 );
@@ -309,6 +328,68 @@ export default function Stores() {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {!isLoading && filteredStores.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing page {currentPage} of {Math.ceil(totalCount / pageSize)} 
+                <span className="ml-2">({totalCount} total stores)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="border-gray-300"
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, Math.ceil(totalCount / pageSize)) }, (_, i) => {
+                    const totalPages = Math.ceil(totalCount / pageSize);
+                    let pageNum;
+                    
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={currentPage === pageNum ? "bg-black text-white" : "border-gray-300"}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
+                  disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                  className="border-gray-300"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Store Dialog */}
       <StoreDialog

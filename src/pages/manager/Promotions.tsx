@@ -33,11 +33,15 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
 const Promotions: React.FC = () => {
-  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]); // Current page
+  const [allPromotions, setAllPromotions] = useState<Promotion[]>([]); // All for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
   const [formData, setFormData] = useState({
@@ -51,12 +55,18 @@ const Promotions: React.FC = () => {
     quantity: '', // Changed from quantityLimit to match backend
   });
 
-  // Fetch promotions
+  // Fetch promotions with pagination and stats
   const fetchPromotions = async () => {
     try {
       setLoading(true);
-      const data = await promotionService.getAll();
+      const [data, allData, count] = await Promise.all([
+        promotionService.getAll(currentPage, pageSize),
+        promotionService.getAllForStats(),
+        promotionService.getCount(),
+      ]);
       setPromotions(data);
+      setAllPromotions(allData);
+      setTotalCount(count);
     } catch (error) {
       console.error('Error fetching promotions:', error);
       toast.error('Failed to load promotions');
@@ -67,9 +77,9 @@ const Promotions: React.FC = () => {
 
   useEffect(() => {
     fetchPromotions();
-  }, []);
+  }, [currentPage]);
 
-  // Filter promotions
+  // Filter promotions (only from current page)
   const filteredPromotions = promotions.filter((promo) => {
     const matchesSearch = promo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          promo.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -80,13 +90,23 @@ const Promotions: React.FC = () => {
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  // Stats
+  // Stats calculated from ALL promotions
   const stats = {
-    total: promotions.length,
-    active: promotions.filter(p => p.isActive).length,
-    inactive: promotions.filter(p => !p.isActive).length,
-    totalUsage: promotions.reduce((sum, p) => sum + (p.usedCount || 0), 0),
+    total: allPromotions.length,
+    active: allPromotions.filter(p => p.isActive).length,
+    inactive: allPromotions.filter(p => !p.isActive).length,
+    totalUsage: allPromotions.reduce((sum, p) => sum + (p.usedCount || 0), 0),
   };
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    if ((searchTerm || filterStatus !== 'all' || filterType !== 'all') && currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, filterStatus, filterType]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -262,14 +282,14 @@ const Promotions: React.FC = () => {
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
-            <TrendingUp className="h-8 w-8 text-black" />
+            <TrendingUp className="h-8 w-8 text-gray-900" />
             <span>Promotions</span>
           </h1>
           <p className="text-sm text-gray-600 mt-1">
             Create and manage promotional campaigns
           </p>
         </div>
-        <Button onClick={handleCreate} className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white">
+        <Button onClick={handleCreate} className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800 text-white">
           <Plus className="h-4 w-4" />
           <span>Create Promotion</span>
         </Button>
@@ -277,39 +297,39 @@ const Promotions: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Promotions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Active</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.active}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-gray-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Inactive</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.inactive}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500">
+        <Card className="border-l-4 border-l-gray-900">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Usage</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.totalUsage}</div>
+            <div className="text-2xl font-bold text-gray-900">{stats.totalUsage}</div>
             <p className="text-xs text-muted-foreground mt-1">Times used</p>
           </CardContent>
         </Card>
@@ -356,7 +376,10 @@ const Promotions: React.FC = () => {
       {/* Promotions Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Promotions ({filteredPromotions.length})</CardTitle>
+          <CardTitle>All Promotions ({allPromotions.length})</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Showing {promotions.length} of {allPromotions.length} promotions (Page {currentPage})
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -397,11 +420,11 @@ const Promotions: React.FC = () => {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {promo.discountType === 'PERCENT' ? (
-                          <Percent className="h-4 w-4 text-green-600" />
+                          <Percent className="h-4 w-4 text-gray-900" />
                         ) : (
-                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <DollarSign className="h-4 w-4 text-gray-900" />
                         )}
-                        <span className="font-bold text-green-600 text-lg">
+                        <span className="font-bold text-gray-900 text-lg">
                           {formatDiscount(promo)}
                         </span>
                       </div>
@@ -431,7 +454,7 @@ const Promotions: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       {isPromotionValid(promo) ? (
-                        <Badge className="bg-green-100 text-green-700 border-green-200">
+                        <Badge className="bg-gray-100 text-gray-700 border-gray-200">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Active & Valid
                         </Badge>
@@ -483,6 +506,34 @@ const Promotions: React.FC = () => {
             </Table>
           )}
         </CardContent>
+        {/* Pagination */}
+        {!loading && filteredPromotions.length > 0 && (
+          <CardContent className="border-t pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing {promotions.length} of {allPromotions.length} promotions (Page {currentPage} of {totalPages})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       {/* Create/Edit Dialog */}

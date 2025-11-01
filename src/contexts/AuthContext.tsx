@@ -66,7 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         if (roleFromToken === 'ADMIN') {
           role = 'admin';
-        } else if (roleFromToken === 'MANAGER' || roleFromToken === 'USER') {
+        } else if (roleFromToken === 'MANAGER') {
+          role = 'manager';
+        } else if (roleFromToken === 'USER') {
           role = 'member';
         } else {
           role = 'guest';
@@ -111,7 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Map backend role to frontend role
           if (roleFromToken === 'ADMIN') {
             role = 'admin';
-          } else if (roleFromToken === 'MANAGER' || roleFromToken === 'USER') {
+          } else if (roleFromToken === 'MANAGER') {
+            role = 'manager';
+          } else if (roleFromToken === 'USER') {
             role = 'member';
           } else {
             role = 'guest';
