@@ -51,7 +51,10 @@ const DailyMenuBuilder: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [stores, setStores] = useState<StoreLocation[]>([]);
   const [dailyMenus, setDailyMenus] = useState<DailyMenuDetail[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(format(addDays(startOfToday(), 1), 'yyyy-MM-dd'));
   const [selectedStores, setSelectedStores] = useState<number[]>([]);
@@ -61,7 +64,7 @@ const DailyMenuBuilder: React.FC = () => {
   // Fetch menu items
   const fetchMenuItems = async () => {
     try {
-      const response = await menuItemService.getAll();
+      const response = await menuItemService.getAllForStats();
       setMenuItems(response.filter((item: MenuItem) => item.isActive));
     } catch (error) {
       console.error('Error fetching menu items:', error);
@@ -72,7 +75,7 @@ const DailyMenuBuilder: React.FC = () => {
   // Fetch stores
   const fetchStores = async () => {
     try {
-      const response = await storeService.getAll();
+      const response = await storeService.getAllForStats();
       setStores(response.filter((store: StoreLocation) => store.isActive));
     } catch (error) {
       console.error('Error fetching stores:', error);
@@ -80,11 +83,15 @@ const DailyMenuBuilder: React.FC = () => {
     }
   };
 
-  // Fetch daily menus
+  // Fetch daily menus with pagination
   const fetchDailyMenus = async () => {
     try {
       setLoading(true);
-      const menus = await dailyMenuService.getAllDailyMenus();
+      const [menus, count] = await Promise.all([
+        dailyMenuService.getAllDailyMenus(currentPage, pageSize),
+        dailyMenuService.getCount(),
+      ]);
+      setTotalCount(count);
       
       // Fetch details for each menu
       const detailedMenus = await Promise.all(
@@ -147,8 +154,14 @@ const DailyMenuBuilder: React.FC = () => {
   useEffect(() => {
     fetchMenuItems();
     fetchStores();
-    fetchDailyMenus();
   }, []);
+
+  useEffect(() => {
+    fetchDailyMenus();
+  }, [currentPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   // Group menu items by category
   const menuItemsByCategory = menuItems.reduce((acc, item) => {
@@ -310,7 +323,7 @@ const DailyMenuBuilder: React.FC = () => {
       </div>
 
       {/* Info Card */}
-      <Card className="border-l-4 border-l-purple-500 bg-purple-50">
+      {/* <Card className="border-l-4 border-l-purple-500 bg-purple-50">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-purple-600 mt-0.5" />
@@ -326,7 +339,7 @@ const DailyMenuBuilder: React.FC = () => {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Daily Menus List */}
       <div className="space-y-6">
@@ -411,6 +424,37 @@ const DailyMenuBuilder: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && sortedDates.length > 0 && totalPages > 1 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages} (Total: {totalCount} menus)
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

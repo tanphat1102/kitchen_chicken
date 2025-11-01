@@ -22,10 +22,18 @@ export interface UpdatePaymentMethodRequest {
 }
 
 export const paymentMethodService = {
-  // Get all payment methods
-  getAll: async (): Promise<PaymentMethod[]> => {
+  // Get all payment methods with pagination support
+  getAll: async (pageNumber: number = 1, pageSize: number = 10): Promise<PaymentMethod[]> => {
     const response = await api.get<ApiResponse<PaymentMethod[]>>(
-      "/api/transaction/payment-method",
+      `/api/transaction/payment-method?size=${pageSize}&pageNumber=${pageNumber}`,
+    );
+    return response.data.data;
+  },
+
+  // Get ALL payment methods (no pagination) for stats calculation
+  getAllForStats: async (): Promise<PaymentMethod[]> => {
+    const response = await api.get<ApiResponse<PaymentMethod[]>>(
+      "/api/transaction/payment-method?size=1000&pageNumber=1",
     );
     return response.data.data;
   },
@@ -78,5 +86,13 @@ export const paymentMethodService = {
   // Delete payment method (Admin only)
   delete: async (id: number): Promise<void> => {
     await api.delete(`/api/transaction/payment-method/${id}`);
+  },
+
+  // Get total count of payment methods
+  getCount: async (): Promise<number> => {
+    const response = await api.get<ApiResponse<{ total: number }>>(
+      "/api/transaction/payment-method/counts",
+    );
+    return response.data.data.total;
   },
 };

@@ -7,9 +7,11 @@ import type {
 import { api } from "./api";
 
 export const userService = {
-  // Get all users
-  getAll: async (): Promise<User[]> => {
-    const response = await api.get<ApiResponse<any[]>>("/api/users");
+  // Get all users with pagination support
+  getAll: async (pageNumber: number = 1, pageSize: number = 10): Promise<User[]> => {
+    const response = await api.get<ApiResponse<any[]>>(
+      `/api/users?size=${pageSize}&pageNumber=${pageNumber}`
+    );
     // Convert backend response to frontend format
     return response.data.data.map((user: any) => ({
       id: user.id.toString(),
@@ -23,6 +25,34 @@ export const userService = {
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     }));
+  },
+
+  // Get ALL users (no pagination) for stats calculation
+  getAllForStats: async (): Promise<User[]> => {
+    const response = await api.get<ApiResponse<any[]>>(
+      "/api/users?size=1000&pageNumber=1" // Fetch max 1000 users for stats
+    );
+    // Convert backend response to frontend format
+    return response.data.data.map((user: any) => ({
+      id: user.id.toString(),
+      email: user.email,
+      displayName: user.fullName,
+      role: user.roles,
+      isActive: user.isActive,
+      isVerified: true,
+      phone: user.phone || "",
+      address: user.address || "",
+      avatar: user.imageURL,
+      createdAt: user.createdAt || "",
+    }));
+  },
+
+  // Get total count of users
+  getCount: async (): Promise<number> => {
+    const response = await api.get<ApiResponse<{ total: number }>>(
+      "/api/users/counts",
+    );
+    return response.data.data.total;
   },
 
   // Get user by ID

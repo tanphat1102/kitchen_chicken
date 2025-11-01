@@ -43,27 +43,27 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
 
   // 🚧 TEMPORARY: Authentication check disabled for UI development
   // TODO: Re-enable this after UI development is complete
-  /* 
+   
   // Check if user's role is allowed to access this route
-  if (!allowedRoles.includes(userRole)) {
-    console.warn('🚫 Access denied to', location.pathname, '- User role:', userRole, '- Required:', allowedRoles);
+  // if (!allowedRoles.includes(userRole)) {
+  //   console.warn('🚫 Access denied to', location.pathname, '- User role:', userRole, '- Required:', allowedRoles);
     
-    // Redirect based on user role
-    if (userRole === 'guest') {
-      // Guest users should see login modal or be redirected to home
-      return <Navigate to="/" state={{ from: location, showLogin: true }} replace />;
-    } else if (userRole === 'member') {
-      // Members should be redirected to member dashboard
-      return <Navigate to="/member/dashboard" replace />;
-    } else if (userRole === 'admin') {
-      // Admins should be redirected to admin dashboard
-      return <Navigate to="/admin/dashboard" replace />;
-    } else {
-      // Fallback redirect
-      return <Navigate to={fallbackPath} replace />;
-    }
-  }
-  */
+  //   // Redirect based on user role
+  //   if (userRole === 'guest') {
+  //     // Guest users should see login modal or be redirected to home
+  //     return <Navigate to="/" state={{ from: location, showLogin: true }} replace />;
+  //   } else if (userRole === 'member') {
+  //     // Members should be redirected to member dashboard
+  //     return <Navigate to="/member/dashboard" replace />;
+  //   } else if (userRole === 'admin') {
+  //     // Admins should be redirected to admin dashboard
+  //     return <Navigate to="/admin/dashboard" replace />;
+  //   } else {
+  //     // Fallback redirect
+  //     return <Navigate to={fallbackPath} replace />;
+  //   }
+  // }
+  
 
   console.log('✅ Access granted to', location.pathname, '- User role:', userRole);
   return <>{children}</>;

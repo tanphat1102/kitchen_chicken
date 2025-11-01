@@ -32,10 +32,14 @@ import { paymentMethodService, type PaymentMethod } from '@/services/paymentMeth
 import toast from 'react-hot-toast';
 
 const PaymentMethods: React.FC = () => {
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]); // Current page
+  const [allPaymentMethods, setAllPaymentMethods] = useState<PaymentMethod[]>([]); // All for stats
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null);
   const [formData, setFormData] = useState({
@@ -44,12 +48,18 @@ const PaymentMethods: React.FC = () => {
     isActive: false,
   });
 
-  // Fetch payment methods
+  // Fetch payment methods, all methods for stats, and total count
   const fetchPaymentMethods = async () => {
     try {
       setLoading(true);
-      const data = await paymentMethodService.getAll();
+      const [data, allData, count] = await Promise.all([
+        paymentMethodService.getAll(currentPage, pageSize), // Paginated
+        paymentMethodService.getAllForStats(), // All for stats
+        paymentMethodService.getCount(), // Total count
+      ]);
       setPaymentMethods(data);
+      setAllPaymentMethods(allData);
+      setTotalCount(count);
     } catch (error) {
       console.error('Error fetching payment methods:', error);
       toast.error('Failed to load payment methods');
@@ -60,7 +70,14 @@ const PaymentMethods: React.FC = () => {
 
   useEffect(() => {
     fetchPaymentMethods();
-  }, []);
+  }, [currentPage, pageSize]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, statusFilter]);
 
   // Filter payment methods
   const filteredMethods = paymentMethods.filter((method) => {
@@ -73,11 +90,11 @@ const PaymentMethods: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Stats
+  // Stats calculated from ALL payment methods (not just current page)
   const stats = {
-    total: paymentMethods.length,
-    active: paymentMethods.filter(m => m.isActive).length,
-    inactive: paymentMethods.filter(m => !m.isActive).length,
+    total: allPaymentMethods.length,
+    active: allPaymentMethods.filter(m => m.isActive).length,
+    inactive: allPaymentMethods.filter(m => !m.isActive).length,
   };
 
   // Handle create/edit
@@ -261,7 +278,10 @@ const PaymentMethods: React.FC = () => {
       {/* Payment Methods Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Payment Methods ({filteredMethods.length})</CardTitle>
+          <CardTitle>All Payment Methods ({allPaymentMethods.length})</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Showing {paymentMethods.length} of {allPaymentMethods.length} payment methods (Page {currentPage})
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -410,6 +430,68 @@ const PaymentMethods: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pagination */}
+      {!loading && filteredMethods.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Showing page {currentPage} of {Math.ceil(totalCount / pageSize)} 
+                <span className="ml-2">({totalCount} total payment methods)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="border-gray-300"
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, Math.ceil(totalCount / pageSize)) }, (_, i) => {
+                    const totalPages = Math.ceil(totalCount / pageSize);
+                    let pageNum;
+                    
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={currentPage === pageNum ? "bg-black text-white" : "border-gray-300"}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / pageSize), prev + 1))}
+                  disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                  className="border-gray-300"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

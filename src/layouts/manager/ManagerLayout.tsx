@@ -56,7 +56,7 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
     try {
       await signOut();
       toast.success('Logged out successfully');
-      navigate('/login');
+      navigate('/'); // Redirect to home page
     } catch (error) {
       toast.error('Failed to logout');
     }
