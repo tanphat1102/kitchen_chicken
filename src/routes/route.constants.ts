@@ -16,6 +16,9 @@ export const APP_ROUTES = {
   RESTAURANTS: "/restaurants",
   CUSTOM_ORDER: "/custom-order",
   CART: "/cart",
+  PAYMENT_CALLBACK: "/payment/callback",
+  VNPAY_RETURN: "/vnpay-payment-result", // VNPay return URL
+  ORDER_HISTORY: "/orders/history",
 } as const;
 
 // Admin routes

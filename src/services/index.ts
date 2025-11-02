@@ -22,6 +22,8 @@ export {
 export { ingredientService } from "./ingredientService";
 export { nutrientService } from "./nutrientService";
 export { orderCustomerService } from "./orderCustomerService";
+export { orderEmployeeService } from "./orderEmployeeService";
+export { orderPaymentService } from "./orderPaymentService";
 export { paymentMethodService } from "./paymentMethodService";
 export { promotionService } from "./promotionService";
 export { stepService } from "./stepService";
@@ -50,6 +52,10 @@ export type {
   StepSelection,
   UpdateDishRequest,
 } from "./orderCustomerService";
+export type {
+  OrderConfirmRequest,
+  OrderConfirmResponse,
+} from "./orderPaymentService";
 export type {
   CreatePaymentMethodRequest,
   PaymentMethod,
