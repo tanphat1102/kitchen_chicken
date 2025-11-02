@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useProfileLogic } from '@/hooks/useProfileLogic';
 
-export const AdminProfile: React.FC = () => {
+export const ManagerProfile: React.FC = () => {
   const {
     profile,
     isLoading,
@@ -259,4 +259,4 @@ export const AdminProfile: React.FC = () => {
   );
 };
 
-export default AdminProfile;
+export default ManagerProfile;
