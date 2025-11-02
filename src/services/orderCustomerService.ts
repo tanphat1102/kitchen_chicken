@@ -4,6 +4,7 @@ import api from "@/config/axios";
 
 export interface OrderDish {
   id: number;
+  dishId: number; // Backend returns this field
   menuItemId: number;
   menuItemName: string;
   quantity: number;
@@ -24,7 +25,7 @@ export interface DishSelection {
 }
 
 export interface Order {
-  id: number;
+  orderId: number;
   storeId: number;
   storeName: string;
   userId: number;
