@@ -60,21 +60,29 @@ class DailyMenuService {
         }
       );
 
+      // Backend returns: { statusCode, message, data: DailyMenuResponse[] }
       const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
       const arr: any[] = Array.isArray(raw) ? raw : [];
 
       const transformed: DailyMenuItem[] = arr.map((m: any) => ({
         id: m?.id,
-        menuDate: m?.menuDate,
-        createdAt: m?.createdAt ?? '',
-        storeList: [],
-        itemList: [],
+        menuDate: m?.menuDate ? String(m.menuDate) : '', // Convert Timestamp to string
+        createdAt: '', // Summary response doesn't have createdAt
+        storeList: [], // Summary response doesn't have storeList
+        itemList: [], // Summary response doesn't have itemList
       }));
 
       return transformed;
     } catch (error: any) {
       console.error('Error fetching daily menus:', error);
       const status = error?.response?.status ?? error?.status;
+      
+      // If 404, return empty array instead of throwing (no data in database yet)
+      if (status === 404) {
+        console.warn('Daily menu endpoint returned 404 - Database may be empty or endpoint not deployed');
+        return [];
+      }
+      
       if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
@@ -97,15 +105,16 @@ class DailyMenuService {
         }
       );
 
+      // Backend returns: { statusCode, message, data: DailyMenuResponse[] }
       const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
       const arr: any[] = Array.isArray(raw) ? raw : [];
 
       const transformed: DailyMenuItem[] = arr.map((m: any) => ({
         id: m?.id,
-        menuDate: m?.menuDate,
-        createdAt: m?.createdAt ?? '',
-        storeList: [],
-        itemList: [],
+        menuDate: m?.menuDate ? String(m.menuDate) : '', // Convert Timestamp to string
+        createdAt: '', // Summary response doesn't have createdAt
+        storeList: [], // Summary response doesn't have storeList
+        itemList: [], // Summary response doesn't have itemList
       }));
 
       this.setCache(cacheKey, transformed);
@@ -113,6 +122,13 @@ class DailyMenuService {
     } catch (error: any) {
       console.error('Error fetching daily menus for stats:', error);
       const status = error?.response?.status ?? error?.status;
+      
+      // If 404, return empty array instead of throwing
+      if (status === 404) {
+        console.warn('Daily menu endpoint returned 404 - Database may be empty');
+        return [];
+      }
+      
       if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
@@ -141,11 +157,14 @@ class DailyMenuService {
         token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
       );
 
+      // Backend returns: { statusCode, message, data: DailyMenuDetailResponse }
       const raw = (result && typeof result === 'object' && 'data' in result) ? (result as any).data : result;
       if (!raw) return null;
 
+      // Backend structure: categoryList with items inside each category
       const categoryList: any[] = Array.isArray(raw?.categoryList) ? raw.categoryList : [];
       const flatItems: DailyMenuFoodItem[] = [];
+      
       for (const cat of categoryList) {
         const items: any[] = Array.isArray(cat?.items) ? cat.items : [];
         for (const it of items) {
@@ -166,8 +185,8 @@ class DailyMenuService {
 
       const detailed: DailyMenuItem = {
         id: raw?.id,
-        menuDate: raw?.menuDate,
-        createdAt: raw?.createdAt ?? '',
+        menuDate: raw?.menuDate ? String(raw.menuDate) : '', // Convert Timestamp to string
+        createdAt: raw?.createdAt ? String(raw.createdAt) : '', // Convert Timestamp to string
         storeList: Array.isArray(raw?.storeList) ? raw.storeList : [],
         itemList: flatItems,
       };
@@ -381,7 +400,7 @@ class DailyMenuService {
         message = 'You do not have permission to access daily menus.';
         break;
     case 404:
-        message = 'Daily menus not found.';
+        message = 'No daily menus found. The database may be empty or the endpoint is not yet deployed.';
         break;
     case 500:
         message = 'Server error. Please try again later.';

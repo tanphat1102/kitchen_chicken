@@ -25,6 +25,7 @@ import Stores from "@/pages/admin/Stores";
 import Users from "@/pages/admin/Users";
 import Transactions from "@/pages/admin/Transactions";
 import PaymentMethods from "@/pages/admin/PaymentMethods";
+import AdminProfile from "@/pages/admin/AdminProfile";
 
 // Admin layout
 import AdminLayout from "@/layouts/admin/AdminLayout";
@@ -38,12 +39,14 @@ import DailyMenu from "@/pages/manager/DailyMenu";
 import Orders from "@/pages/manager/Orders";
 import Promotions from "@/pages/manager/Promotions";
 import Reports from "@/pages/manager/Reports";
+import ManagerProfile from "@/pages/manager/ManagerProfile";
 
 // Manager layout
 import ManagerLayout from "@/layouts/manager/ManagerLayout";
 
 // Member pages
 import MemberDashboard from "@/pages/member/MemberDashboard";
+import Profile from "@/pages/member/Profile";
 
 import LocalStorageTest from "@/components/LocalStorageTest";
 import { useState } from "react";
@@ -97,6 +100,7 @@ export function AppRoutes() {
         <Route path="users" element={<Users />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="payment-methods" element={<PaymentMethods />} />
+        <Route path="profile" element={<AdminProfile />} />
       </Route>
 
       {/* Manager routes with layout */}
@@ -140,6 +144,7 @@ export function AppRoutes() {
           path={MANAGER_ROUTES.MANAGER_REPORTS} 
           element={<Reports />} 
         />
+        <Route path="profile" element={<ManagerProfile />} />
       </Route>
 
       {/* Member routes */}
@@ -148,6 +153,16 @@ export function AppRoutes() {
         element={
           <RoleBasedRoute allowedRoles={['member']}>
             <MemberDashboard />
+          </RoleBasedRoute>
+        } 
+      />
+
+      {/* Profile route - accessible by member and guest only */}
+      <Route 
+        path={MEMBER_ROUTES.MEMBER_PROFILE} 
+        element={
+          <RoleBasedRoute allowedRoles={['guest', 'member']}>
+            <Profile />
           </RoleBasedRoute>
         } 
       />

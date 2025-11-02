@@ -16,9 +16,10 @@ import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { managerSidebarData } from "./manager-sidebar-data";
-import { Bell, Search, Settings, LogOut, User, ChevronDown } from "lucide-react";
+import { Bell, Search, Settings, LogOut, User, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
+import { MANAGER_ROUTES } from "@/routes/route.constants";
 
 type ManagerLayoutProps = {
   children?: ReactNode;
@@ -60,6 +61,11 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
     } catch (error) {
       toast.error('Failed to logout');
     }
+  };
+
+  const handleGoHome = () => {
+    // Force full page reload to exit ManagerLayout completely
+    window.location.href = window.location.origin + '/';
   };
 
   return (
@@ -158,7 +164,11 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
                 <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200">
                   <DropdownMenuLabel className="text-gray-900">My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-200" />
-                  <DropdownMenuItem className="focus:bg-gray-100">
+                  <DropdownMenuItem onSelect={handleGoHome} className="focus:bg-gray-100 cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    HomePage
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => navigate(MANAGER_ROUTES.MANAGER_PROFILE)} className="focus:bg-gray-100 cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
@@ -167,7 +177,7 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
                     Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200" />
-                  <DropdownMenuItem onClick={handleLogout} className="text-black focus:bg-gray-100">
+                  <DropdownMenuItem onSelect={handleLogout} className="text-black focus:bg-gray-100 cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>

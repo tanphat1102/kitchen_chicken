@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaSearch, FaShoppingCart, FaUserAlt, FaSignInAlt } from "react-icons/fa";
 import LoginModal from '@/components/shared/LoginModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { APP_ROUTES } from '@/routes/route.constants';
+import { APP_ROUTES, MEMBER_ROUTES, ADMIN_ROUTES, MANAGER_ROUTES } from '@/routes/route.constants';
 
 import {
     DropdownMenu,
@@ -90,6 +90,20 @@ const handleLogout = async () => {
         // Otherwise stay on the current public page
     } catch (error) {
         console.error('Logout error:', error);
+    }
+};
+
+const handleDashboardClick = () => {
+    // Navigate to dashboard based on user role
+    if (currentUser?.role === 'admin') {
+        navigate(ADMIN_ROUTES.ADMIN_DASHBOARD);
+    } else if (currentUser?.role === 'manager') {
+        navigate(MANAGER_ROUTES.MANAGER_DASHBOARD);
+    } else if (currentUser?.role === 'member') {
+        navigate(MEMBER_ROUTES.MEMBER_DASHBOARD);
+    } else {
+        // Fallback for guest or undefined role
+        navigate(APP_ROUTES.HOME);
     }
 };
 
@@ -212,8 +226,12 @@ const handleLogout = async () => {
                         </motion.button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-48 border-gray-300">
-                        <DropdownMenuItem onClick={() => navigate('/dashboard')}>
-                            Profile
+                        <DropdownMenuItem onClick={() => navigate(MEMBER_ROUTES.MEMBER_PROFILE)}>
+                            My Profile
+                        </DropdownMenuItem>
+                        <div className="h-px bg-gray-200 my-1 -mx-1" />
+                        <DropdownMenuItem onClick={handleDashboardClick}>
+                            Dashboard
                         </DropdownMenuItem>
                         <div className="h-px bg-gray-200 my-1 -mx-1" />
                         <DropdownMenuItem>Payment</DropdownMenuItem>

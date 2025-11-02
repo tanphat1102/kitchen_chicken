@@ -262,3 +262,18 @@ export interface UpdateUserRequest {
   birthday?: string | null; // ISO date string, backend converts to LocalDate
   imageURL?: string | null;
 }
+
+// User Profile Types (for /api/users/me endpoints)
+export interface UserProfile {
+  fullName: string;
+  email: string; // Read-only, cannot be updated
+  birthday?: string; // ISO date string (YYYY-MM-DD)
+  createdAt: string; // Read-only
+  imageURL?: string;
+}
+
+export interface UpdateProfileRequest {
+  fullName?: string;
+  birthday?: string; // ISO date string (YYYY-MM-DD)
+  imageURL?: string;
+}

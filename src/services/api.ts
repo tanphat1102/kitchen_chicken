@@ -25,12 +25,10 @@ const createAxiosInstance = (): AxiosInstance => {
   instance.interceptors.request.use(
     async (config) => {
       try {
-        // TEMPORARY: Skip auth in development since backend endpoints are public
-        // TODO: Re-enable when backend security is configured
-        const currentUser = auth.currentUser;
-        if (currentUser) {
-          const token = await currentUser.getIdToken();
-          config.headers.Authorization = `Bearer ${token}`;
+        // Get JWT token from localStorage (set by authService after login)
+        const accessToken = localStorage.getItem('accessToken');
+        if (accessToken) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
         }
       } catch (error) {
         console.error("Error getting auth token:", error);
@@ -49,22 +47,26 @@ const createAxiosInstance = (): AxiosInstance => {
     async (error) => {
       const originalRequest = error.config;
 
-      // Handle 401 Unauthorized - Token expired
+      // Handle 401 Unauthorized - Token expired or invalid
       if (error.response?.status === 401 && !originalRequest._retry) {
         originalRequest._retry = true;
 
         try {
-          const currentUser = auth.currentUser;
-          if (currentUser) {
-            // Force refresh token
-            const newToken = await currentUser.getIdToken(true);
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return instance(originalRequest);
+          // Try to refresh token using refreshToken from localStorage
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (refreshToken) {
+            // TODO: Call backend refresh endpoint
+            // For now, just clear tokens and dispatch event
+            console.warn('⚠️ Token expired, clearing auth data');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userInfo');
+            
+            // Dispatch event to trigger login modal
+            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
           }
         } catch (refreshError) {
-          // Redirect to login if refresh fails
-          window.location.href = "/login";
-          return Promise.reject(refreshError);
+          console.error('Token refresh failed:', refreshError);
         }
       }
 

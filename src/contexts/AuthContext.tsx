@@ -171,14 +171,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Refresh user data (useful after login to get updated role)
   const refreshUser = async () => {
-    const currentFirebaseUser = auth.currentUser;
-    if (currentFirebaseUser) {
-      const authUser = await convertFirebaseUser(currentFirebaseUser);
-      setCurrentUser(authUser);
-    } else {
-      // Try loading from storage if Firebase user is not available
+    try {
+      // Force reload from localStorage to get updated JWT token with role
       const storedUser = loadUserFromStorage();
-      setCurrentUser(storedUser);
+      if (storedUser) {
+        setCurrentUser(storedUser);
+        return;
+      }
+
+      // Fallback: use Firebase user if storage is empty
+      const currentFirebaseUser = auth.currentUser;
+      if (currentFirebaseUser) {
+        const authUser = await convertFirebaseUser(currentFirebaseUser);
+        setCurrentUser(authUser);
+      } else {
+        setCurrentUser(null);
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing user:', error);
     }
   };
 
