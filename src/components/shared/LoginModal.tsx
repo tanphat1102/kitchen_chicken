@@ -37,9 +37,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
     } else if (role === 'manager') {
       // Manager goes to manager dashboard
       navigate("/manager/dashboard");
-    } else if (role === 'member') {
-      // Member goes to member dashboard
-      navigate("/member/dashboard");
     } else {
       // Guest stays on current page or goes to home
       if (currentPath.startsWith('/admin') || currentPath.startsWith('/manager') || currentPath.startsWith('/member')) {
