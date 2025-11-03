@@ -3,6 +3,8 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   User,
+  UserProfile,
+  UpdateProfileRequest,
 } from "@/types/api.types";
 import { api } from "./api";
 
@@ -189,5 +191,19 @@ export const userService = {
   // Delete user by ID (Admin only)
   delete: async (id: string): Promise<void> => {
     await api.delete(`/api/users/${id}`);
+  },
+
+  // ===================== PROFILE (Current User) =====================
+  
+  // Get current user profile (any authenticated user)
+  getMyProfile: async (): Promise<UserProfile> => {
+    const response = await api.get<ApiResponse<UserProfile>>("/api/users/me");
+    return response.data.data;
+  },
+
+  // Update current user profile (any authenticated user)
+  updateMyProfile: async (data: UpdateProfileRequest): Promise<UserProfile> => {
+    const response = await api.put<ApiResponse<UserProfile>>("/api/users/me", data);
+    return response.data.data;
   },
 };

@@ -9,7 +9,7 @@ import {
 import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { authService } from "@/services/authService";
+import { authService, type UserRole } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthErrorHandler } from "@/utils/authErrorHandler";
 import Logo from "@/assets/img/Logo.png";
@@ -29,6 +29,27 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
   // Get the current page path to redirect back after login
   const currentPath = location.pathname + location.search;
 
+  // Helper function to get role from JWT token
+  const getRoleFromToken = (): UserRole => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) return 'guest';
+
+      // Decode JWT token to get role
+      const payload = JSON.parse(atob(accessToken.split('.')[1]));
+      const roleFromToken = payload.role;
+      
+      // Map backend role to frontend role
+      if (roleFromToken === 'ADMIN') return 'admin';
+      if (roleFromToken === 'MANAGER') return 'manager';
+      if (roleFromToken === 'USER') return 'member';
+      return 'guest';
+    } catch (error) {
+      console.error('Error decoding JWT token:', error);
+      return 'guest';
+    }
+  };
+
   // Helper function to redirect after login based on user role
   const redirectAfterLogin = (role: string) => {
     if (role === 'admin') {
@@ -46,14 +67,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
     }
   };
 
-  // Close modal if already logged in
-  React.useEffect(() => {
-    if (currentUser) {
-      onOpenChange(false);
-      redirectAfterLogin(currentUser.role);
-    }
-  }, [currentUser, onOpenChange]);
-
   const handleGoogleLogin = async () => {
     setLoading(true);
     const loadingToast = AuthErrorHandler.showLoadingToast("Đang đăng nhập với Google...");
@@ -67,8 +80,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
       // Refresh user data in AuthContext to trigger immediate UI update
       await refreshUser();
       
-      // Close modal and let AuthContext handle the redirect
+      // Close modal first
       onOpenChange(false);
+      
+      // Get role directly from JWT token and redirect
+      setTimeout(() => {
+        const role = getRoleFromToken();
+        redirectAfterLogin(role);
+      }, 200);
     } catch (err: any) {
       // Dismiss loading toast immediately
       AuthErrorHandler.dismissToast(loadingToast);
@@ -104,8 +123,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
       // Refresh user data in AuthContext to trigger immediate UI update
       await refreshUser();
       
-      // Close modal and let AuthContext handle the redirect
+      // Close modal first
       onOpenChange(false);
+      
+      // Get role directly from JWT token and redirect
+      setTimeout(() => {
+        const role = getRoleFromToken();
+        redirectAfterLogin(role);
+      }, 200);
     } catch (err: any) {
       // Dismiss loading toast immediately
       AuthErrorHandler.dismissToast(loadingToast);
@@ -142,8 +167,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ open, onOpenChange }) => {
       // Refresh user data in AuthContext to trigger immediate UI update
       await refreshUser();
       
-      // Close modal and let AuthContext handle the redirect
+      // Close modal first
       onOpenChange(false);
+      
+      // Get role directly from JWT token and redirect
+      setTimeout(() => {
+        const role = getRoleFromToken();
+        redirectAfterLogin(role);
+      }, 200);
     } catch (err: any) {
       // Dismiss loading toast immediately
       AuthErrorHandler.dismissToast(loadingToast);

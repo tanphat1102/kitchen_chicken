@@ -29,6 +29,7 @@ export const ADMIN_ROUTES = {
   ADMIN_USERS: "/admin/users",
   ADMIN_TRANSACTIONS: "/admin/transactions",
   ADMIN_PAYMENT_METHODS: "/admin/payment-methods",
+  ADMIN_PROFILE: "/admin/profile",
 } as const;
 
 // Manager routes
@@ -41,6 +42,7 @@ export const MANAGER_ROUTES = {
   MANAGER_ORDERS: "/manager/orders",
   MANAGER_PROMOTIONS: "/manager/promotions",
   MANAGER_REPORTS: "/manager/reports",
+  MANAGER_PROFILE: "/manager/profile",
 } as const;
 
 // API endpoints
@@ -89,6 +91,8 @@ export const API_ROUTES = {
 // Member routes
 export const MEMBER_ROUTES = {
   MEMBER_DASHBOARD: "/member/dashboard",
+  MEMBER_PROFILE: "/profile",
+  MEMBER_PROFILE_DEBUG: "/profile-debug",
 } as const;
 
 // Route access levels

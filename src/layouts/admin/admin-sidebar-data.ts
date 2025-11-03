@@ -8,6 +8,7 @@ import {
   BarChart3,
   Shield,
   Database,
+  User,
 } from "lucide-react";
 
 export const sidebarData = {
@@ -51,6 +52,13 @@ export const sidebarData = {
       icon: Receipt,
       description: "Transaction history",
       badge: "New",
+    },
+    {
+      title: "Profile",
+      url: "/admin/profile",
+      icon: User,
+      description: "My profile settings",
+      badge: undefined,
     },
   ],
 };

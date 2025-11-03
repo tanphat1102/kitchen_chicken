@@ -129,7 +129,7 @@ const ManagerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-6 page-enter">
+    <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>

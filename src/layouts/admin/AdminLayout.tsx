@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { sidebarData } from "./admin-sidebar-data";
-import { Bell, Search, Settings, LogOut, User, ChevronDown } from "lucide-react";
+import { Bell, Search, Settings, LogOut, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 
@@ -60,6 +60,11 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
     } catch (error) {
       toast.error('Failed to logout');
     }
+  };
+
+  const handleGoHome = () => {
+    // Force full page reload to exit AdminLayout completely
+    window.location.href = window.location.origin + '/';
   };
 
   return (
@@ -164,16 +169,16 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
                 <DropdownMenuContent align="end" className="w-56 bg-white border-gray-200">
                   <DropdownMenuLabel className="text-gray-900">My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-gray-200" />
-                  <DropdownMenuItem className="focus:bg-gray-100">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
+                  <DropdownMenuItem onSelect={handleGoHome} className="focus:bg-gray-100 cursor-pointer">
+                    <Home className="mr-2 h-4 w-4" />
+                    HomePage
                   </DropdownMenuItem>
                   <DropdownMenuItem className="focus:bg-gray-100">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200" />
-                  <DropdownMenuItem onClick={handleLogout} className="text-black focus:bg-gray-100">
+                  <DropdownMenuItem onSelect={handleLogout} className="text-black focus:bg-gray-100 cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
