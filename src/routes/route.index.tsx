@@ -37,7 +37,7 @@ import ManagerDashboard from "@/pages/manager/ManagerDashboard";
 import MenuItems from "@/pages/manager/MenuItems";
 import Categories from "@/pages/manager/Categories";
 import Ingredients from "@/pages/manager/Ingredients";
-import DailyMenu from "@/pages/manager/DailyMenu";
+import Dishes from "@/pages/manager/Dishes";
 import Orders from "@/pages/manager/Orders";
 import Promotions from "@/pages/manager/Promotions";
 import Reports from "@/pages/manager/Reports";
@@ -137,8 +137,8 @@ export function AppRoutes() {
           element={<Ingredients />} 
         />
         <Route 
-          path={MANAGER_ROUTES.MANAGER_DAILY_MENU} 
-          element={<DailyMenu />} 
+          path={MANAGER_ROUTES.MANAGER_DISHES} 
+          element={<Dishes />} 
         />
         <Route 
           path={MANAGER_ROUTES.MANAGER_ORDERS} 

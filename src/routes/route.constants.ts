@@ -38,7 +38,7 @@ export const MANAGER_ROUTES = {
   MANAGER_MENU_ITEMS: "/manager/menu-items",
   MANAGER_CATEGORIES: "/manager/categories",
   MANAGER_INGREDIENTS: "/manager/ingredients",
-  MANAGER_DAILY_MENU: "/manager/daily-menu",
+  MANAGER_DISHES: "/manager/dishes",
   MANAGER_ORDERS: "/manager/orders",
   MANAGER_PROMOTIONS: "/manager/promotions",
   MANAGER_REPORTS: "/manager/reports",
@@ -189,9 +189,9 @@ export const ROUTE_METADATA = {
     description: "Quản lý kho nguyên liệu",
     access: ROUTE_ACCESS.ADMIN,
   },
-  [MANAGER_ROUTES.MANAGER_DAILY_MENU]: {
-    title: "Quản lý - Thực đơn hàng ngày",
-    description: "Quản lý thực đơn hàng ngày",
+  [MANAGER_ROUTES.MANAGER_DISHES]: {
+    title: "Quản lý - Món ăn mẫu",
+    description: "Quản lý món ăn có sẵn",
     access: ROUTE_ACCESS.ADMIN,
   },
   [MANAGER_ROUTES.MANAGER_ORDERS]: {
@@ -277,9 +277,9 @@ export const MANAGER_NAVIGATION_ITEMS = [
     icon: "Package",
   },
   {
-    path: MANAGER_ROUTES.MANAGER_DAILY_MENU,
-    label: "Thực đơn hàng ngày",
-    icon: "Calendar",
+    path: MANAGER_ROUTES.MANAGER_DISHES,
+    label: "Món ăn mẫu",
+    icon: "Utensils",
   },
   {
     path: MANAGER_ROUTES.MANAGER_ORDERS,
