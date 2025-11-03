@@ -4,10 +4,10 @@ import {
   ShoppingCart,
   Package,
   Tag,
-  Calendar,
   TrendingUp,
   BarChart3,
   User,
+  Utensils,
 } from "lucide-react";
 
 export const managerSidebarData = {
@@ -39,13 +39,6 @@ export const managerSidebarData = {
       badge: undefined,
     },
     {
-      title: "Daily Menu",
-      url: "/manager/daily-menu",
-      icon: Calendar,
-      description: "Daily offerings",
-      badge: undefined,
-    },
-    {
       title: "Orders",
       url: "/manager/orders",
       icon: ShoppingCart,
@@ -57,6 +50,13 @@ export const managerSidebarData = {
       url: "/manager/ingredients",
       icon: Package,
       description: "Inventory",
+      badge: undefined,
+    },
+    {
+      title: "Dishes",
+      url: "/manager/dishes",
+      icon: Utensils,
+      description: "Predefined dishes",
       badge: undefined,
     },
     {

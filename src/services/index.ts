@@ -19,6 +19,7 @@ export {
 } from "./storeService";
 
 // Export new services
+export { dishService } from "./dishService";
 export { ingredientService } from "./ingredientService";
 export { nutrientService } from "./nutrientService";
 export { orderCustomerService } from "./orderCustomerService";
@@ -28,6 +29,12 @@ export { stepService } from "./stepService";
 export { transactionService } from "./transactionService";
 
 // Export types
+export type {
+  Dish,
+  DishSearchResponse,
+  CreateDishRequest as CreateDishBaseRequest,
+  UpdateDishRequest as UpdateDishBaseRequest,
+} from "./dishService";
 export type {
   CreateIngredientRequest,
   Ingredient,
