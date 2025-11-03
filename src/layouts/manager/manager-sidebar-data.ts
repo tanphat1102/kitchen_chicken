@@ -7,7 +7,7 @@ import {
   Calendar,
   TrendingUp,
   BarChart3,
-  Settings,
+  User,
 } from "lucide-react";
 
 export const managerSidebarData = {
@@ -74,10 +74,10 @@ export const managerSidebarData = {
       badge: undefined,
     },
     {
-      title: "Settings",
-      url: "/manager/settings",
-      icon: Settings,
-      description: "Configuration",
+      title: "Profile",
+      url: "/manager/profile",
+      icon: User,
+      description: "My profile settings",
       badge: undefined,
     },
   ],

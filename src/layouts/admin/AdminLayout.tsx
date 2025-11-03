@@ -16,10 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { sidebarData } from "./admin-sidebar-data";
-import { Bell, Search, Settings, LogOut, User, ChevronDown, Home } from "lucide-react";
+import { Bell, Search, Settings, LogOut, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
-import { ADMIN_ROUTES } from "@/routes/route.constants";
 
 type AdminLayoutProps = {
   children?: ReactNode;
@@ -173,10 +172,6 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
                   <DropdownMenuItem onSelect={handleGoHome} className="focus:bg-gray-100 cursor-pointer">
                     <Home className="mr-2 h-4 w-4" />
                     HomePage
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate(ADMIN_ROUTES.ADMIN_PROFILE)} className="focus:bg-gray-100 cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem className="focus:bg-gray-100">
                     <Settings className="mr-2 h-4 w-4" />

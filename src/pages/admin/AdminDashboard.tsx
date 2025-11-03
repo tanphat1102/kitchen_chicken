@@ -125,7 +125,7 @@ const AdminDashboard: React.FC = () => {
   const avgDailyRevenue = revenueTrend.length > 0 ? totalRevenue / revenueTrend.length : 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-6">
+    <div className="flex flex-1 flex-col gap-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-200 pb-4">
         <div>

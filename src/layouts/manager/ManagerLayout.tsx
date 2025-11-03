@@ -16,10 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { managerSidebarData } from "./manager-sidebar-data";
-import { Bell, Search, Settings, LogOut, User, ChevronDown, Home } from "lucide-react";
+import { Bell, Search, LogOut, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
-import { MANAGER_ROUTES } from "@/routes/route.constants";
 
 type ManagerLayoutProps = {
   children?: ReactNode;
@@ -137,11 +136,6 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Settings */}
-              <Button variant="ghost" size="icon" className="text-gray-600 hover:text-black hover:bg-gray-100">
-                <Settings className="h-5 w-5" />
-              </Button>
-
               <Separator orientation="vertical" className="h-6 bg-gray-300" />
 
               {/* User Profile Dropdown */}
@@ -167,14 +161,6 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
                   <DropdownMenuItem onSelect={handleGoHome} className="focus:bg-gray-100 cursor-pointer">
                     <Home className="mr-2 h-4 w-4" />
                     HomePage
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => navigate(MANAGER_ROUTES.MANAGER_PROFILE)} className="focus:bg-gray-100 cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-gray-100">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200" />
                   <DropdownMenuItem onSelect={handleLogout} className="text-black focus:bg-gray-100 cursor-pointer">
