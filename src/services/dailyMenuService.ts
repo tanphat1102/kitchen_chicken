@@ -76,13 +76,6 @@ class DailyMenuService {
     } catch (error: any) {
       console.error('Error fetching daily menus:', error);
       const status = error?.response?.status ?? error?.status;
-      
-      // If 404, return empty array instead of throwing (no data in database yet)
-      if (status === 404) {
-        console.warn('Daily menu endpoint returned 404 - Database may be empty or endpoint not deployed');
-        return [];
-      }
-      
       if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }
@@ -122,13 +115,6 @@ class DailyMenuService {
     } catch (error: any) {
       console.error('Error fetching daily menus for stats:', error);
       const status = error?.response?.status ?? error?.status;
-      
-      // If 404, return empty array instead of throwing
-      if (status === 404) {
-        console.warn('Daily menu endpoint returned 404 - Database may be empty');
-        return [];
-      }
-      
       if (status) throw this.handleHttpError(status);
       throw this.handleApiError(error);
     }

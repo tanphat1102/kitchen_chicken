@@ -40,6 +40,8 @@ export const MANAGER_ROUTES = {
   MANAGER_PROMOTIONS: "/manager/promotions",
   MANAGER_REPORTS: "/manager/reports",
   MANAGER_PROFILE: "/manager/profile",
+  MANAGER_NUTRIENTS: "/manager/nutrients",
+  MANAGER_STEPS: "/manager/steps",
 } as const;
 
 // API endpoints
@@ -206,6 +208,16 @@ export const ROUTE_METADATA = {
     description: "Xem báo cáo và thống kê",
     access: ROUTE_ACCESS.ADMIN,
   },
+  [MANAGER_ROUTES.MANAGER_NUTRIENTS]: {
+    title: "Quản lý - Dinh dưỡng",
+    description: "Quản lý thông tin dinh dưỡng",
+    access: ROUTE_ACCESS.ADMIN,
+  },
+  [MANAGER_ROUTES.MANAGER_STEPS]: {
+    title: "Quản lý - Công thức",
+    description: "Quản lý các bước nấu ăn",
+    access: ROUTE_ACCESS.ADMIN,
+  },
 } as const;
 
 // Navigation items for public pages
@@ -287,6 +299,16 @@ export const MANAGER_NAVIGATION_ITEMS = [
     path: MANAGER_ROUTES.MANAGER_PROMOTIONS,
     label: "Khuyến mãi",
     icon: "TrendingUp",
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_NUTRIENTS,
+    label: "Dinh dưỡng",
+    icon: "Apple",
+  },
+  {
+    path: MANAGER_ROUTES.MANAGER_STEPS,
+    label: "Công thức",
+    icon: "ListOrdered",
   },
   {
     path: MANAGER_ROUTES.MANAGER_REPORTS,

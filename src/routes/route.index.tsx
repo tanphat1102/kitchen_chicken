@@ -40,6 +40,8 @@ import Orders from "@/pages/manager/Orders";
 import Promotions from "@/pages/manager/Promotions";
 import Reports from "@/pages/manager/Reports";
 import ManagerProfile from "@/pages/manager/ManagerProfile";
+import Nutrients from "@/pages/manager/Nutrients";
+import Steps from "@/pages/manager/Steps";
 
 // Manager layout
 import ManagerLayout from "@/layouts/manager/ManagerLayout";
@@ -139,6 +141,14 @@ export function AppRoutes() {
         <Route 
           path={MANAGER_ROUTES.MANAGER_PROMOTIONS} 
           element={<Promotions />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_NUTRIENTS} 
+          element={<Nutrients />} 
+        />
+        <Route 
+          path={MANAGER_ROUTES.MANAGER_STEPS} 
+          element={<Steps />} 
         />
         <Route 
           path={MANAGER_ROUTES.MANAGER_REPORTS} 
