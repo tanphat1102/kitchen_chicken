@@ -57,6 +57,8 @@ const MenuDetailPage: React.FC = () => {
     return dish.nutrients;
   }, [dish]);
 
+  const steps = dish?.steps ?? [];
+
   return (
     <>
       <Navbar />
@@ -164,7 +166,7 @@ const MenuDetailPage: React.FC = () => {
                 </div>
 
                 {/* Steps section */}
-                {dish.steps && dish.steps.length > 0 && (
+                {steps.length > 0 && (
                   <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 animate-slideInLeft" style={{ animationDelay: '0.1s' }}>
                     <div className="flex items-start gap-3 mb-6">
                       <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -176,7 +178,7 @@ const MenuDetailPage: React.FC = () => {
                     </div>
                     
                     <div className="space-y-6">
-                      {dish.steps.map((step, idx) => (
+                      {steps.map((step, idx) => (
                         <div key={step.stepId} className="relative">
                           <div className="flex items-start gap-4">
                             <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
@@ -208,7 +210,7 @@ const MenuDetailPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          {idx < dish.steps.length - 1 && (
+                          {idx < steps.length - 1 && (
                             <div className="absolute left-4 top-12 bottom-0 w-0.5 bg-gradient-to-b from-orange-300 to-transparent"></div>
                           )}
                         </div>
