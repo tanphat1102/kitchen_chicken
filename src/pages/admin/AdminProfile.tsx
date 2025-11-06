@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, Mail, Calendar, Loader2, 
-  Edit3, Check, X 
+  Edit3, Check, X, Camera, Upload 
 } from 'lucide-react';
 import { useProfileLogic } from '@/hooks/useProfileLogic';
 
@@ -15,6 +15,8 @@ export const AdminProfile: React.FC = () => {
     setIsEditing,
     formData,
     setFormData,
+    isUploading,
+    handleAvatarChange,
     handleSubmit,
     cancelEdit,
   } = useProfileLogic();
@@ -95,6 +97,69 @@ export const AdminProfile: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Avatar Section */}
+            <div className="flex items-start space-x-6 pb-6 border-b border-gray-100">
+              {/* Avatar Preview */}
+              <div className="relative group">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-gray-100 shadow-sm">
+                  {formData.imageURL || profile?.imageURL ? (
+                    <img
+                      src={formData.imageURL || profile?.imageURL}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                      <User className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Upload Overlay when editing */}
+                {isEditing && (
+                  <label 
+                    htmlFor="avatar-upload"
+                    className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
+                  </label>
+                )}
+                
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={!isEditing || isUploading}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Avatar Info */}
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">Profile Picture</h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  {isEditing 
+                    ? 'Click on the avatar to upload a new photo. Max size: 5MB' 
+                    : 'Your profile picture is visible to all users'}
+                </p>
+                
+                {isEditing && (
+                  <label 
+                    htmlFor="avatar-upload"
+                    className="inline-flex items-center space-x-2 px-3 py-1.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-xs font-medium cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{isUploading ? 'Uploading...' : 'Upload Photo'}</span>
+                  </label>
+                )}
+              </div>
+            </div>
+
             {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -159,6 +224,30 @@ export const AdminProfile: React.FC = () => {
                 </p>
               )}
             </div>
+
+            {/* Account Created (Read-only) */}
+            {profile?.createdAt && (
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Account Created
+                </label>
+                <input
+                  type="text"
+                  value={new Date(profile.createdAt).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                  disabled
+                  className="w-full px-3 py-2 rounded-md border border-gray-200 bg-gray-50 cursor-not-allowed text-gray-500 outline-none text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1.5">
+                  This is when your account was first created.
+                </p>
+              </div>
+            )}
 
             {/* Save Button */}
             {isEditing && (

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { dishService, type Dish } from '@/services/dishService';
+import { managerDishService, type Dish } from '@/services/managerDishService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plus, Pencil, Trash2, Search, Utensils, ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Search, Utensils, ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface DishFormData {
@@ -41,7 +41,6 @@ const Dishes = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [formData, setFormData] = useState<DishFormData>({
     name: '',
@@ -53,21 +52,21 @@ const Dishes = () => {
 
   // Fetch all dishes
   const { data: dishes = [], isLoading } = useQuery({
-    queryKey: ['dishes'],
-    queryFn: () => dishService.getAllForStats(),
+    queryKey: ['manager-dishes'],
+    queryFn: () => managerDishService.getAllForStats(),
   });
 
   // Fetch dish count
   const { data: totalCount = 0 } = useQuery({
-    queryKey: ['dishes', 'count'],
-    queryFn: () => dishService.getCount(),
+    queryKey: ['manager-dishes', 'count'],
+    queryFn: () => managerDishService.getCount(),
   });
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: dishService.create,
+    mutationFn: (data: DishFormData) => managerDishService.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dishes'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-dishes'] });
       setIsCreateDialogOpen(false);
       resetForm();
       toast.success('Dish created successfully');
@@ -80,9 +79,9 @@ const Dishes = () => {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<DishFormData> }) =>
-      dishService.update(id, data),
+      managerDishService.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dishes'] });
+      queryClient.invalidateQueries({ queryKey: ['manager-dishes'] });
       setIsEditDialogOpen(false);
       setSelectedDish(null);
       resetForm();
@@ -90,20 +89,6 @@ const Dishes = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update dish');
-    },
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: dishService.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dishes'] });
-      setIsDeleteDialogOpen(false);
-      setSelectedDish(null);
-      toast.success('Dish deleted successfully');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete dish');
     },
   });
 
@@ -134,11 +119,6 @@ const Dishes = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (dish: Dish) => {
-    setSelectedDish(dish);
-    setIsDeleteDialogOpen(true);
-  };
-
   const onSubmitCreate = () => {
     createMutation.mutate({
       name: formData.name,
@@ -155,11 +135,6 @@ const Dishes = () => {
       id: selectedDish.id,
       data: formData,
     });
-  };
-
-  const onConfirmDelete = () => {
-    if (!selectedDish) return;
-    deleteMutation.mutate(selectedDish.id);
   };
 
   // Filter dishes based on search
@@ -305,18 +280,10 @@ const Dishes = () => {
                       <Button
                         variant="secondary"
                         size="icon"
-                        className="h-9 w-9 bg-white/95 hover:bg-white shadow-lg backdrop-blur-sm border border-gray-200"
+                        className="h-9 w-9 !bg-white/95 hover:!bg-yellow-400 shadow-lg backdrop-blur-sm border !border-gray-200 hover:!border-yellow-500 transition-colors group/edit"
                         onClick={() => handleEdit(dish)}
                       >
-                        <Pencil className="h-4 w-4 text-gray-700" />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="icon"
-                        className="h-9 w-9 bg-white/95 hover:bg-red-600 shadow-lg backdrop-blur-sm border border-gray-200 hover:border-red-600 transition-colors group/delete"
-                        onClick={() => handleDelete(dish)}
-                      >
-                        <Trash2 className="h-4 w-4 text-gray-700 group-hover/delete:text-white transition-colors" />
+                        <Pencil className="h-4 w-4 !text-gray-700 group-hover/edit:!text-black transition-colors" />
                       </Button>
                     </div>
                   </div>
@@ -353,16 +320,18 @@ const Dishes = () => {
                     </div>
                     
                     {/* Created Date */}
-                    <div className="text-xs text-gray-500 flex items-center gap-1.5 pt-1">
-                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span>{new Date(dish.createdAt).toLocaleDateString('vi-VN', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}</span>
-                    </div>
+                    {dish.createdAt && (
+                      <div className="text-xs text-gray-500 flex items-center gap-1.5 pt-1">
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>{new Date(dish.createdAt).toLocaleDateString('vi-VN', { 
+                          year: 'numeric', 
+                          month: 'short', 
+                          day: 'numeric' 
+                        })}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -598,29 +567,6 @@ const Dishes = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the dish "{selectedDish?.name}".
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={onConfirmDelete}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

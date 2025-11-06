@@ -76,8 +76,8 @@ const Steps: React.FC = () => {
       ]);
       
       // Sort by order
-      const sortedData = data.sort((a, b) => a.order - b.order);
-      const sortedAllData = allData.sort((a, b) => a.order - b.order);
+      const sortedData = data.sort((a, b) => (a.order || 0) - (b.order || 0));
+      const sortedAllData = allData.sort((a, b) => (a.order || 0) - (b.order || 0));
       
       setSteps(sortedData);
       setAllSteps(sortedAllData);
@@ -107,8 +107,8 @@ const Steps: React.FC = () => {
 
   // Filter steps
   const filteredSteps = steps.filter((step) => {
-    const matchesSearch = step.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMenuItem = filterMenuItem === 'all' || step.menuItemId.toString() === filterMenuItem;
+    const matchesSearch = (step.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMenuItem = filterMenuItem === 'all' || (step.menuItemId?.toString() === filterMenuItem);
     return matchesSearch && matchesMenuItem;
   });
 
@@ -118,10 +118,12 @@ const Steps: React.FC = () => {
   // Group steps by menuItemId to count unique menu items with steps
   const menuItemsWithSteps = new Map<number, Step[]>();
   allSteps.forEach(step => {
-    if (!menuItemsWithSteps.has(step.menuItemId)) {
-      menuItemsWithSteps.set(step.menuItemId, []);
+    const menuItemId = step.menuItemId;
+    if (menuItemId === undefined) return; // Skip if no menuItemId
+    if (!menuItemsWithSteps.has(menuItemId)) {
+      menuItemsWithSteps.set(menuItemId, []);
     }
-    menuItemsWithSteps.get(step.menuItemId)!.push(step);
+    menuItemsWithSteps.get(menuItemId)!.push(step);
   });
   
   const uniqueMenuItems = menuItemsWithSteps.size;
@@ -174,9 +176,9 @@ const Steps: React.FC = () => {
   const handleEdit = (step: Step) => {
     setEditingStep(step);
     setFormData({
-      description: step.description,
-      order: step.order,
-      menuItemId: step.menuItemId,
+      description: step.description || '',
+      order: step.order || 1,
+      menuItemId: step.menuItemId || 0,
     });
     setIsDialogOpen(true);
   };
@@ -188,6 +190,7 @@ const Steps: React.FC = () => {
     if (stepIndex === -1) return;
 
     const currentStep = filteredSteps[stepIndex];
+    const currentOrder = currentStep.order || 0;
     
     // Check boundaries within the FILTERED context
     if (direction === 'up' && stepIndex === 0) {
@@ -200,7 +203,7 @@ const Steps: React.FC = () => {
       return;
     }
 
-    const newOrder = direction === 'up' ? currentStep.order - 1 : currentStep.order + 1;
+    const newOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1;
 
     if (newOrder < 1) {
       toast.error('Step order cannot be less than 1');
@@ -234,7 +237,8 @@ const Steps: React.FC = () => {
   };
 
   // Get menu item name by ID
-  const getMenuItemName = (menuItemId: number) => {
+  const getMenuItemName = (menuItemId?: number) => {
+    if (!menuItemId) return 'Unknown';
     const item = menuItems.find(m => m.id === menuItemId);
     return item?.name || 'Unknown';
   };
@@ -245,43 +249,39 @@ const Steps: React.FC = () => {
       <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
-            <ListOrdered className="h-8 w-8 text-gray-900" />
+            <ListOrdered className="h-8 w-8 text-black" />
             <span>Recipe Steps Management</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage cooking steps and instructions for menu items
           </p>
         </div>
         <Button 
           onClick={openCreateDialog}
-          className="gap-2 bg-gray-900 hover:bg-gray-800"
+          className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white"
         >
           <Plus className="h-4 w-4" />
-          Add Step
+          <span>Add Step</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 card-grid">
-        <Card className="border-l-4 border-l-gray-900 bg-white animate-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover-lift animate-card">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Steps</CardTitle>
-            <ListOrdered className="h-4 w-4 text-gray-900" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{totalSteps}</div>
-            <p className="text-xs text-gray-500 mt-1">All recipe steps</p>
+            <div className="text-2xl font-bold text-black">{totalSteps}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500 bg-white animate-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover-lift animate-card">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Menu Items</CardTitle>
-            <ChefHat className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{uniqueMenuItems}</div>
-            <p className="text-xs text-gray-500 mt-1">With recipe steps</p>
+            <div className="text-2xl font-bold text-black">{uniqueMenuItems}</div>
           </CardContent>
         </Card>
       </div>
@@ -317,112 +317,132 @@ const Steps: React.FC = () => {
       </Card>
 
       {/* Steps Table */}
-      <Card className="bg-white animate-card">
-        <CardHeader className="border-b border-gray-100">
-          <CardTitle className="text-gray-900">
-            Recipe Steps ({filteredSteps.length})
-          </CardTitle>
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-gray-900">Recipe Steps ({filteredSteps.length})</CardTitle>
+            <div className="text-sm text-gray-600">
+              Total: {allSteps.length} steps
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading steps...</div>
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading steps...</p>
+            </div>
           ) : filteredSteps.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No steps found</div>
+            <div className="text-center py-12">
+              <ListOrdered className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-lg font-medium text-gray-900 mb-2">No steps yet</p>
+              <p className="text-sm text-gray-600 mb-4">Get started by creating your first recipe step</p>
+              <Button onClick={openCreateDialog} className="bg-black text-white hover:bg-gray-800">
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Step
+              </Button>
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[80px]">Order</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Menu Item</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSteps.map((step, index) => (
-                  <TableRow key={step.id}>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono">
-                        {step.order}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="max-w-md">
-                      <p className="text-sm text-gray-900 line-clamp-2">
-                        {step.description}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">
-                        {getMenuItemName(step.menuItemId)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleChangeOrder(step.id, 'up')}
-                          disabled={index === 0}
-                          className="hover:bg-gray-100"
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleChangeOrder(step.id, 'down')}
-                          disabled={index === filteredSteps.length - 1}
-                          className="hover:bg-gray-100"
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(step)}
-                          className="hover:bg-gray-100"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(step.id)}
-                          className="hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
+                    <TableHead className="font-semibold text-gray-700 w-[80px]">Order</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Description</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Menu Item</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredSteps.map((step, index) => (
+                    <TableRow key={step.id} className="hover:bg-gray-50 border-gray-200">
+                      <TableCell>
+                        <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-bold text-sm">{step.order || 0}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-md text-gray-900">
+                        {step.description}
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {getMenuItemName(step.menuItemId)}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleChangeOrder(step.id, 'up')}
+                            disabled={index === 0}
+                            className="!bg-white !border-gray-300 hover:!bg-blue-400 hover:!border-blue-500 transition-colors"
+                          >
+                            <ArrowUp className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleChangeOrder(step.id, 'down')}
+                            disabled={index === filteredSteps.length - 1}
+                            className="!bg-white !border-gray-300 hover:!bg-blue-400 hover:!border-blue-500 transition-colors"
+                          >
+                            <ArrowDown className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(step)}
+                            className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
+                          >
+                            <Edit className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(step.id)}
+                            className="!bg-white !border-gray-300 !text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 animate-card">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center px-4 text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
+      {!loading && filteredSteps.length > 0 && totalPages > 1 && (
+        <Card className="bg-white animate-card">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {filteredSteps.length} of {allSteps.length} steps (Page {currentPage} of {totalPages})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Create/Edit Dialog */}
@@ -506,7 +526,7 @@ const Steps: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-gray-900 hover:bg-gray-800">
+              <Button type="submit" className="bg-black hover:bg-gray-800">
                 {editingStep ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>

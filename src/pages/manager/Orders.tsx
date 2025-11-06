@@ -232,7 +232,7 @@ const Orders: React.FC = () => {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6 page-enter">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
             <ShoppingCart className="h-8 w-8 text-black" />
@@ -242,60 +242,61 @@ const Orders: React.FC = () => {
             Monitor and manage customer orders in real-time
           </p>
         </div>
-        <Button onClick={fetchOrders} variant="outline" className="border-gray-900 text-gray-900 hover:bg-gray-800 hover:text-white transition-colors">
+        <Button onClick={fetchOrders} className="bg-black hover:bg-gray-800 text-white transition-colors">
           Refresh Orders
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-l-4 border-l-gray-900">
+      <div className="grid gap-4 md:grid-cols-4 card-grid">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            <div className="text-2xl font-bold text-black">{stats.total}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-gray-900">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">New Orders</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.new}</div>
+            <div className="text-2xl font-bold text-black">{stats.new}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-gray-900">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Processing</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.processing}</div>
+            <div className="text-2xl font-bold text-black">{stats.processing}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-gray-900">
+        <Card className="hover-lift animate-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{stats.completed}</div>
+            <div className="text-2xl font-bold text-gray-600">{stats.completed}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="bg-white animate-card">
         <CardContent className="pt-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search by order ID, customer, store..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
               />
             </div>
 
@@ -331,94 +332,116 @@ const Orders: React.FC = () => {
       </Card>
 
       {/* Orders Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Orders ({filteredOrders.length})</CardTitle>
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-gray-900">All Orders ({filteredOrders.length})</CardTitle>
+            <div className="text-sm text-gray-600">
+              Total: {orders.length} orders
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading orders...
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading orders...</p>
             </div>
           ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm || filterStatus !== 'all' || filterStore !== 'all' 
-                ? 'No orders found' 
-                : 'No orders yet'}
+            <div className="text-center py-12">
+              <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-lg font-medium text-gray-900 mb-2">No orders yet</p>
+              <p className="text-sm text-gray-600">
+                {searchTerm || filterStatus !== 'all' || filterStore !== 'all' 
+                  ? 'Try adjusting your filters' 
+                  : 'Orders will appear here when customers place them'}
+              </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Store</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">#{order.id}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-3 w-3 text-muted-foreground" />
-                        {formatDateTime(order.orderDate)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm">{order.userName || `User #${order.userId}`}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Store className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm">{order.storeName || `Store #${order.storeId}`}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-bold text-green-600">
-                        {formatVND(order.totalAmount)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`border ${getStatusColor(order.status)}`}>
-                        {getStatusIcon(order.status)}
-                        <span className="ml-1">{order.status}</span>
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {getNextStatus(order.status) && (
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
+                    <TableHead className="font-semibold text-gray-700">Order ID</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Date & Time</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Customer</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Store</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Amount</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Status</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
+                    <TableRow key={order.id} className="hover:bg-gray-50 border-gray-200">
+                      <TableCell className="text-gray-900">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                            <ShoppingCart className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-gray-900">#{order.id}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="h-3 w-3" />
+                          {formatDateTime(order.orderDate)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span className="text-sm">{order.userName || `User #${order.userId}`}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Store className="h-4 w-4" />
+                          <span className="text-sm">{order.storeName || `Store #${order.storeId}`}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-bold text-green-600">
+                          {formatVND(order.totalAmount)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Badge className={`border ${getStatusColor(order.status)}`}>
+                            {getStatusIcon(order.status)}
+                            <span className="ml-1">{order.status}</span>
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                          {getNextStatus(order.status) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleStatusUpdate(order, getNextStatus(order.status)!)}
+                              className="!bg-white !border-gray-300 hover:!bg-green-400 hover:!border-green-500 transition-colors"
+                            >
+                              → {getNextStatus(order.status)}
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleStatusUpdate(order, getNextStatus(order.status)!)}
-                            className="text-gray-900 border-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
+                            onClick={() => handleViewDetails(order)}
+                            className="!bg-white !border-gray-300 hover:!bg-blue-400 hover:!border-blue-500 transition-colors"
                           >
-                            → {getNextStatus(order.status)}
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(order)}
-                          className="text-gray-900 border-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -167,15 +167,6 @@ const AdminDashboard: React.FC = () => {
               90 Days
             </Button>
           </div>
-          
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="flex items-center gap-2 border-gray-300 bg-white text-gray-900 hover:bg-gray-100"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
-          </Button>
         </div>
       </div>
 

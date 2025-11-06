@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, MapPin, Phone, Edit, Trash2, Store as StoreIcon, CheckCircle, XCircle, MoreVertical, Calendar } from "lucide-react";
+import { Plus, Search, MapPin, Phone, Edit, Store as StoreIcon, CheckCircle, XCircle, MoreVertical, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,19 +97,6 @@ export default function Stores() {
     } catch (error) {
       console.error("Error toggling store status:", error);
       alert("Failed to toggle store status. Please try again.");
-    }
-  };
-
-  // Delete store
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this store?")) return;
-    
-    try {
-      await deleteStore(id);
-      setStores(stores.filter(store => store.id !== id));
-    } catch (error) {
-      console.error("Error deleting store:", error);
-      alert("Failed to delete store. Please try again.");
     }
   };
 
@@ -300,13 +287,6 @@ export default function Stores() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleStatus(store.id)}>
                         {store.isActive ? 'Deactivate' : 'Activate'}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => handleDelete(store.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

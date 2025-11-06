@@ -1,131 +1,331 @@
-import { api } from './api';
-import type { ApiResponse } from '@/types/api.types';
+import api from '@/config/axios';
 
 export interface Nutrient {
-  name: string;
-  quantity: number;
-  unit: string;
+	id: number;
+	name: string;
+	quantity: number;
+	baseUnit?: string;
+}
+
+export interface MenuItemShort {
+	menuItemId: number;
+	name: string;
+	imageUrl?: string;
+	quantity?: number;
+	price?: number;
+	cal?: number;
 }
 
 export interface DishStep {
-  stepId: number;
-  stepName: string;
-  items: {
-    menuItemId: number;
-    menuItemName: string;
-    price: number;
-  }[];
+	stepId: number;
+	stepName: string;
+	items: MenuItemShort[];
 }
 
-export interface Dish {
-  id: number;
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  price: number;
-  cal: number;
-  isCustom: boolean;
-  createdAt: string;
-  steps?: DishStep[];
-  nutrients?: Nutrient[];
+export interface DishSummary {
+	id: number;
+	name: string;
+	price: number;
+	cal?: number;
+	isCustom: boolean;
+	note?: string;
+	imageUrl?: string;
 }
 
-export interface DishSearchResponse {
-  dishes: Dish[];
-  total: number;
+export interface Dish extends DishSummary {
+	description?: string;
+	createdAt?: string;
+	updatedAt?: string;
+	steps?: DishStep[];
+	nutrients?: Nutrient[];
 }
 
-export interface CreateDishRequest {
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  price: number;
-  cal?: number;
+const ENDPOINT = '/api/dishes';
+
+class DishService {
+	private cache = new Map<number, { data: Dish; ts: number }>();
+	private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+	/**
+	 * Get dish by id
+	 */
+	async getDishById(id: number, token?: string): Promise<Dish> {
+		try {
+			const cached = this.cache.get(id);
+			if (cached && Date.now() - cached.ts < this.CACHE_TTL) {
+				return cached.data;
+			}
+
+			const { data: resp } = await api.get<any>(
+				`${ENDPOINT}/${id}`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const payload = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+
+			if (!payload) throw new Error(resp?.message || `Dish ${id} not found`);
+
+			const dish: Dish = {
+				id: payload.id,
+				name: payload.name,
+				price: payload.price,
+				cal: payload.cal,
+				isCustom: !!payload.isCustom,
+				note: payload.note,
+				imageUrl: payload.imageUrl,
+				createdAt: payload.createdAt,
+				updatedAt: payload.updatedAt,
+				steps: Array.isArray(payload.steps) ? payload.steps : undefined,
+				nutrients: Array.isArray(payload.nutrients) ? payload.nutrients : undefined,
+			};
+
+			this.cache.set(id, { data: dish, ts: Date.now() });
+			return dish;
+		} catch (error: any) {
+			console.error(`Error fetching dish ${id}:`, error);
+			const msg = error?.response?.data?.message ?? error?.message ?? 'Đã xảy ra lỗi khi lấy món ăn';
+			throw new Error(msg);
+		}
+	}
+
+	/**
+	 * Get all dishes (paginated). If size/pageNumber omitted, backend defaults apply.
+	 */
+	async getAllDishes(size?: number, pageNumber?: number, token?: string): Promise<DishSummary[]> {
+		try {
+			const params: string[] = [];
+			if (typeof size === 'number') params.push(`size=${encodeURIComponent(size)}`);
+			if (typeof pageNumber === 'number') params.push(`pageNumber=${encodeURIComponent(pageNumber)}`);
+			const query = params.length ? `?${params.join('&')}` : '';
+
+			const { data: resp } = await api.get<any>(
+				`${ENDPOINT}${query}`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const raw = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			const arr: any[] = Array.isArray(raw) ? raw : [];
+
+			return arr.map((d) => ({
+				id: d?.id,
+				name: d?.name,
+				price: d?.price,
+				cal: d?.cal,
+				isCustom: !!d?.isCustom,
+				note: d?.note,
+				imageUrl: d?.imageUrl,
+			}));
+		} catch (error: any) {
+			console.error('Error fetching dishes:', error);
+			const msg = error?.response?.data?.message ?? error?.message ?? 'Đã xảy ra lỗi khi lấy danh sách món ăn';
+			throw new Error(msg);
+		}
+	}
+
+	/**
+	 * Search dishes with optional filters (menuItemIds, keyword, minCal, maxCal, minPrice, maxPrice, size, pageNumber)
+	 * Returns { items, total }
+	 */
+	async searchDishes(filters: Record<string, any> = {}, token?: string): Promise<{ items: DishSummary[]; total: number }> {
+		try {
+			const qp = new URLSearchParams();
+
+			Object.keys(filters).forEach((k) => {
+				const v = filters[k];
+				if (v === undefined || v === null) return;
+				if (Array.isArray(v)) {
+					v.forEach((it) => qp.append(k, String(it)));
+				} else {
+					qp.set(k, String(v));
+				}
+			});
+
+			const query = qp.toString() ? `?${qp.toString()}` : '';
+
+			const { data: resp } = await api.get<any>(
+				`${ENDPOINT}/search${query}`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const payload = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			const itemsRaw: any[] = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []);
+			const total = typeof payload?.total === 'number' ? payload.total : 0;
+
+			const items = itemsRaw.map((d) => ({
+				id: d?.id,
+				name: d?.name,
+				price: d?.price,
+				cal: d?.cal,
+				isCustom: !!d?.isCustom,
+				note: d?.note,
+				imageUrl: d?.imageUrl,
+			}));
+
+			return { items, total };
+		} catch (error: any) {
+			console.error('Error searching dishes:', error);
+			const msg = error?.response?.data?.message ?? error?.message ?? 'Đã xảy ra lỗi khi tìm kiếm món ăn';
+			throw new Error(msg);
+		}
+	}
+
+	/**
+	 * Get my custom dishes (requires auth)
+	 */
+	async getMyCustomDishes(token?: string): Promise<DishSummary[] | null> {
+		try {
+			const { data: resp } = await api.get<any>(
+				`${ENDPOINT}/custom/mine`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const raw = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			if (raw === null) return null;
+			const arr: any[] = Array.isArray(raw) ? raw : [];
+			return arr.map((d) => ({
+				id: d?.id,
+				name: d?.name,
+				price: d?.price,
+				cal: d?.cal,
+				isCustom: !!d?.isCustom,
+				note: d?.note,
+				imageUrl: d?.imageUrl,
+			}));
+		} catch (error: any) {
+			console.error('Error fetching my custom dishes:', error);
+			const msg = error?.response?.data?.message ?? error?.message ?? 'Đã xảy ra lỗi khi lấy món tùy chỉnh của bạn';
+			throw new Error(msg);
+		}
+	}
+
+	/**
+	 * Get all dishes for stats (no pagination, returns all)
+	 */
+	async getAllForStats(token?: string): Promise<Dish[]> {
+		try {
+			const { data: resp } = await api.get<any>(
+				`${ENDPOINT}?size=1000&pageNumber=1`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const raw = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			const arr: any[] = Array.isArray(raw) ? raw : [];
+
+			return arr.map((d) => ({
+				id: d?.id,
+				name: d?.name,
+				description: d?.description,
+				price: d?.price,
+				cal: d?.cal || 0,
+				isCustom: !!d?.isCustom,
+				note: d?.note,
+				imageUrl: d?.imageUrl,
+				createdAt: d?.createdAt,
+				updatedAt: d?.updatedAt,
+			}));
+		} catch (error: any) {
+			console.error('Error fetching dishes for stats:', error);
+			throw new Error(error?.response?.data?.message ?? error?.message ?? 'Failed to fetch dishes');
+		}
+	}
+
+	/**
+	 * Get total count of dishes
+	 */
+	async getCount(token?: string): Promise<number> {
+		try {
+			const { data: resp } = await api.get<any>(
+				`${ENDPOINT}/counts`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const payload = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			return payload?.total ?? 0;
+		} catch (error: any) {
+			console.error('Error fetching dish count:', error);
+			return 0;
+		}
+	}
+
+	/**
+	 * Create new dish
+	 */
+	async create(data: {
+		name: string;
+		description?: string;
+		imageUrl?: string;
+		price: number;
+		cal?: number;
+	}, token?: string): Promise<Dish> {
+		try {
+			const { data: resp } = await api.post<any>(
+				ENDPOINT,
+				data,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const payload = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			this.clearCache();
+			return payload;
+		} catch (error: any) {
+			console.error('Error creating dish:', error);
+			throw new Error(error?.response?.data?.message ?? error?.message ?? 'Failed to create dish');
+		}
+	}
+
+	/**
+	 * Update dish
+	 */
+	async update(id: number, data: {
+		name?: string;
+		description?: string;
+		imageUrl?: string;
+		price?: number;
+		cal?: number;
+	}, token?: string): Promise<Dish> {
+		try {
+			const { data: resp } = await api.put<any>(
+				`${ENDPOINT}/${id}`,
+				data,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			const payload = resp && typeof resp === 'object' && 'data' in resp ? resp.data : resp;
+			this.clearCache();
+			this.clearCacheById(id);
+			return payload;
+		} catch (error: any) {
+			console.error('Error updating dish:', error);
+			throw new Error(error?.response?.data?.message ?? error?.message ?? 'Failed to update dish');
+		}
+	}
+
+	/**
+	 * Delete dish
+	 */
+	async delete(id: number, token?: string): Promise<void> {
+		try {
+			await api.delete<any>(
+				`${ENDPOINT}/${id}`,
+				token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+			);
+
+			this.clearCache();
+			this.clearCacheById(id);
+		} catch (error: any) {
+			console.error('Error deleting dish:', error);
+			throw new Error(error?.response?.data?.message ?? error?.message ?? 'Failed to delete dish');
+		}
+	}
+
+	clearCache(): void {
+		this.cache.clear();
+	}
+
+	clearCacheById(id: number): void {
+		this.cache.delete(id);
+	}
 }
 
-export interface UpdateDishRequest {
-  name?: string;
-  description?: string;
-  imageUrl?: string;
-  price?: number;
-  cal?: number;
-}
-
-export const dishService = {
-  // Get all dishes with pagination
-  getAll: async (pageNumber: number = 1, size: number = 10): Promise<Dish[]> => {
-    const response = await api.get<ApiResponse<Dish[]>>('/api/dishes', {
-      params: { pageNumber, size }
-    });
-    return response.data.data;
-  },
-
-  // Get all dishes for stats (no pagination)
-  getAllForStats: async (): Promise<Dish[]> => {
-    const response = await api.get<ApiResponse<Dish[]>>('/api/dishes', {
-      params: { pageNumber: 0, size: 0 }
-    });
-    return response.data.data;
-  },
-
-  // Get total count
-  getCount: async (): Promise<number> => {
-    const response = await api.get<ApiResponse<{ total: number }>>('/api/dishes/counts');
-    return response.data.data.total;
-  },
-
-  // Get dish by ID
-  getById: async (id: number): Promise<Dish> => {
-    const response = await api.get<ApiResponse<Dish>>(`/api/dishes/${id}`);
-    return response.data.data;
-  },
-
-  // Create new dish
-  create: async (data: CreateDishRequest): Promise<Dish> => {
-    const response = await api.post<ApiResponse<Dish>>('/api/dishes', data);
-    return response.data.data;
-  },
-
-  // Update dish
-  update: async (id: number, data: UpdateDishRequest): Promise<Dish> => {
-    const response = await api.put<ApiResponse<Dish>>(`/api/dishes/${id}`, data);
-    return response.data.data;
-  },
-
-  // Delete dish
-  delete: async (id: number): Promise<void> => {
-    await api.delete(`/api/dishes/${id}`);
-  },
-
-  // Search dishes
-  search: async (params: {
-    menuItemIds?: number[];
-    keyword?: string;
-    minCal?: number;
-    maxCal?: number;
-    minPrice?: number;
-    maxPrice?: number;
-    pageNumber?: number;
-    size?: number;
-  }): Promise<DishSearchResponse> => {
-    const response = await api.get<ApiResponse<DishSearchResponse>>('/api/dishes/search', {
-      params: {
-        menuItemIds: params.menuItemIds?.join(','),
-        keyword: params.keyword,
-        minCal: params.minCal,
-        maxCal: params.maxCal,
-        minPrice: params.minPrice,
-        maxPrice: params.maxPrice,
-        pageNumber: params.pageNumber || 1,
-        size: params.size || 10,
-      }
-    });
-    return response.data.data;
-  },
-
-  // Get my custom dishes
-  getMyCustomDishes: async (): Promise<Dish[]> => {
-    const response = await api.get<ApiResponse<Dish[]>>('/api/dishes/custom/mine');
-    return response.data.data;
-  },
-};
+export const dishService = new DishService();
+export default dishService;

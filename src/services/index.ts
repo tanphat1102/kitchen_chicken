@@ -21,6 +21,7 @@ export {
 // Export new services
 export { dishService } from "./dishService";
 export { ingredientService } from "./ingredientService";
+export { managerDishService } from "./managerDishService";
 export { nutrientService } from "./nutrientService";
 export { orderCustomerService } from "./orderCustomerService";
 export { orderEmployeeService } from "./orderEmployeeService";
@@ -33,15 +34,23 @@ export { transactionService } from "./transactionService";
 // Export types
 export type {
   Dish,
-  DishSearchResponse,
-  CreateDishRequest as CreateDishBaseRequest,
-  UpdateDishRequest as UpdateDishBaseRequest,
+  DishStep as CustomerDishStep,
+  DishSummary,
+  MenuItemShort,
+  Nutrient as CustomerNutrient,
 } from "./dishService";
 export type {
   CreateIngredientRequest,
   Ingredient,
   UpdateIngredientRequest,
 } from "./ingredientService";
+export type {
+  Dish as ManagerDish,
+  CreateDishRequest as CreateManagerDishRequest,
+  UpdateDishRequest as UpdateManagerDishRequest,
+  DishStep,
+  Nutrient as DishNutrient,
+} from "./managerDishService";
 export type {
   CreateNutrientRequest,
   Nutrient,

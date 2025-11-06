@@ -5,28 +5,34 @@ import api from "@/config/axios";
 export interface Step {
   id: number;
   name: string;
-  description?: string;
+  description?: string; // Optional - used in both CustomOrder.tsx and Steps.tsx
   categoryId: number;
   categoryName?: string;
   stepNumber: number;
+  order?: number; // Alias for stepNumber (used in Steps.tsx)
+  menuItemId?: number; // Used in Steps.tsx (optional for CustomOrder compatibility)
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface CreateStepRequest {
-  name: string;
-  description?: string;
-  categoryId: number;
-  stepNumber: number;
-  isActive: boolean;
+  name?: string; // Optional for backward compatibility
+  description: string;
+  categoryId?: number; // Optional for backward compatibility
+  menuItemId?: number; // Added for Steps.tsx
+  stepNumber?: number; // Optional for backward compatibility
+  order: number; // Used in Steps.tsx
+  isActive?: boolean; // Optional for backward compatibility
 }
 
 export interface UpdateStepRequest {
   name?: string;
   description?: string;
   categoryId?: number;
+  menuItemId?: number; // Added for Steps.tsx
   stepNumber?: number;
+  order?: number; // Added for Steps.tsx
   isActive?: boolean;
 }
 
@@ -59,7 +65,13 @@ export const stepService = {
     });
 
     if (response.data.statusCode === 200) {
-      return response.data.data.filter((step) => step.isActive);
+      // Map stepNumber to order for Steps.tsx compatibility
+      return response.data.data
+        .filter((step) => step.isActive)
+        .map((step) => ({
+          ...step,
+          order: step.order ?? step.stepNumber, // Fallback to stepNumber if order not set
+        }));
     }
     throw new Error(response.data.message || "Failed to fetch steps");
   },
@@ -123,5 +135,21 @@ export const stepService = {
       return response.data.data;
     }
     throw new Error(response.data.message || "Failed to get steps count");
+  },
+
+  // Change step order (for Steps.tsx)
+  changeOrder: async (
+    stepId: number,
+    data: { newOrder: number }
+  ): Promise<Step> => {
+    const response = await api.put<ApiResponse<Step>>(
+      `${API_ENDPOINTS.STEP_BY_ID(stepId)}/order`,
+      data,
+    );
+
+    if (response.data.statusCode === 200) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || "Failed to change step order");
   },
 };

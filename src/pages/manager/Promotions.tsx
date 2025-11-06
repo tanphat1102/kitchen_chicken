@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search, TrendingUp, CheckCircle, XCircle, Percent, DollarSign, Calendar } from 'lucide-react';
+import { Plus, Pencil, Search, TrendingUp, CheckCircle, XCircle, Percent, DollarSign, Calendar } from 'lucide-react';
 import { promotionService, type Promotion, type DiscountType } from '@/services/promotionService';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -209,22 +209,6 @@ const Promotions: React.FC = () => {
     } catch (error) {
       console.error('Error toggling status:', error);
       toast.error('Failed to toggle status');
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete promotion "${name}"?`)) {
-      return;
-    }
-
-    try {
-      await promotionService.delete(id);
-      toast.success('Promotion deleted successfully');
-      fetchPromotions();
-    } catch (error) {
-      console.error('Error deleting promotion:', error);
-      toast.error('Failed to delete promotion');
     }
   };
 
@@ -486,17 +470,9 @@ const Promotions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(promo)}
-                          className="text-gray-900 border-gray-900 hover:bg-gray-800 hover:text-white transition-colors"
+                          className="!bg-white !text-gray-900 !border-gray-900 hover:!bg-yellow-400 hover:!text-black hover:!border-yellow-500 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(promo.id, promo.name)}
-                          className="text-gray-900 border-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

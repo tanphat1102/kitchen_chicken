@@ -201,65 +201,57 @@ const Nutrients: React.FC = () => {
       <div className="flex items-center justify-between border-b border-gray-200 pb-4 animate-card">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 text-gray-900">
-            <Apple className="h-8 w-8 text-gray-900" />
+            <Apple className="h-8 w-8 text-black" />
             <span>Nutrients Management</span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Manage nutritional information for menu items
           </p>
         </div>
         <Button 
           onClick={openCreateDialog}
-          className="gap-2 bg-gray-900 hover:bg-gray-800"
+          className="flex items-center gap-2 bg-black hover:bg-gray-800 text-white"
         >
           <Plus className="h-4 w-4" />
-          Add Nutrient
+          <span>Add Nutrient</span>
         </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4 card-grid">
-        <Card className="border-l-4 border-l-gray-900 bg-white animate-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover-lift animate-card">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Nutrients</CardTitle>
-            <Apple className="h-4 w-4 text-gray-900" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{totalNutrients}</div>
-            <p className="text-xs text-gray-500 mt-1">All nutritional entries</p>
+            <div className="text-2xl font-bold text-black">{totalNutrients}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500 bg-white animate-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover-lift animate-card">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Menu Items</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{menuItemsWithNutrients}</div>
-            <p className="text-xs text-gray-500 mt-1">Items with nutrients</p>
+            <div className="text-2xl font-bold text-black">{menuItemsWithNutrients}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500 bg-white animate-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover-lift animate-card">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Linked</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{nutrientsWithMenuItems}</div>
-            <p className="text-xs text-gray-500 mt-1">Assigned to dishes</p>
+            <div className="text-2xl font-bold text-black">{nutrientsWithMenuItems}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-orange-500 bg-white animate-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card className="hover-lift animate-card">
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Unassigned</CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">{standaloneNutrients}</div>
-            <p className="text-xs text-gray-500 mt-1">Not linked yet</p>
+            <div className="text-2xl font-bold text-gray-600">{standaloneNutrients}</div>
           </CardContent>
         </Card>
       </div>
@@ -295,94 +287,126 @@ const Nutrients: React.FC = () => {
       </Card>
 
       {/* Nutrients Table */}
-      <Card className="bg-white animate-card">
-        <CardHeader className="border-b border-gray-100">
-          <CardTitle className="text-gray-900">
-            Nutrients List ({filteredNutrients.length})
-          </CardTitle>
+      <Card className="bg-white border-gray-200">
+        <CardHeader className="border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl text-gray-900">Nutrients List ({filteredNutrients.length})</CardTitle>
+            <div className="text-sm text-gray-600">
+              Total: {allNutrients.length} nutrients
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading nutrients...</div>
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading nutrients...</p>
+            </div>
           ) : filteredNutrients.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">No nutrients found</div>
+            <div className="text-center py-12">
+              <Apple className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-lg font-medium text-gray-900 mb-2">No nutrients yet</p>
+              <p className="text-sm text-gray-600 mb-4">Get started by creating your first nutrient</p>
+              <Button onClick={openCreateDialog} className="bg-black text-white hover:bg-gray-800">
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Nutrient
+              </Button>
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Menu Item</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredNutrients.map((nutrient) => (
-                  <TableRow key={nutrient.id}>
-                    <TableCell className="font-medium">{nutrient.name}</TableCell>
-                    <TableCell>{nutrient.quantity}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{nutrient.unit}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {nutrient.menuItemId ? (
-                        <span className="text-sm text-gray-600">
-                          {getMenuItemName(nutrient.menuItemId)}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-gray-400 italic">Not assigned</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(nutrient)}
-                          className="hover:bg-gray-100"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(nutrient.id)}
-                          className="hover:bg-red-50 hover:text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
+                    <TableHead className="font-semibold text-gray-700">Name</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Quantity</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Unit</TableHead>
+                    <TableHead className="font-semibold text-gray-700">Menu Item</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredNutrients.map((nutrient) => (
+                    <TableRow key={nutrient.id} className="hover:bg-gray-50 border-gray-200">
+                      <TableCell className="text-gray-900">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                            <Apple className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-gray-900">{nutrient.name}</div>
+                            <div className="text-sm text-gray-600">ID: #{nutrient.id}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-gray-900">{nutrient.quantity}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-white text-black border-black">{nutrient.unit}</Badge>
+                      </TableCell>
+                      <TableCell className="text-gray-600">
+                        {nutrient.menuItemId ? (
+                          getMenuItemName(nutrient.menuItemId)
+                        ) : (
+                          <span className="italic text-gray-400">Not assigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(nutrient)}
+                            className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
+                          >
+                            <Edit className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(nutrient.id)}
+                            className="!bg-white !border-gray-300 !text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 animate-card">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <span className="flex items-center px-4 text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-        </div>
+      {!loading && filteredNutrients.length > 0 && totalPages > 1 && (
+        <Card className="bg-white animate-card">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Showing {filteredNutrients.length} of {allNutrients.length} nutrients (Page {currentPage} of {totalPages})
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Create/Edit Dialog */}
@@ -479,7 +503,7 @@ const Nutrients: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-gray-900 hover:bg-gray-800">
+              <Button type="submit" className="bg-black hover:bg-gray-800">
                 {editingNutrient ? 'Update' : 'Create'}
               </Button>
             </DialogFooter>

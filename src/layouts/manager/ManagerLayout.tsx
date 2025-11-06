@@ -72,7 +72,7 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
       <AppSidebar data={managerSidebarData} panelType="manager" />
       <SidebarInset>
         {/* Enhanced Header - Light Theme */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white backdrop-blur supports-[backdrop-filter]:bg-white/80 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-sm">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white backdrop-blur supports-[backdrop-filter]:bg-white/80 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-sm">
           <div className="flex flex-1 items-center justify-between gap-2 px-4">
             {/* Left: Breadcrumb */}
             <div className="flex items-center gap-2">

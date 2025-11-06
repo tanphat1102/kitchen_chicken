@@ -21,9 +21,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles, // Backend uses "roles" not "role"
       isActive: user.isActive,
-      isVerified: true, // Backend doesn't return this, default to true
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     }));
@@ -41,9 +38,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles,
       isActive: user.isActive,
-      isVerified: true,
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     }));
@@ -67,9 +61,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles, // Backend uses "roles" not "role"
       isActive: user.isActive,
-      isVerified: true, // Backend doesn't return this
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     };
@@ -85,9 +76,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles,
       isActive: user.isActive,
-      isVerified: true,
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     };
@@ -111,9 +99,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles || user.role,
       isActive: user.isActive,
-      isVerified: user.isVerified || false,
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     };
@@ -135,9 +120,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles,
       isActive: user.isActive,
-      isVerified: true,
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     };
@@ -160,9 +142,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles || user.role,
       isActive: user.isActive,
-      isVerified: user.isVerified || false,
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     };
@@ -180,9 +159,6 @@ export const userService = {
       displayName: user.fullName,
       role: user.roles,
       isActive: user.isActive,
-      isVerified: true,
-      phone: user.phone || "",
-      address: user.address || "",
       avatar: user.imageURL,
       createdAt: user.createdAt || "",
     };

@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search, Users as UsersIcon, Mail, Phone, MapPin, Shield, CheckCircle, XCircle, Calendar, Image } from 'lucide-react';
+import { Plus, Pencil, Users as UsersIcon, Mail, Shield, CheckCircle, XCircle, Calendar, Image } from 'lucide-react';
 import { userService } from '@/services/userService';
 import type { User } from '@/types/api.types';
 import toast from 'react-hot-toast';
@@ -36,9 +36,6 @@ const Users: React.FC = () => {
   const [allUsers, setAllUsers] = useState<User[]>([]); // All users for stats
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -76,27 +73,6 @@ const Users: React.FC = () => {
   useEffect(() => {
     fetchUsers();
   }, [currentPage, pageSize]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [searchTerm, roleFilter, statusFilter]);
-
-  // Filter users
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = 
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (user.displayName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'ALL' || 
-      (statusFilter === 'ACTIVE' && user.isActive) ||
-      (statusFilter === 'INACTIVE' && !user.isActive);
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
 
   // Stats calculated from ALL users (not just current page)
   const stats = {
@@ -162,22 +138,6 @@ const Users: React.FC = () => {
     } catch (error) {
       console.error('Error toggling user status:', error);
       toast.error('Failed to toggle user status');
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async (id: string, email: string) => {
-    if (!confirm(`Are you sure you want to delete user "${email}"?`)) {
-      return;
-    }
-
-    try {
-      await userService.delete(id);
-      toast.success('User deleted successfully');
-      fetchUsers();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
     }
   };
 
@@ -310,47 +270,8 @@ const Users: React.FC = () => {
         </Card>
       </div>
 
-      {/* Search & Filters */}
-      <Card className="animate-card-delayed">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex items-center gap-2 flex-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by email or name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-              />
-            </div>
-
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Roles</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-                <SelectItem value="MANAGER">Manager</SelectItem>
-                <SelectItem value="EMPLOYEE">Employee</SelectItem>
-                <SelectItem value="STORE">Store</SelectItem>
-                <SelectItem value="USER">Customer</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="ACTIVE">Active</SelectItem>
-                <SelectItem value="INACTIVE">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Search & Filters - REMOVED: Backend doesn't support filtering yet */}
+      {/* TODO: Re-enable when backend adds filter support (role, status, search) */}
 
       {/* Users Table */}
       <Card className="bg-white border-gray-200">
@@ -368,25 +289,15 @@ const Users: React.FC = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
               <p className="text-gray-600">Loading users...</p>
             </div>
-          ) : filteredUsers.length === 0 ? (
+          ) : users.length === 0 ? (
             <div className="text-center py-12">
               <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg font-medium text-gray-900 mb-2">
-                {searchTerm || roleFilter !== 'ALL' || statusFilter !== 'ALL' 
-                  ? 'No users found' 
-                  : 'No users yet'}
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                {searchTerm || roleFilter !== 'ALL' || statusFilter !== 'ALL' 
-                  ? 'Try adjusting your search or filters' 
-                  : 'Get started by creating your first user'}
-              </p>
-              {!searchTerm && roleFilter === 'ALL' && statusFilter === 'ALL' && (
-                <Button onClick={handleCreate} className="bg-black text-white hover:bg-gray-800">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First User
-                </Button>
-              )}
+              <p className="text-lg font-medium text-gray-900 mb-2">No users yet</p>
+              <p className="text-sm text-gray-600 mb-4">Get started by creating your first user</p>
+              <Button onClick={handleCreate} className="bg-black text-white hover:bg-gray-800">
+                <Plus className="h-4 w-4 mr-2" />
+                Create First User
+              </Button>
             </div>
           ) : (
             <div className="overflow-hidden">
@@ -394,15 +305,13 @@ const Users: React.FC = () => {
                 <TableHeader>
                   <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
                     <TableHead className="font-semibold text-gray-700">User</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Contact</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Role</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Verified</TableHead>
-                    <TableHead className="text-right font-semibold text-gray-700">Actions</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Role</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Status</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((user) => (
+                  {users.map((user) => (
                     <TableRow key={user.id} className="hover:bg-gray-50 border-gray-200" style={{ overflow: 'hidden' }}>
                       <TableCell className="text-gray-900">
                         <div className="flex items-center gap-3">
@@ -426,28 +335,17 @@ const Users: React.FC = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-900">
-                        {/* Note: Backend UserResponse doesn't include phone/address fields yet */}
-                        {/* These will always show "Not provided" until backend adds these fields */}
-                        <div className="space-y-1 text-sm">
-                          <div className="flex items-center gap-1 text-gray-500">
-                            <Phone className="h-3 w-3" />
-                            <span className="italic">Not available</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-gray-500">
-                            <MapPin className="h-3 w-3" />
-                            <span className="italic">Not available</span>
-                          </div>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center">
+                          <Badge className={`border ${getRoleBadgeColor(user.role)}`}>
+                            <Shield className="h-3 w-3 mr-1" />
+                            {user.role}
+                          </Badge>
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-900">
-                        <Badge className={`border ${getRoleBadgeColor(user.role)}`}>
-                          <Shield className="h-3 w-3 mr-1" />
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-900">
-                        <Badge className={`border ${user.isActive ? 'bg-white text-black border-black' : 'bg-gray-200 text-gray-700 border-gray-400'}`}>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        <Badge className={`border transition-colors ${user.isActive ? 'bg-white text-black border-black hover:bg-black hover:text-white' : 'bg-white text-gray-700 border-black hover:bg-black hover:text-white'}`}>
                           {user.isActive ? (
                             <>
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -460,28 +358,18 @@ const Users: React.FC = () => {
                             </>
                           )}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-900">
-                        {user.isVerified ? (
-                          <div className="flex items-center gap-1 text-black">
-                            <CheckCircle className="h-5 w-5" />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-gray-400">
-                            <XCircle className="h-5 w-5" />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                      </div>
+                    </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleToggleStatus(user)}
-                            className={`bg-white border-gray-300 transition-colors ${
+                            className={`!bg-white !border-gray-300 transition-colors ${
                               user.isActive 
-                                ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
-                                : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
+                                ? '!text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500' 
+                                : '!text-gray-900 hover:!bg-green-400 hover:!text-black hover:!border-green-400'
                             }`}
                           >
                             {user.isActive ? (
@@ -500,17 +388,9 @@ const Users: React.FC = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => handleEdit(user)}
-                            className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
+                            className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(user.id, user.email)}
-                            className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
+                            <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
                           </Button>
                         </div>
                       </TableCell>
@@ -524,7 +404,7 @@ const Users: React.FC = () => {
       </Card>
 
       {/* Pagination */}
-      {!loading && filteredUsers.length > 0 && (
+      {!loading && users.length > 0 && (
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
