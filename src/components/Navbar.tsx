@@ -234,9 +234,11 @@ const handleDashboardClick = () => {
                             Dashboard
                         </DropdownMenuItem>
                         <div className="h-px bg-gray-200 my-1 -mx-1" />
-                        <DropdownMenuItem>Payment</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(APP_ROUTES.ORDER_HISTORY)}>
+                            Order History
+                        </DropdownMenuItem>
                         <div className="h-px bg-gray-200 my-1 -mx-1" />
-                        <DropdownMenuItem>Orders</DropdownMenuItem>
+                        <DropdownMenuItem>Payment</DropdownMenuItem>
                         <div className="h-px bg-gray-200 my-1 -mx-1" />
                         <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                             Logout

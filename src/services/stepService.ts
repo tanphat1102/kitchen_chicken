@@ -1,43 +1,67 @@
-import { api } from './api';
-import type { ApiResponse } from '@/types/api.types';
+import api from "@/config/axios";
+
+// ==================== Interfaces ====================
 
 export interface Step {
   id: number;
-  description: string;
-  order: number;
-  menuItemId: number;
-  menuItemName?: string;
+  name: string;
+  description?: string;
+  categoryId: number;
+  categoryName?: string;
+  stepNumber: number;
+  isActive: boolean;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateStepRequest {
-  description: string;
-  order: number;
-  menuItemId: number;
+  name: string;
+  description?: string;
+  categoryId: number;
+  stepNumber: number;
+  isActive: boolean;
 }
 
 export interface UpdateStepRequest {
+  name?: string;
   description?: string;
-  order?: number;
+  categoryId?: number;
+  stepNumber?: number;
+  isActive?: boolean;
 }
 
-export interface ChangeStepOrderRequest {
-  newOrder: number;
+// ==================== Response Models ====================
+
+interface ApiResponse<T> {
+  statusCode: number;
+  message: string;
+  data: T;
 }
+
+// ==================== API Endpoints ====================
+
+const API_ENDPOINTS = {
+  STEPS: "/api/steps",
+  STEP_BY_ID: (id: number) => `/api/steps/${id}`,
+  STEPS_COUNTS: "/api/steps/counts",
+};
+
+// ==================== Service ====================
 
 export const stepService = {
   // Get all steps (Logged users)
-  getAll: async (): Promise<Step[]> => {
-    const response = await api.get<ApiResponse<Step[]>>('/api/steps');
-    return response.data.data;
-  },
-
-  // Get all steps for stats (no pagination)
-  getAllForStats: async (): Promise<Step[]> => {
-    const response = await api.get<ApiResponse<Step[]>>('/api/steps', {
-      params: { pageNumber: 1, size: 1000 },
+  getAll: async (
+    pageSize: number = 100,
+    pageNumber: number = 1,
+  ): Promise<Step[]> => {
+    const response = await api.get<ApiResponse<Step[]>>(API_ENDPOINTS.STEPS, {
+      params: { size: pageSize, pageNumber },
     });
-    return response.data.data;
+
+    if (response.data.statusCode === 200) {
+      return response.data.data.filter((step) => step.isActive);
+    }
+    throw new Error(response.data.message || "Failed to fetch steps");
   },
 
   // Get total count
@@ -48,30 +72,56 @@ export const stepService = {
 
   // Get step by ID (Logged users)
   getById: async (id: number): Promise<Step> => {
-    const response = await api.get<ApiResponse<Step>>(`/api/steps/${id}`);
-    return response.data.data;
+    const response = await api.get<ApiResponse<Step>>(
+      API_ENDPOINTS.STEP_BY_ID(id),
+    );
+
+    if (response.data.statusCode === 200) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || `Failed to fetch step ${id}`);
   },
 
   // Create new step (Manager only)
   create: async (data: CreateStepRequest): Promise<Step> => {
-    const response = await api.post<ApiResponse<Step>>('/api/steps', data);
-    return response.data.data;
+    const response = await api.post<ApiResponse<Step>>(
+      API_ENDPOINTS.STEPS,
+      data,
+    );
+
+    if (response.data.statusCode === 200) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || "Failed to create step");
   },
 
   // Update step (Manager only)
   update: async (id: number, data: UpdateStepRequest): Promise<Step> => {
-    const response = await api.put<ApiResponse<Step>>(`/api/steps/${id}`, data);
-    return response.data.data;
-  },
+    const response = await api.put<ApiResponse<Step>>(
+      API_ENDPOINTS.STEP_BY_ID(id),
+      data,
+    );
 
-  // Change step order (Manager only)
-  changeOrder: async (id: number, data: ChangeStepOrderRequest): Promise<Step> => {
-    const response = await api.patch<ApiResponse<Step>>(`/api/steps/${id}/order`, data);
-    return response.data.data;
+    if (response.data.statusCode === 200) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || "Failed to update step");
   },
 
   // Delete step (Manager only)
   delete: async (id: number): Promise<void> => {
-    await api.delete(`/api/steps/${id}`);
+    await api.delete(API_ENDPOINTS.STEP_BY_ID(id));
+  },
+
+  // Get total steps count
+  getStepsCount: async (): Promise<number> => {
+    const response = await api.get<ApiResponse<number>>(
+      API_ENDPOINTS.STEPS_COUNTS,
+    );
+
+    if (response.data.statusCode === 200) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || "Failed to get steps count");
   },
 };

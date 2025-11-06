@@ -1,7 +1,10 @@
 import {
   orderCustomerService,
+  type CreateCustomDishRequest,
   type CreateDishRequest,
+  type CreateExistingDishRequest,
   type CreateFeedbackRequest,
+  type Order,
   type UpdateDishRequest,
 } from "@/services/orderCustomerService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -71,7 +74,50 @@ export function useOrderFeedback(orderId: number, enabled = true) {
 // ==================== Mutations ====================
 
 /**
- * Add a dish to current NEW order
+ * Add an existing menu item to current NEW order
+ */
+export function useAddExistingDishToOrder(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateExistingDishRequest) =>
+      orderCustomerService.addExistingDishToOrder(request),
+    onSuccess: (data) => {
+      // Update the current order cache with the new data
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * Add a custom dish to current NEW order
+ */
+export function useAddCustomDishToOrder(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateCustomDishRequest) =>
+      orderCustomerService.addCustomDishToOrder(request),
+    onSuccess: (data) => {
+      // Update the current order cache with the new data
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * @deprecated Use useAddExistingDishToOrder or useAddCustomDishToOrder instead
+ * Add a dish to current NEW order (legacy - auto-routes to correct endpoint)
  */
 export function useAddDishToCurrentOrder(storeId: number) {
   const queryClient = useQueryClient();
@@ -105,13 +151,94 @@ export function useUpdateDish(storeId: number) {
       dishId: number;
       request: UpdateDishRequest;
     }) => orderCustomerService.updateDish(dishId, request),
-    onSuccess: (data) => {
-      // Update the current order cache
-      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
 
+    // Optimistic update - update UI immediately before API call
+    onMutate: async ({ dishId, request }) => {
+      console.log("=== Optimistic Update Start ===");
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+
+      // Snapshot the previous value
+      const previousOrder = queryClient.getQueryData<Order>(
+        orderCustomerKeys.currentOrder(storeId),
+      );
+
+      // Optimistically update to the new value
+      if (previousOrder?.dishes) {
+        const updatedOrder: Order = {
+          ...previousOrder,
+          dishes: previousOrder.dishes.map((dish: any) => {
+            if (dish.dishId === dishId) {
+              // Update the dish's steps with new quantities
+              const updatedSteps = (dish as any).steps?.map((step: any) => ({
+                ...step,
+                items: step.items.map((item: any) => {
+                  // Find if this item's quantity should be updated
+                  const stepUpdate = request.selections?.find(
+                    (s: any) => s.stepId === step.stepId,
+                  );
+                  const itemUpdate = stepUpdate?.items?.find(
+                    (i: any) => i.menuItemId === item.menuItemId,
+                  );
+
+                  if (itemUpdate) {
+                    return { ...item, quantity: itemUpdate.quantity };
+                  }
+                  return item;
+                }),
+              }));
+
+              return {
+                ...dish,
+                steps: updatedSteps,
+              };
+            }
+            return dish;
+          }),
+        };
+
+        queryClient.setQueryData(
+          orderCustomerKeys.currentOrder(storeId),
+          updatedOrder,
+        );
+
+        console.log("Optimistic update applied");
+      }
+
+      console.log("==============================");
+
+      // Return context with previous value
+      return { previousOrder };
+    },
+
+    onSuccess: (data) => {
+      console.log("=== Update Dish Success ===");
+
+      // Refetch to ensure we have the latest data from server
       queryClient.invalidateQueries({
         queryKey: orderCustomerKeys.currentOrder(storeId),
       });
+
+      console.log("===========================");
+    },
+
+    onError: (error, variables, context) => {
+      console.error("=== Update Dish Error ===");
+      console.error("Error:", error);
+
+      // Rollback to previous value on error
+      if (context?.previousOrder) {
+        queryClient.setQueryData(
+          orderCustomerKeys.currentOrder(storeId),
+          context.previousOrder,
+        );
+        console.log("Rolled back to previous state");
+      }
+
+      console.error("========================");
     },
   });
 }
@@ -167,7 +294,8 @@ export function useOrderFlow(storeId: number) {
   const orderHistory = useOrderHistory(storeId, false); // Don't auto-fetch history
   const orderStatuses = useOrderStatuses();
 
-  const addDish = useAddDishToCurrentOrder(storeId);
+  const addExistingDish = useAddExistingDishToOrder(storeId);
+  const addCustomDish = useAddCustomDishToOrder(storeId);
   const updateDish = useUpdateDish(storeId);
   const deleteDish = useDeleteDish(storeId);
 
@@ -178,7 +306,8 @@ export function useOrderFlow(storeId: number) {
     orderStatuses,
 
     // Mutations
-    addDish,
+    addExistingDish,
+    addCustomDish,
     updateDish,
     deleteDish,
 

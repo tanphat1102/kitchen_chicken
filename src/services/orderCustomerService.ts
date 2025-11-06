@@ -4,6 +4,7 @@ import api from "@/config/axios";
 
 export interface OrderDish {
   id: number;
+  dishId: number; // Backend returns this field
   menuItemId: number;
   menuItemName: string;
   quantity: number;
@@ -24,7 +25,7 @@ export interface DishSelection {
 }
 
 export interface Order {
-  id: number;
+  orderId: number;
   storeId: number;
   storeName: string;
   userId: number;
@@ -63,6 +64,22 @@ export interface StepSelection {
   items: SelectionItem[];
 }
 
+export interface CreateExistingDishRequest {
+  storeId: number;
+  dishId: number;
+  quantity: number;
+}
+
+export interface CreateCustomDishRequest {
+  storeId: number;
+  note?: string;
+  selections: StepSelection[];
+  isCustom: boolean;
+}
+
+/**
+ * @deprecated Legacy interface - Use CreateExistingDishRequest or CreateCustomDishRequest
+ */
 export interface CreateDishRequest {
   storeId: number; // REQUIRED
   note?: string;
@@ -87,14 +104,15 @@ interface ApiResponse<T> {
   data: T;
 }
 
-// ==================== Service ====================
+// ==================== API Endpoints ====================
 
 const API_ENDPOINTS = {
   CURRENT_ORDER: "/api/orders/current",
-  CURRENT_DISHES: "/api/orders/current/dishes",
-  DISH: (dishId: number) => `/api/orders/dishes/${dishId}`,
+  CURRENT_DISHES_EXISTING: "/api/orders/current/dishes/existing",
+  CURRENT_DISHES_CUSTOM: "/api/orders/current/dishes/custom",
+  DISH: (dishId: number) => `/api/orders/current/dishes/${dishId}`,
   ORDER_HISTORY: "/api/orders/history",
-  ORDER_STATUSES: "/api/orders/statuses",
+  ORDER_STATUSES: "/api/order-statuses",
   ORDER_FEEDBACK: (orderId: number) => `/api/orders/${orderId}/feedback`,
 };
 
@@ -114,14 +132,51 @@ class OrderCustomerService {
   }
 
   /**
-   * Add a dish to current NEW order (auto-create if none)
+   * Add an existing menu item to current NEW order
    */
-  async addDishToCurrentOrder(request: CreateDishRequest): Promise<Order> {
+  async addExistingDishToOrder(
+    request: CreateExistingDishRequest,
+  ): Promise<Order> {
     const response = await api.post<ApiResponse<Order>>(
-      API_ENDPOINTS.CURRENT_DISHES,
+      API_ENDPOINTS.CURRENT_DISHES_EXISTING,
       request,
     );
     return response.data.data;
+  }
+
+  /**
+   * Add a custom dish to current NEW order
+   */
+  async addCustomDishToOrder(request: CreateCustomDishRequest): Promise<Order> {
+    const response = await api.post<ApiResponse<Order>>(
+      API_ENDPOINTS.CURRENT_DISHES_CUSTOM,
+      request,
+    );
+    return response.data.data;
+  }
+
+  /**
+   * @deprecated Use addExistingDishToOrder or addCustomDishToOrder instead
+   * Legacy method for backward compatibility - auto-routes to correct endpoint
+   */
+  async addDishToCurrentOrder(request: CreateDishRequest): Promise<Order> {
+    // Auto-detect if it's a custom dish or existing dish
+    const isCustom = request.selections && request.selections.length > 0;
+
+    if (isCustom) {
+      // Route to custom dish endpoint
+      return this.addCustomDishToOrder({
+        storeId: request.storeId,
+        note: request.note,
+        selections: request.selections!,
+        isCustom: true,
+      });
+    } else {
+      // This shouldn't happen with old code, but handle it gracefully
+      throw new Error(
+        "Cannot add existing dish without dishId. Use addExistingDishToOrder instead.",
+      );
+    }
   }
 
   /**

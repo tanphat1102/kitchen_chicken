@@ -1,40 +1,18 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { builderService } from '@/services/builderService';
+import { stepService, type Step } from '@/services/stepService';
+import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
 import { storeService, type Store } from '@/services/storeService';
 import useEmblaCarousel from 'embla-carousel-react';
-import { CustomOrderSummary } from '@/components/CustomOrderSummary';
-import { useAddDishToCurrentOrder } from '@/hooks/useOrderCustomer';
+import { useAddCustomDishToOrder } from '@/hooks/useOrderCustomer';
 import { useNavigate } from 'react-router-dom';
 import { APP_ROUTES } from '@/routes/route.constants';
-
-interface Option {
-  id: number;
-  name: string;
-  price: number; //VND
-  cal?: number;
-  imageUrl?: string;
-}
-
-interface StepDef {
-  id: number;
-  name: string;
-  code: 'CARB' | 'PROTEIN' | 'VEGETABLE' | 'SAUCE' | 'DAIRY' | 'FRUIT' | string;
-  description?: string;
-  min: number;
-  max: number;
-  options: Option[];
-}
-
-interface BuilderData {
-  currency: 'VND' | 'USD' | string;
-  basePrice: number;
-  steps: StepDef[];
-}
+import { toast } from 'sonner';
+import { ChevronLeft, ChevronRight, ShoppingCart, Flame, DollarSign } from 'lucide-react';
 
 interface SelectionMap {
-  [stepId: number]: { optionId: number; quantity: number }[];
+  [stepId: number]: { menuItemId: number; quantity: number }[];
 }
 
 const currencyFormat = (v: number, currency: string) =>
@@ -42,16 +20,17 @@ const currencyFormat = (v: number, currency: string) =>
 
 const CustomOrder: React.FC = () => {
   const navigate = useNavigate();
-  const [data, setData] = useState<BuilderData | null>(null);
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [menuItemsByCategory, setMenuItemsByCategory] = useState<Record<number, MenuItem[]>>({});
   const [current, setCurrent] = useState(0);
   const [selection, setSelection] = useState<SelectionMap>({});
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
   
   // Order customer mutation
-  const addDish = useAddDishToCurrentOrder(selectedStoreId || 0);
+  const addDish = useAddCustomDishToOrder(selectedStoreId || 0);
   
   // Embla carousel with smooth animations
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
@@ -96,111 +75,147 @@ const CustomOrder: React.FC = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Fetch builder data when store selection changes
+  // Fetch steps and menu items
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (!selectedStoreId) return;
       try {
+        setLoading(true);
         setError(null);
-        setData(null);
         setSelection({});
         setCurrent(0);
-        const result = await builderService.getBuilderData({ storeId: selectedStoreId });
-        if (mounted) setData(result as unknown as BuilderData);
+        
+        // Fetch all steps
+        const allSteps = await stepService.getAll();
+        if (!mounted) return;
+        
+        // Sort steps by stepNumber
+        const sortedSteps = allSteps.sort((a, b) => a.stepNumber - b.stepNumber);
+        setSteps(sortedSteps);
+        
+        // Fetch menu items for each category
+        const menuItemsMap: Record<number, MenuItem[]> = {};
+        for (const step of sortedSteps) {
+          try {
+            const items = await menuItemsService.searchMenuItems({
+              categoryId: step.categoryId,
+              size: 100,
+            });
+            menuItemsMap[step.categoryId] = items.items.filter(item => item.isActive);
+          } catch (err) {
+            console.error(`Failed to fetch items for category ${step.categoryId}:`, err);
+            menuItemsMap[step.categoryId] = [];
+          }
+        }
+        
+        if (mounted) {
+          setMenuItemsByCategory(menuItemsMap);
+        }
       } catch (e: any) {
         if (mounted) setError(e?.message || 'Failed to load custom builder');
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
     return () => { mounted = false; };
   }, [selectedStoreId]);
 
-  const step = useMemo(() => (data ? data.steps[current] : undefined), [data, current]);
+  const currentStep = useMemo(() => steps[current], [steps, current]);
+  const currentStepMenuItems = useMemo(() => {
+    if (!currentStep) return [];
+    return menuItemsByCategory[currentStep.categoryId] || [];
+  }, [currentStep, menuItemsByCategory]);
 
   const total = useMemo(() => {
-    if (!data) return 0;
-    let sum = data.basePrice;
-    for (const s of data.steps) {
-      const picks = selection[s.id] || [];
-      for (const p of picks) {
-        const opt = s.options.find((o) => o.id === p.optionId);
-        if (opt) sum += opt.price * (p.quantity || 1);
+    let sum = 0;
+    for (const stepId in selection) {
+      const picks = selection[stepId] || [];
+      for (const pick of picks) {
+        // Find the menu item across all categories
+        for (const categoryId in menuItemsByCategory) {
+          const item = menuItemsByCategory[categoryId].find(m => m.id === pick.menuItemId);
+          if (item) {
+            sum += item.price * (pick.quantity || 1);
+            break;
+          }
+        }
       }
     }
     return sum;
-  }, [data, selection]);
+  }, [selection, menuItemsByCategory]);
 
   const totalKcal = useMemo(() => {
-    if (!data) return 0;
     let kcal = 0;
-    for (const s of data.steps) {
-      const picks = selection[s.id] || [];
-      for (const p of picks) {
-        const opt = s.options.find((o) => o.id === p.optionId);
-        if (opt) kcal += (opt.cal || 0) * (p.quantity || 1);
+    for (const stepId in selection) {
+      const picks = selection[stepId] || [];
+      for (const pick of picks) {
+        // Find the menu item across all categories
+        for (const categoryId in menuItemsByCategory) {
+          const item = menuItemsByCategory[categoryId].find(m => m.id === pick.menuItemId);
+          if (item) {
+            kcal += (item.cal || 0) * (pick.quantity || 1);
+            break;
+          }
+        }
       }
     }
     return kcal;
-  }, [data, selection]);
+  }, [selection, menuItemsByCategory]);
 
-  const toggleOption = (s: StepDef, opt: Option) => {
+  const toggleOption = (item: MenuItem) => {
+    if (!currentStep) return;
+    
     setSelection((prev) => {
-      const curr = prev[s.id] || [];
-      const idx = curr.findIndex((x) => x.optionId === opt.id);
-      const selectedCount = curr.length;
+      const curr = prev[currentStep.id] || [];
+      const idx = curr.findIndex((x) => x.menuItemId === item.id);
       const isSelected = idx >= 0;
 
-      // Enforce min/max and single-select cases
-      if (s.max === 1) {
-        // Single-select: replace or remove
-        if (isSelected) {
-          return { ...prev, [s.id]: [] };
-        } else {
-          return { ...prev, [s.id]: [{ optionId: opt.id, quantity: 1 }] };
-        }
-      }
-
-      // Multi-select
-      if (!isSelected) {
-        if (selectedCount >= s.max) return prev; 
-        return { ...prev, [s.id]: [...curr, { optionId: opt.id, quantity: 1 }] };
-      } else {
+      // For now, allow multiple selections
+      if (isSelected) {
         const copy = curr.slice();
         copy.splice(idx, 1);
-        return { ...prev, [s.id]: copy };
+        return { ...prev, [currentStep.id]: copy };
+      } else {
+        return { ...prev, [currentStep.id]: [...curr, { menuItemId: item.id, quantity: 1 }] };
       }
     });
   };
 
-  const inc = (s: StepDef, opt: Option) => {
+  const inc = (item: MenuItem) => {
+    if (!currentStep) return;
+    
     setSelection((prev) => {
-      const curr = prev[s.id] || [];
-      const idx = curr.findIndex((x) => x.optionId === opt.id);
+      const curr = prev[currentStep.id] || [];
+      const idx = curr.findIndex((x) => x.menuItemId === item.id);
       if (idx === -1) return prev;
       const copy = curr.slice();
       copy[idx] = { ...copy[idx], quantity: (copy[idx].quantity || 1) + 1 };
-      return { ...prev, [s.id]: copy };
+      return { ...prev, [currentStep.id]: copy };
     });
   };
 
-  const dec = (s: StepDef, opt: Option) => {
+  const dec = (item: MenuItem) => {
+    if (!currentStep) return;
+    
     setSelection((prev) => {
-      const curr = prev[s.id] || [];
-      const idx = curr.findIndex((x) => x.optionId === opt.id);
+      const curr = prev[currentStep.id] || [];
+      const idx = curr.findIndex((x) => x.menuItemId === item.id);
       if (idx === -1) return prev;
       const copy = curr.slice();
       const nextQ = (copy[idx].quantity || 1) - 1;
       if (nextQ <= 0) copy.splice(idx, 1);
       else copy[idx] = { ...copy[idx], quantity: nextQ };
-      return { ...prev, [s.id]: copy };
+      return { ...prev, [currentStep.id]: copy };
     });
   };
 
   const canNext = useMemo(() => {
-    if (!step) return false;
-    const picks = selection[step.id] || [];
-    return picks.length >= step.min && picks.length <= step.max;
-  }, [step, selection]);
+    if (!currentStep) return false;
+    const picks = selection[currentStep.id] || [];
+    // At least one item selected
+    return picks.length > 0;
+  }, [currentStep, selection]);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -211,33 +226,26 @@ const CustomOrder: React.FC = () => {
   }, [emblaApi]);
 
   const next = () => {
-    if (!data) return;
-    if (current < data.steps.length - 1 && canNext) setCurrent((c) => c + 1);
+    if (current < steps.length - 1 && canNext) setCurrent((c) => c + 1);
   };
   const back = () => setCurrent((c) => Math.max(0, c - 1));
 
   const handleDone = () => {
     if (!canNext) return;
-    setShowSummary(true);
+    // Directly place order instead of showing summary modal
+    placeOrder();
   };
 
   const placeOrder = () => {
-    if (!data || !selectedStoreId) return;
+    if (!selectedStoreId) return;
 
     // Convert selection to API format
-    const selectionsMap = new Map<number, { menuItemId: number; quantity: number }[]>();
-    
-    Object.entries(selection).forEach(([stepId, picks]) => {
-      const items = picks.map((pick: { optionId: number; quantity: number }) => ({
-        menuItemId: pick.optionId, // optionId is the menuItemId in selections
+    const selections = Object.entries(selection).map(([stepId, picks]) => ({
+      stepId: Number(stepId),
+      items: picks.map((pick: { menuItemId: number; quantity: number }) => ({
+        menuItemId: pick.menuItemId,
         quantity: pick.quantity || 1,
-      }));
-      selectionsMap.set(Number(stepId), items);
-    });
-
-    const selections = Array.from(selectionsMap.entries()).map(([stepId, items]) => ({
-      stepId,
-      items,
+      })),
     }));
 
     // Add custom bowl to order
@@ -246,15 +254,18 @@ const CustomOrder: React.FC = () => {
         storeId: selectedStoreId,
         note: 'Custom bowl',
         selections,
+        isCustom: true,
       },
       {
         onSuccess: () => {
-          setShowSummary(false);
           // Reset builder
           setSelection({});
           setCurrent(0);
-          // Navigate to cart or show success message
-          alert('Custom bowl added to order!');
+          // Show success toast
+          toast.success('Custom bowl added to order!', {
+            description: 'Your custom dish has been added successfully.',
+            duration: 3000,
+          });
           // Optionally navigate to menu or cart
           // navigate(APP_ROUTES.MENU);
         },
@@ -263,12 +274,17 @@ const CustomOrder: React.FC = () => {
           
           // Handle 401 Unauthorized
           if (error.response?.status === 401) {
-            alert('Please login to add items to cart');
-            setShowSummary(false);
+            toast.error('Authentication required', {
+              description: 'Please login to add items to cart',
+              duration: 4000,
+            });
             // Optional: Trigger login modal
             window.dispatchEvent(new CustomEvent('auth:login-required'));
           } else {
-            alert('Failed to add to order. Please try again.');
+            toast.error('Failed to add to order', {
+              description: 'Please try again or contact support.',
+              duration: 4000,
+            });
           }
         },
       }
@@ -278,19 +294,19 @@ const CustomOrder: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-20">
-        <div className="max-w-4xl mx-auto px-4">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">Build Your Perfect Bowl</h1>
-            <p className="text-gray-600">Customize your meal step by step</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-6 lg:py-8 overflow-x-hidden">
+        <div className="w-[95vw] lg:w-[80vw] mx-auto overflow-x-hidden">
+          {/* Header - Compact */}
+          <div className="text-center mb-4">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Build Your Perfect Bowl</h1>
+            <p className="text-sm text-gray-600">Customize your meal step by step</p>
           </div>
 
-          {/* Store selector */}
-          <div className="mb-8 flex items-center justify-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Select Store:</label>
+          {/* Store selector - Compact */}
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <label className="text-xs lg:text-sm font-medium text-gray-700">Store:</label>
             <select
-              className="border border-gray-300 rounded-lg px-4 py-2 bg-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
               value={selectedStoreId ?? ''}
               onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
             >
@@ -301,277 +317,363 @@ const CustomOrder: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-6 rounded-lg bg-red-50 border border-red-200 p-4 text-red-700 text-center">
+            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-red-700 text-center text-sm">
               {error}
             </div>
           )}
 
-          {!data ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          {loading ? (
+            <div className="text-center py-16">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-red-600"></div>
               <p className="mt-4 text-gray-600">Loading your custom builder...</p>
             </div>
           ) : (
             <>
-              {/* Current Step Display */}
-              {step && (
-                <div className="mb-8">
-                  <div className="bg-white rounded-2xl shadow-lg p-8">
-                    <h2 className="text-3xl font-bold text-red-600 mb-2 uppercase tracking-wide">
-                      {step.name}:
-                    </h2>
-                    {step.description && (
-                      <p className="text-gray-600 mb-4">{step.description}</p>
-                    )}
-                    
-                    {/* Carousel Container */}
-                    <div className="relative mt-8">
-                      {/* Carousel Viewport */}
-                      <div className="overflow-hidden" ref={emblaRef}>
-                        <div className="flex gap-6">
-                          {step.options.map((opt, optIndex) => {
-                            const picks = selection[step.id] || [];
-                            const picked = picks.find((p) => p.optionId === opt.id);
-                            const isSelected = !!picked;
-                            
-                            return (
-                              <div
-                                key={opt.id}
-                                className="flex-[0_0_33.333%] min-w-0 px-2"
-                              >
+              {/* Desktop Layout (Horizontal) - ưu tiên cho màn hình ngang */}
+              <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-4 lg:items-start">
+                {/* Left Side: Step Builder */}
+                <div className="space-y-4 min-w-0">
+                  {/* Progress Indicator - More Compact */}
+                  <div className="bg-white rounded-lg shadow-sm p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-gray-700">
+                        Step {current + 1} of {steps.length}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {Math.round(((current + 1) / steps.length) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-gradient-to-r from-red-500 to-red-600 h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${((current + 1) / steps.length) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      {steps.map((s, idx) => (
+                        <div key={s.id} className="flex flex-col items-center flex-1">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                            idx === current 
+                              ? 'bg-red-600 text-white scale-110 shadow-md' 
+                              : idx < current 
+                              ? 'bg-red-400 text-white' 
+                              : 'bg-gray-300 text-gray-600'
+                          }`}>
+                            {idx < current ? '✓' : idx + 1}
+                          </div>
+                          <span className={`text-[10px] mt-0.5 font-medium truncate max-w-[60px] ${
+                            idx === current ? 'text-red-600' : 'text-gray-500'
+                          }`}>
+                            {s.name}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Current Step Display */}
+                  {currentStep && (
+                    <div className="bg-white rounded-lg shadow-md p-4 overflow-hidden w-full max-w-full">
+                      <div className="mb-3">
+                        <h2 className="text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wide">
+                          {currentStep.name}
+                        </h2>
+                        {currentStep.description && (
+                          <p className="text-gray-600 text-sm mt-1">{currentStep.description}</p>
+                        )}
+                      </div>
+                      
+                      {/* Items Grid - Horizontal layout for desktop */}
+                      <div className="relative overflow-x-hidden max-w-full">
+                        <div className="overflow-hidden px-4 lg:px-10 max-w-full" ref={emblaRef}>
+                          <div className="flex gap-3 min-w-0">
+                            {currentStepMenuItems.map((item) => {
+                              const picks = selection[currentStep.id] || [];
+                              const picked = picks.find((p) => p.menuItemId === item.id);
+                              const isSelected = !!picked;
+                              
+                              return (
                                 <div
-                                  className="flex flex-col items-center cursor-pointer group transition-transform duration-300"
-                                  onClick={() => toggleOption(step, opt)}
+                                  key={item.id}
+                                  className="flex-[0_0_220px] lg:flex-[0_0_240px] min-w-0"
                                 >
-                                  {/* Bowl Circle - Single element approach */}
-                                  <div className="relative mb-6">
-                                    {/* Outer glow effect when selected */}
+                                  <div
+                                    className={`relative group bg-white rounded-lg border-2 transition-all duration-300 cursor-pointer h-full ${
+                                      isSelected 
+                                        ? 'z-10 border-red-600 shadow-lg shadow-red-100 scale-[1.02] ring-2 ring-red-500/40 ring-offset-2 ring-offset-white bg-gradient-to-b from-white to-red-50/40' 
+                                        : 'z-0 border-gray-200 hover:border-red-300 hover:shadow-md hover:shadow-red-100 hover:-translate-y-0.5'
+                                    }`}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-pressed={isSelected}
+                                    onKeyDown={(e) => {
+                                      if ((e as React.KeyboardEvent).key === 'Enter' || (e as React.KeyboardEvent).key === ' ') {
+                                        e.preventDefault();
+                                        toggleOption(item);
+                                      }
+                                    }}
+                                    onClick={() => toggleOption(item)}
+                                  >
+                                    {/* Selection Badge */}
                                     {isSelected && (
-                                      <div className="absolute -inset-4 rounded-full bg-red-400 opacity-20 blur-2xl animate-pulse" />
-                                    )}
-                                    
-                                    {/* Main bowl container with perfect circle border */}
-                                    <div className="relative w-56 h-56">
-                                      {/* Red circle border (when selected) or gray (when not) */}
-                                      <div
-                                        className={`absolute inset-0 rounded-full transition-all duration-300 ${
-                                          isSelected
-                                            ? 'bg-red-600 shadow-2xl'
-                                            : 'bg-gray-200 group-hover:bg-gray-300 group-hover:shadow-xl'
-                                        }`}
-                                      />
-                                      
-                                      {/* White inner circle */}
-                                      <div className="absolute inset-2 rounded-full bg-white shadow-inner flex items-center justify-center">
-                                        {/* Image container */}
-                                        <div className="w-48 h-48 rounded-full overflow-hidden bg-gray-50 shadow-md">
-                                          <img
-                                            src={opt.imageUrl || '/images/placeholder.svg'}
-                                            alt={opt.name}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              (e.currentTarget as HTMLImageElement).src = '/images/placeholder.svg';
-                                            }}
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Quantity Controls */}
-                                    {isSelected && (
-                                      <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 flex items-center gap-3 bg-white rounded-full shadow-xl px-4 py-2 border-2 border-red-600 animate-fadeIn">
-                                        <button
-                                          className="w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition-all hover:scale-110 active:scale-95"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            dec(step, opt);
-                                          }}
-                                        >
-                                          −
-                                        </button>
-                                        <span className="font-bold text-gray-800 min-w-[24px] text-center text-lg">
-                                          {picked?.quantity || 1}
-                                        </span>
-                                        <button
-                                          className="w-8 h-8 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition-all hover:scale-110 active:scale-95"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            inc(step, opt);
-                                          }}
-                                        >
-                                          +
-                                        </button>
-                                      </div>
-                                    )}
-                                    
-                                    {/* Selection checkmark */}
-                                    {isSelected && (
-                                      <div className="absolute -top-2 -right-2 w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg animate-scaleIn z-10">
-                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shadow-md z-10 animate-scaleIn">
+                                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                         </svg>
                                       </div>
                                     )}
+                                    
+                                    {/* Image */}
+                                    <div className="relative h-32 lg:h-36 overflow-hidden bg-gray-100 flex items-center justify-center p-3">
+                                      <div className={`w-28 h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden bg-white shadow-md ${isSelected ? 'ring-2 ring-red-300 ring-offset-2 ring-offset-gray-100' : ''}` }>
+                                        <img
+                                          src={item.imageUrl || '/images/placeholder.svg'}
+                                          alt={item.name}
+                                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                                          onError={(e) => {
+                                            (e.currentTarget as HTMLImageElement).src = '/images/placeholder.svg';
+                                          }}
+                                        />
+                                      </div>
+                                      {isSelected && (
+                                        <div className="absolute inset-10 bg-opacity-10 rounded-t-lg"></div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Content */}
+                                    <div className="p-3">
+                                      <h3 className={`font-bold text-sm lg:text-base mb-1.5 line-clamp-1 ${
+                                        isSelected ? 'text-red-600' : 'text-gray-800'
+                                      }`}>
+                                        {item.name}
+                                      </h3>
+                                      
+                                      <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                                        <span className="flex items-center gap-1">
+                                          <Flame className="w-3 h-3 text-orange-500" />
+                                          {item.cal || 0} cal
+                                        </span>
+                                        <span className="flex items-center gap-0.5 font-semibold text-red-600">
+                                          {new Intl.NumberFormat('vi-VN').format(item.price)}đ
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Quantity Controls */}
+                                      {isSelected && (
+                                        <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-200">
+                                          <button
+                                            className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition-all hover:scale-110 active:scale-95"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              dec(item);
+                                            }}
+                                          >
+                                            −
+                                          </button>
+                                          <span className="font-bold text-gray-800 text-base min-w-[24px] text-center">
+                                            {picked?.quantity || 1}
+                                          </span>
+                                          <button
+                                            className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition-all hover:scale-110 active:scale-95"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              inc(item);
+                                            }}
+                                          >
+                                            +
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Selected visual accents */}
+                                    {isSelected && (
+                                      <>
+                                        <div className="pointer-events-none absolute inset-0 rounded-lg bg-red-500/5"></div>
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-red-500 to-red-600 rounded-b-lg"></div>
+                                      </>
+                                    )}
                                   </div>
-                                  
-                                  {/* Option Name */}
-                                  <h3 className={`text-2xl font-bold mb-1 transition-colors duration-300 text-center ${
-                                    isSelected ? 'text-red-600' : 'text-gray-800'
-                                  }`}>
-                                    {opt.name}
-                                  </h3>
-                                  
-                                  {/* Calories */}
-                                  <p className="text-base text-gray-500 font-medium">{opt.cal || 0} calories</p>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
+
+                        {/* Navigation Arrows */}
+                        {currentStepMenuItems.length > 3 && (
+                          <>
+                            <button
+                              onClick={scrollPrev}
+                              className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-300 transition-all hover:scale-110 z-10"
+                            >
+                              <ChevronLeft className="w-5 h-5 text-gray-700" />
+                            </button>
+                            <button
+                              onClick={scrollNext}
+                              className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-300 transition-all hover:scale-110 z-10"
+                            >
+                              <ChevronRight className="w-5 h-5 text-gray-700" />
+                            </button>
+                          </>
+                        )}
                       </div>
 
-                      {/* Carousel Navigation Arrows with enhanced styling */}
+                      {/* Carousel Dots */}
+                      {currentStepMenuItems.length > 1 && (
+                        <div className="flex justify-center gap-1.5 mt-4">
+                          {currentStepMenuItems.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => emblaApi?.scrollTo(idx)}
+                              className={`transition-all duration-300 rounded-full ${
+                                idx === selectedIndex
+                                  ? 'w-6 h-2 bg-red-600'
+                                  : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Navigation Buttons - Desktop */}
+                  <div className="hidden lg:flex items-center justify-between gap-3">
+                    <button
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 font-semibold text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      onClick={back}
+                      disabled={current === 0}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Back
+                    </button>
+
+                    {current === steps.length - 1 ? (
                       <button
-                        onClick={scrollPrev}
-                        className="absolute left-4 top-1/3 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-2xl border-2 border-gray-100 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-all hover:scale-110 active:scale-95 z-10 group"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleDone}
+                        disabled={!canNext}
                       >
-                        <svg className="w-7 h-7 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                        </svg>
+                        <ShoppingCart className="w-4 h-4" />
+                        Add to Cart
                       </button>
+                    ) : (
                       <button
-                        onClick={scrollNext}
-                        className="absolute right-4 top-1/3 -translate-y-1/2 w-14 h-14 rounded-full bg-white shadow-2xl border-2 border-gray-100 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-all hover:scale-110 active:scale-95 z-10 group"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={next}
+                        disabled={!canNext}
                       >
-                        <svg className="w-7 h-7 text-gray-600 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                        </svg>
+                        Next Step
+                        <ChevronRight className="w-4 h-4" />
                       </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Side: Summary Panel - Sticky on desktop */}
+                <div className="lg:sticky lg:top-20 mt-4 lg:mt-0">
+                  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4 text-red-600" />
+                      Your Selection
+                    </h3>
+
+                    {/* Summary Items */}
+                    <div className="space-y-3 max-h-[500px] overflow-y-auto mb-3">
+                      {steps.map((s) => {
+                        const picks = selection[s.id] || [];
+                        if (picks.length === 0) return null;
+                        const stepMenuItems = menuItemsByCategory[s.categoryId] || [];
+                        return (
+                          <div key={s.id} className="border-b border-gray-100 pb-2.5">
+                            <div className="font-semibold text-red-600 text-xs mb-1.5">{s.name}</div>
+                            <ul className="space-y-1">
+                              {picks.map((p) => {
+                                const menuItem = stepMenuItems.find((x) => x.id === p.menuItemId);
+                                if (!menuItem) return null;
+                                return (
+                                  <li key={p.menuItemId} className="flex items-center justify-between text-xs text-gray-700">
+                                    <span className="flex-1 line-clamp-1">
+                                      {menuItem.name}
+                                      {p.quantity > 1 && (
+                                        <span className="text-red-600 font-semibold ml-1">×{p.quantity}</span>
+                                      )}
+                                    </span>
+                                    <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
+                                      {new Intl.NumberFormat('vi-VN').format(menuItem.price * p.quantity)}đ
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        );
+                      })}
                       
-                      {/* Carousel dots indicator */}
-                      <div className="flex justify-center gap-2 mt-8">
-                        {step.options.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => emblaApi?.scrollTo(idx)}
-                            className={`transition-all duration-300 rounded-full ${
-                              idx === selectedIndex
-                                ? 'w-8 h-3 bg-red-600'
-                                : 'w-3 h-3 bg-gray-300 hover:bg-gray-400'
-                            }`}
-                          />
-                        ))}
+                      {Object.keys(selection).length === 0 && (
+                        <p className="text-gray-400 text-xs text-center py-6">
+                          No items selected yet
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Totals */}
+                    <div className="space-y-2 pt-3 border-t-2 border-gray-200">
+                      <div className="flex items-center justify-between text-gray-700 text-sm">
+                        <span className="flex items-center gap-1.5">
+                          <Flame className="w-4 h-4 text-orange-500" />
+                          <span className="font-medium">Calories</span>
+                        </span>
+                        <span className="font-bold">{totalKcal}</span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-gray-900 pt-1">
+                        <span className="text-sm font-semibold">Total</span>
+                        <span className="text-xl font-bold text-red-600">
+                          {currencyFormat(total, 'VND')}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Total Calories Display */}
-              <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold text-red-600 uppercase">Total calories:</h3>
-                  </div>
-                  <div className="text-4xl font-bold text-gray-800">
-                    {totalKcal}
-                  </div>
-                </div>
               </div>
 
-              {/* Navigation & Action Buttons */}
-              <div className="flex items-center justify-between gap-4">
+              {/* Mobile Navigation Buttons - shown only on mobile */}
+              <div className="lg:hidden flex items-center justify-between gap-3 mt-4">
                 <button
-                  className="px-8 py-3 rounded-full border-2 border-gray-300 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 font-semibold text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
                   onClick={back}
                   disabled={current === 0}
                 >
-                  ← Back
+                  <ChevronLeft className="w-4 h-4" />
+                  Back
                 </button>
 
-                <div className="flex items-center gap-2">
-                  {data.steps.map((s, idx) => (
-                    <div
-                      key={s.id}
-                      className={`w-3 h-3 rounded-full transition ${
-                        idx === current
-                          ? 'bg-red-600 scale-125'
-                          : idx < current
-                          ? 'bg-red-400'
-                          : 'bg-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                {current === data.steps.length - 1 ? (
+                {current === steps.length - 1 ? (
                   <button
-                    className="px-8 py-3 rounded-full bg-red-600 font-semibold text-white hover:bg-red-700 shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleDone}
                     disabled={!canNext}
                   >
-                    Done
+                    <ShoppingCart className="w-4 h-4" />
+                    Add to Cart
                   </button>
                 ) : (
                   <button
-                    className="px-8 py-3 rounded-full bg-red-600 font-semibold text-white hover:bg-red-700 shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={next}
                     disabled={!canNext}
                   >
-                    Next →
+                    Next
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 )}
-              </div>
-
-              {/* Summary Footer */}
-              <div className="mt-8 bg-gray-50 rounded-2xl p-6">
-                <h3 className="font-semibold text-lg mb-4 text-gray-800">Your Selection Summary</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  {data.steps.map((s) => {
-                    const picks = selection[s.id] || [];
-                    if (picks.length === 0) return null;
-                    return (
-                      <div key={s.id} className="bg-white rounded-lg p-3 shadow-sm">
-                        <div className="font-semibold text-red-600 mb-2">{s.name}</div>
-                        <ul className="space-y-1 text-gray-600">
-                          {picks.map((p) => {
-                            const o = s.options.find((x) => x.id === p.optionId);
-                            if (!o) return null;
-                            return (
-                              <li key={p.optionId}>
-                                {o.name} {p.quantity > 1 ? `×${p.quantity}` : ''}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-6 flex items-center justify-between pt-4 border-t border-gray-200">
-                  <span className="text-lg font-semibold text-gray-700">Total Price:</span>
-                  <span className="text-2xl font-bold text-red-600">
-                    {currencyFormat(total, data.currency)}
-                  </span>
-                </div>
               </div>
             </>
           )}
         </div>
       </div>
-      
-      {/* Summary Modal */}
-      {data && (
-        <CustomOrderSummary
-          open={showSummary}
-          onClose={() => setShowSummary(false)}
-          steps={data.steps}
-          selection={selection}
-          currency={data.currency}
-          basePrice={data.basePrice}
-          onAddToCart={placeOrder}
-        />
-      )}
       
       <Footer />
     </>
