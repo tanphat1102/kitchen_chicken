@@ -75,7 +75,6 @@ export type {
   UpdatePromotionRequest,
 } from "./promotionService";
 export type {
-  ChangeStepOrderRequest,
   CreateStepRequest,
   Step,
   UpdateStepRequest,
