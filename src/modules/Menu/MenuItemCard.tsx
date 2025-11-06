@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getCategoryMetaByName } from '@/constants/categoryMeta';
 import type { MenuItem } from '@/services/menuItemsService';
-import { useAddDishToCurrentOrder } from '@/hooks/useOrderCustomer';
+import { useAddExistingDishToOrder } from '@/hooks/useOrderCustomer';
 
 interface MenuItemDetail extends MenuItem {
   calories: number;
@@ -96,7 +96,7 @@ const formatVND = (value: number) =>
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
   const { color, Icon } = useMemo(() => getCategoryMeta(item.categoryName), [item.categoryName]);
-  const addDish = useAddDishToCurrentOrder(storeId);
+  const addDish = useAddExistingDishToOrder(storeId);
 
   const description = useMemo(() => {
     // if (item.description) return item.description; //API chưa có
@@ -110,8 +110,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
     addDish.mutate(
       {
         storeId: storeId,
-        note: '',
-        selections: [], // No selections for regular menu items
+        dishId: item.id,
+        quantity: 1,
       },
       {
         onSuccess: () => {
@@ -177,22 +177,28 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
             <span>{isFinite(item.calories) ? `${item.calories} kcal` : '—'}</span>
           </div>
 
-          <div className="mt-4 flex items-center justify-between">
+          <div className="mt-4 flex items-center justify-between gap-2">
             <p className="text-gray-900 font-extrabold text-lg sm:text-xl">{formatVND(item.price)}</p>
             <button
               type="button"
               onClick={handleAddToCart}
               disabled={addDish.isPending}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-600 text-white shadow-md transition-transform hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-red-600 text-white text-sm font-semibold shadow-md transition-all hover:bg-red-700 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Add to cart"
             >
               {addDish.isPending ? (
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="hidden sm:inline">Adding...</span>
+                </>
               ) : (
-                <PlusIcon className="w-5 h-5" />
+                <>
+                  <PlusIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add</span>
+                </>
               )}
             </button>
           </div>

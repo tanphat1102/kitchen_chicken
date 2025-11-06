@@ -1,6 +1,8 @@
 import {
   orderCustomerService,
+  type CreateCustomDishRequest,
   type CreateDishRequest,
+  type CreateExistingDishRequest,
   type CreateFeedbackRequest,
   type Order,
   type UpdateDishRequest,
@@ -72,7 +74,50 @@ export function useOrderFeedback(orderId: number, enabled = true) {
 // ==================== Mutations ====================
 
 /**
- * Add a dish to current NEW order
+ * Add an existing menu item to current NEW order
+ */
+export function useAddExistingDishToOrder(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateExistingDishRequest) =>
+      orderCustomerService.addExistingDishToOrder(request),
+    onSuccess: (data) => {
+      // Update the current order cache with the new data
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * Add a custom dish to current NEW order
+ */
+export function useAddCustomDishToOrder(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateCustomDishRequest) =>
+      orderCustomerService.addCustomDishToOrder(request),
+    onSuccess: (data) => {
+      // Update the current order cache with the new data
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * @deprecated Use useAddExistingDishToOrder or useAddCustomDishToOrder instead
+ * Add a dish to current NEW order (legacy - auto-routes to correct endpoint)
  */
 export function useAddDishToCurrentOrder(storeId: number) {
   const queryClient = useQueryClient();
@@ -249,7 +294,8 @@ export function useOrderFlow(storeId: number) {
   const orderHistory = useOrderHistory(storeId, false); // Don't auto-fetch history
   const orderStatuses = useOrderStatuses();
 
-  const addDish = useAddDishToCurrentOrder(storeId);
+  const addExistingDish = useAddExistingDishToOrder(storeId);
+  const addCustomDish = useAddCustomDishToOrder(storeId);
   const updateDish = useUpdateDish(storeId);
   const deleteDish = useDeleteDish(storeId);
 
@@ -260,7 +306,8 @@ export function useOrderFlow(storeId: number) {
     orderStatuses,
 
     // Mutations
-    addDish,
+    addExistingDish,
+    addCustomDish,
     updateDish,
     deleteDish,
 
