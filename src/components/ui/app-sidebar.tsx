@@ -54,10 +54,27 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
           isCollapsed ? "w-20" : "w-64",
           className
         )}
+        style={{ zIndex: 40 }}
       >
+        {/* Collapse Toggle Button - Positioned at top level */}
+        <button
+          onClick={toggleCollapse}
+          className={cn(
+            "absolute -right-3 h-6 w-6 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-black transition-all shadow-lg",
+            isCollapsed && "rotate-180"
+          )}
+          style={{ 
+            top: '32px', // Align with header center
+            zIndex: 99999,
+            position: 'absolute'
+          }}
+        >
+          <ChevronLeft className="h-3 w-3 text-gray-700" />
+        </button>
+
         {/* Sidebar Header */}
         <div className={cn(
-          "flex items-center gap-3 p-6 border-b border-gray-200 relative bg-gray-50",
+          "flex items-center gap-3 p-6 border-b border-gray-200 bg-gray-50",
           isCollapsed && "justify-center p-4"
         )}>
           <div className="relative">
@@ -80,17 +97,6 @@ const AppSidebar = React.forwardRef<HTMLDivElement, AppSidebarProps>(
               </span>
             </div>
           )}
-          
-          {/* Collapse Toggle Button */}
-          <button
-            onClick={toggleCollapse}
-            className={cn(
-              "absolute -right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center hover:bg-gray-100 hover:border-black transition-all shadow-lg z-50",
-              isCollapsed && "rotate-180"
-            )}
-          >
-            <ChevronLeft className="h-3 w-3 text-gray-700" />
-          </button>
         </div>
 
         {/* Navigation */}

@@ -8,6 +8,8 @@ import {
   BarChart3,
   User,
   Utensils,
+  Apple,
+  ListOrdered,
 } from "lucide-react";
 
 export const managerSidebarData = {
@@ -64,6 +66,20 @@ export const managerSidebarData = {
       url: "/manager/promotions",
       icon: TrendingUp,
       description: "Special offers",
+      badge: undefined,
+    },
+    {
+      title: "Nutrients",
+      url: "/manager/nutrients",
+      icon: Apple,
+      description: "Nutritional info",
+      badge: undefined,
+    },
+    {
+      title: "Recipe Steps",
+      url: "/manager/steps",
+      icon: ListOrdered,
+      description: "Cooking instructions",
       badge: undefined,
     },
     {

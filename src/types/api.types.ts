@@ -32,6 +32,7 @@ export interface Category {
   id: number;
   name: string;
   description?: string;
+  isActive?: boolean; // Frontend-only field for soft delete
 }
 
 export interface CreateCategoryRequest {
@@ -239,9 +240,6 @@ export interface User {
   displayName: string; // ✅ Required (backend's fullName is required)
   role: 'USER' | 'EMPLOYEE' | 'MANAGER' | 'ADMIN' | 'STORE';
   isActive: boolean;
-  isVerified: boolean;
-  phone?: string; // ⚠️ Note: Backend doesn't return this in UserResponse
-  address?: string; // ⚠️ Note: Backend doesn't return this in UserResponse
   avatar?: string; // Maps to backend's imageURL
   createdAt?: string;
 }

@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/ui/app-sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,11 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { sidebarData } from "./admin-sidebar-data";
-import { Bell, Search, Settings, LogOut, ChevronDown, Home } from "lucide-react";
+import { LogOut, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 
@@ -72,7 +70,7 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
       <AppSidebar data={sidebarData} />
       <SidebarInset>
         {/* Enhanced Header - Light Theme */}
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white backdrop-blur supports-[backdrop-filter]:bg-white/80 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-sm">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b border-gray-200 bg-white backdrop-blur supports-[backdrop-filter]:bg-white/80 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 shadow-sm">
           <div className="flex flex-1 items-center justify-between gap-2 px-4">
             {/* Left: Breadcrumb */}
             <div className="flex items-center gap-2">
@@ -95,60 +93,6 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">
-              {/* Search Button */}
-              <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-black hover:bg-gray-100">
-                <Search className="h-5 w-5" />
-              </Button>
-
-              {/* Notifications */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-black hover:bg-gray-100">
-                    <Bell className="h-5 w-5" />
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-black text-white hover:bg-black"
-                    >
-                      3
-                    </Badge>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 bg-white border-gray-200">
-                  <DropdownMenuLabel className="text-gray-900">Notifications</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-200" />
-                  <div className="max-h-[300px] overflow-y-auto">
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 focus:bg-gray-100">
-                      <p className="text-sm font-medium text-gray-900">New user registered</p>
-                      <p className="text-xs text-gray-600">John Doe just signed up</p>
-                      <span className="text-xs text-gray-500">2 minutes ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-gray-200" />
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 focus:bg-gray-100">
-                      <p className="text-sm font-medium text-gray-900">New transaction</p>
-                      <p className="text-xs text-gray-600">Payment of ₫500,000 received</p>
-                      <span className="text-xs text-gray-500">15 minutes ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-gray-200" />
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 focus:bg-gray-100">
-                      <p className="text-sm font-medium text-gray-900">Store updated</p>
-                      <p className="text-xs text-gray-600">District 1 store information changed</p>
-                      <span className="text-xs text-gray-500">1 hour ago</span>
-                    </DropdownMenuItem>
-                  </div>
-                  <DropdownMenuSeparator className="bg-gray-200" />
-                  <DropdownMenuItem className="justify-center text-sm text-black focus:bg-gray-100">
-                    View all notifications
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {/* Settings */}
-              <Button variant="ghost" size="icon" className="text-gray-600 hover:text-black hover:bg-gray-100">
-                <Settings className="h-5 w-5" />
-              </Button>
-
-              <Separator orientation="vertical" className="h-6 bg-gray-300" />
-
               {/* User Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -172,10 +116,6 @@ export default function AdminLayout({ children }: Readonly<AdminLayoutProps>) {
                   <DropdownMenuItem onSelect={handleGoHome} className="focus:bg-gray-100 cursor-pointer">
                     <Home className="mr-2 h-4 w-4" />
                     HomePage
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-gray-100">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-200" />
                   <DropdownMenuItem onSelect={handleLogout} className="text-black focus:bg-gray-100 cursor-pointer">

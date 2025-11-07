@@ -30,6 +30,22 @@ export const nutrientService = {
     return response.data.data;
   },
 
+  // Get all nutrients for stats (no pagination)
+  getAllForStats: async (): Promise<Nutrient[]> => {
+    const response = await api.get<ApiResponse<Nutrient[]>>("/api/nutrients", {
+      params: { pageNumber: 1, size: 1000 },
+    });
+    return response.data.data;
+  },
+
+  // Get total count
+  getCount: async (): Promise<number> => {
+    const response = await api.get<ApiResponse<{ total: number }>>(
+      "/api/nutrients/counts"
+    );
+    return response.data.data.total;
+  },
+
   // Get nutrient by ID (All actors)
   getById: async (id: number): Promise<Nutrient> => {
     const response = await api.get<ApiResponse<Nutrient>>(

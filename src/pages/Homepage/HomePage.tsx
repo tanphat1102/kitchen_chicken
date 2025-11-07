@@ -6,11 +6,8 @@ import { Link } from 'react-router-dom';
 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import TodayEmblaCarousel from '@/modules/Homepage/TodayEmblaCarousel';
-import { dailyMenuService, type DailyMenuItem} from '@/services/dailyMenuService';
-import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
+import TodayMenu from '@/modules/Homepage/TodayMenu';
 import { storeService, type Store } from '@/services/storeService';
-import { StoreSelector } from '@/modules/Homepage/storeSelector'; 
 
 import SaladBowl from '../../assets/img/HeroImg.png';
 
@@ -20,118 +17,35 @@ function Homepage() {
   const [error, setError] = useState<string | null>(null);
 
   const [allStores, setAllStores] = useState<Store[]>([]);
-  const [allDailyMenus, setAllDailyMenus] = useState<DailyMenuItem[]>([]);
   
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
 
-  const [currentDailyMenu, setCurrentDailyMenu] = useState<DailyMenuItem | null>(null);
-  const [todayFullMenuItems, setTodayFullMenuItems] = useState<MenuItem[]>([]);
+  
 
   const todayMenuRef = useRef<HTMLElement | null>(null);
 
-// Load stores & all daily menu
+// Load stores
   useEffect(() => {
     const fetchGlobalData = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        const [stores, dailyMenus] = await Promise.all([
-          storeService.getAll(),
-          dailyMenuService.getAllDailyMenus() 
-        ]);
-
+        const stores = await storeService.getAll();
         setAllStores(stores);
-        setAllDailyMenus(dailyMenus);
 
         if (stores.length > 0) {
           setSelectedStoreId(stores[0].id);
-        } else {
-          setLoading(false); 
         }
-        console.log('Fetched initial data:', { stores, dailyMenus });
+        console.log('Fetched initial data:', { stores });
       } catch (err: any) {
         setError(err.message || 'Failed to fetch initial data');
-        setLoading(false); 
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchGlobalData();
   }, []); 
-
-  // Load detailed menu for selected store (using summary list to locate today's id)
-  useEffect(() => {
-    if (!selectedStoreId || allDailyMenus.length === 0) return;
-
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-    const day = today.getDate().toString().padStart(2, '0');
-    const todayStr = `${year}-${month}-${day}`;
-
-    (async () => {
-      try {
-        setLoading(true);
-        // First find summary by date only
-        const summary = allDailyMenus.find((m) => (m.menuDate || '').split('T')[0] === todayStr);
-        if (!summary) {
-          setCurrentDailyMenu(null);
-          setLoading(false);
-          return;
-        }
-        // Then load detailed record (has storeList and items)
-        const detailed = await dailyMenuService.getDailyMenuById(summary.id);
-        if (!detailed) {
-          setCurrentDailyMenu(null);
-          setLoading(false);
-          return;
-        }
-        //ensure store exists in detailed.storeList if provided
-        const hasStore = !selectedStoreId
-          ? true
-          : !!(detailed && Array.isArray(detailed.storeList) && detailed.storeList.some((s) => s.storeId === selectedStoreId));
-        setCurrentDailyMenu(hasStore ? detailed : null);
-      } catch (e: any) {
-        setError(e?.message || 'Failed to load today\'s menu');
-        setCurrentDailyMenu(null);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [allDailyMenus, selectedStoreId]); 
-
-  useEffect(() => {
-    const fetchMenuItemDetails = async () => {
-      if (!currentDailyMenu) {
-        setTodayFullMenuItems([]);
-        setLoading(false); 
-        return;
-      }
-      
-      setLoading(true); 
-      
-      try {
-        const itemIds = (currentDailyMenu.itemList || []).map(item => item.menuItemId);
-        if (itemIds.length === 0) {
-           setTodayFullMenuItems([]);
-           setLoading(false);
-           return;
-        }
-        
-        const fetchPromises = itemIds.map(id => menuItemsService.getMenuItemById(id));
-        const fullMenuItems = await Promise.all(fetchPromises);
-
-        setTodayFullMenuItems(fullMenuItems);
-        
-      } catch (err: any) {
-        setError(err.message || 'Failed to fetch menu item details');
-      } finally {
-        setLoading(false); 
-      }
-    };
-
-    fetchMenuItemDetails();
-  }, [currentDailyMenu]); 
 
   if (loading) {
     return <div>Loading menu...</div>;
@@ -292,50 +206,12 @@ function Homepage() {
       </section>
 
     {/* Today Menu */}
-      <section ref={todayMenuRef} className="bg-white py-20 flex items-center justify-center">
-        <div className="relative w-full max-w-[1300px]">
-
-         <div className="flex justify-end px-4 md:px-0 mb-1">
-            <Link 
-              to="/menu" 
-              className="text-sm font-semibold text-gray-700 hover:text-red-600 transition-colors flex items-center gap-1"
-            >
-              View more
-              <span aria-hidden="true">&rarr;</span>
-            </Link>
-          </div>
-
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-16 px-4 md:px-0">
-            <div className="flex items-center gap-4">
-              <div className="w-2 h-16 bg-red-600"></div>
-              <div>
-                <h2 className="text-4xl font-bold text-red-600">Today Menu</h2>
-                <p className="text-gray-500 mt-2">Discover our most loved, crafted for taste and health.</p>
-              </div>
-            </div>
-            
-            <StoreSelector 
-              stores={allStores}
-              selectedStoreId={selectedStoreId}
-              onSelect={setSelectedStoreId}
-            />
-          </div>
-  
-          <div className="mx-12 relative">
-            {loading ? (
-              <div className="text-center py-20">Loading menu...</div>
-            ) : error ? (
-              <div className="text-center py-20 text-red-500">Error: {error}</div>
-            ) : todayFullMenuItems.length === 0 ? (
-              <div className="text-center py-20 text-gray-600">
-                No menu items available for this store today.
-              </div>
-            ) : (
-              <TodayEmblaCarousel items={todayFullMenuItems} />
-            )}
-          </div>
-        </div>
-      </section>
+      <TodayMenu
+        ref={todayMenuRef}
+        stores={allStores}
+        selectedStoreId={selectedStoreId}
+        onSelect={setSelectedStoreId}
+      />
 
     {/* Get Started*/}
     <section className="bg-white py-24 px-8">

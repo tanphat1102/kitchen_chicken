@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Pencil, Trash2, Search, ChefHat, CheckCircle, XCircle, ImagePlus } from 'lucide-react';
+import { Plus, Pencil, Search, ChefHat, CheckCircle, XCircle, ImagePlus } from 'lucide-react';
 import { menuItemService } from '@/services/menuItemService';
 import { categoryService } from '@/services/categoryService';
 import type { MenuItem, Category } from '@/types/api.types';
@@ -213,22 +213,6 @@ const MenuItems: React.FC = () => {
     } catch (error) {
       console.error('Error toggling status:', error);
       toast.error('Failed to toggle status');
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-      return;
-    }
-
-    try {
-      await menuItemService.delete(id);
-      toast.success('Menu item deleted successfully');
-      fetchMenuItems();
-    } catch (error) {
-      console.error('Error deleting menu item:', error);
-      toast.error('Failed to delete menu item');
     }
   };
 
@@ -463,17 +447,9 @@ const MenuItems: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(item)}
-                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
+                          className="!bg-white !text-gray-900 hover:!bg-yellow-400 hover:!text-black hover:!border-yellow-500 !border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(item.id, item.name)}
-                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

@@ -75,19 +75,20 @@ const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch basic stats
-      const [users, stores, paymentMethods, transactions] = await Promise.all([
-        userService.getAll().catch(() => []),
-        storeService.getAll().catch(() => []),
-        paymentMethodService.getAll().catch(() => []),
-        transactionService.getAll().catch(() => []),
+      // Fetch basic stats using counts API
+      const [userCount, storeCount, paymentMethodCount, transactionCount, paymentMethods] = await Promise.all([
+        userService.getCount().catch(() => 0),
+        storeService.getCount().catch(() => 0),
+        paymentMethodService.getCount().catch(() => 0),
+        transactionService.getCount().catch(() => 0),
+        paymentMethodService.getAllForStats().catch(() => []), // Need full list to count active
       ]);
 
       setStats({
-        totalUsers: users.length,
-        totalStores: stores.length,
+        totalUsers: userCount,
+        totalStores: storeCount,
         activePaymentMethods: paymentMethods.filter((pm: any) => pm.isActive).length,
-        totalTransactions: transactions.length,
+        totalTransactions: transactionCount,
       });
 
       // Fetch chart data
@@ -102,8 +103,9 @@ const AdminDashboard: React.FC = () => {
       setStorePerformance(storePerformanceData);
       setUserGrowth(userGrowthData);
 
-      // Get recent transactions
-      const sortedTransactions = transactions
+      // Get recent transactions - fetch separately since we need them for display
+      const allTransactions = await transactionService.getAllForStats().catch(() => []);
+      const sortedTransactions = allTransactions
         .sort((a: any, b: any) => new Date(b.createAt || b.date).getTime() - new Date(a.createAt || a.date).getTime())
         .slice(0, 5);
       setRecentTransactions(sortedTransactions);
@@ -165,15 +167,6 @@ const AdminDashboard: React.FC = () => {
               90 Days
             </Button>
           </div>
-          
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="flex items-center gap-2 border-gray-300 bg-white text-gray-900 hover:bg-gray-100"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
-          </Button>
         </div>
       </div>
 

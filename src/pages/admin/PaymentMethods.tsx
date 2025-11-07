@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Search, CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Pencil, Search, CreditCard, CheckCircle, XCircle } from 'lucide-react';
 import { paymentMethodService, type PaymentMethod } from '@/services/paymentMethodService';
 import toast from 'react-hot-toast';
 
@@ -146,22 +146,6 @@ const PaymentMethods: React.FC = () => {
     } catch (error) {
       console.error('Error toggling status:', error);
       toast.error('Failed to toggle status');
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-      return;
-    }
-
-    try {
-      await paymentMethodService.delete(id);
-      toast.success('Payment method deleted successfully');
-      fetchPaymentMethods();
-    } catch (error) {
-      console.error('Error deleting payment method:', error);
-      toast.error('Failed to delete payment method');
     }
   };
 
@@ -340,10 +324,10 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleToggleStatus(method)}
-                          className={`bg-white border-gray-300 transition-colors ${
+                          className={`!bg-white !border-gray-300 transition-colors ${
                             method.isActive 
-                              ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
-                              : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
+                              ? '!text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500' 
+                              : '!text-gray-900 hover:!bg-green-400 hover:!text-white hover:!border-green-400'
                           }`}
                         >
                           {method.isActive ? 'Deactivate' : 'Activate'}
@@ -352,17 +336,9 @@ const PaymentMethods: React.FC = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(method)}
-                          className="bg-white text-gray-900 hover:bg-gray-800 hover:text-white border-gray-300 transition-colors"
+                          className="!bg-white !text-gray-900 hover:!bg-yellow-400 hover:!text-black hover:!border-yellow-500 !border-gray-300 transition-colors"
                         >
                           <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(method.id, method.name)}
-                          className="bg-white text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 border-gray-300 transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>

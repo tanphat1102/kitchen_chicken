@@ -1,252 +1,284 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import MenuFilterSidebar, { type FilterState } from '@/modules/Menu/MenuFilterSidebar';
-import MenuItemCard, { type MenuItemDetail } from '@/modules/Menu/MenuItemCard';
-
-import { dailyMenuService } from '@/services/dailyMenuService';
-import { menuItemsService } from '@/services/menuItemsService';
-import type { DailyMenuItem } from '@/services/dailyMenuService';
-import type { Nutrient, MenuItem } from '@/services/menuItemsService';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import dishService, { type DishSummary } from '@/services/dishService';
 
-
-const getTodayDateString = (): string => {
-  return new Date().toISOString().split('T')[0]; 
+const formatPrice = (price?: number) => {
+  if (typeof price !== 'number') return '';
+  try {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
+  } catch {
+    return `${price} đ`;
+  }
 };
 
-const extractCalories = (item: Partial<MenuItem> & { nutrients?: Nutrient[] } ): number => {
-  if (typeof item.cal === 'number' && isFinite(item.cal)) return Math.round(item.cal);
-  const nutrients = item.nutrients;
-  if (!nutrients) return 0;
-  const calorieNutrient = nutrients.find(n => {
-    const nm = (n.name || '').toLowerCase();
-    return nm === 'calories' || nm === 'kcal';
-  });
-  return calorieNutrient ? Math.round(calorieNutrient.quantity) : 0;
-};
+type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'cal-asc' | 'cal-desc';
 
-const MenuPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [dailyMenuItems, setDailyMenuItems] = useState<MenuItemDetail[]>([]);
-  const [filteredItems, setFilteredItems] = useState<MenuItemDetail[]>([]);
-  const [currentFilters, setCurrentFilters] = useState<FilterState | null>(null);
+export default function Menu() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedStoreId, setSelectedStoreId] = useState<number>(1); // Track selected store
-  
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  useEffect(() => {
-    const q = searchParams.get('q') || '';
-    setSearchQuery(q);
-  }, [searchParams]);
-
-  const itemsPerPage = 12; 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
-  const currentPageClamped = Math.min(Math.max(1, currentPage), totalPages);
-  const startIdx = (currentPageClamped - 1) * itemsPerPage;
-  const paginatedItems = filteredItems.slice(startIdx, startIdx + itemsPerPage);
+  const [dishes, setDishes] = useState<DishSummary[]>([]);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const PAGE_SIZE = 12;
+  const [total, setTotal] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
 
   useEffect(() => {
-    if (currentFilters === null) {
-      return; 
-    }
-
-    const fetchMenuData = async () => {
-      setLoading(true);
-      setError(null);
-      setDailyMenuItems([]);
-      setFilteredItems([]);
-
-  const storeId = currentFilters.selectedStore ? parseInt(currentFilters.selectedStore, 10) : undefined;
-  const selectedDate = currentFilters.selectedDate || getTodayDateString();
-      
-      // Update state for order customer hook
-      if (storeId) {
-        setSelectedStoreId(storeId);
-      }
-      
+    let mounted = true;
+    (async () => {
       try {
-        let todayMenu: DailyMenuItem | null = null;
-        const todayStr = selectedDate;
-
-        const allDailyMenus = await dailyMenuService.getAllDailyMenus();
-        const summary = allDailyMenus.find((menu) => (menu.menuDate || '').startsWith(todayStr));
-
-        if (!summary) {
-          const storeMsg = storeId ? `for selected store` : ``;
-          setError(`No menu found ${storeMsg} for date (${todayStr}).`);
-          setLoading(false);
-          return;
-        }
-
-        todayMenu = await dailyMenuService.getDailyMenuById(summary.id);
-
-        if (!todayMenu) {
-          setError(`No menu details found for date (${todayStr}).`);
-          setLoading(false);
-          return;
-        }
-
-        if (storeId) {
-          const hasStore = Array.isArray(todayMenu.storeList)
-            ? todayMenu.storeList.some((s) => s.storeId === storeId)
-            : true;
-          if (!hasStore) {
-            setError(`No menu found for selected store for date (${todayStr}).`);
-            setLoading(false);
-            return;
-          }
-        }
-
-        const itemIds = (todayMenu.itemList || []).map((item) => item.menuItemId);
-        const detailPromises = itemIds.map(id => menuItemsService.getMenuItemById(id));
-        const detailedResults = await Promise.allSettled(detailPromises);
-
-        const todayDetailedItems: MenuItemDetail[] = [];
-        detailedResults.forEach((result, index) => {
-          if (result.status === 'fulfilled' && result.value && result.value.isActive) {
-            const item = result.value;
-            todayDetailedItems.push({
-              ...item,
-              calories: extractCalories(item),
-            });
-          } else if (result.status === 'rejected') {
-             console.error(`Cannot load daily menu ID: ${itemIds[index]}`, result.reason);
-          }
-        });
+        setLoading(true);
+        setError(null);
+        const { items, total: t } = await dishService.searchDishes({ size: PAGE_SIZE, pageNumber });
+        if (!mounted) return;
         
-        setDailyMenuItems(todayDetailedItems);
-
-      } catch (err: any) {
-        console.error('Error fetching or processing menu data:', err);
-        setError(err.message || 'Error fetching or processing menu data');
+        let sortedItems = [...(items || [])];
+        switch (sortBy) {
+          case 'name-asc':
+            sortedItems.sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+            break;
+          case 'name-desc':
+            sortedItems.sort((a, b) => b.name.localeCompare(a.name, 'vi'));
+            break;
+          case 'price-asc':
+            sortedItems.sort((a, b) => (a.price || 0) - (b.price || 0));
+            break;
+          case 'price-desc':
+            sortedItems.sort((a, b) => (b.price || 0) - (a.price || 0));
+            break;
+          case 'cal-asc':
+            sortedItems.sort((a, b) => (a.cal || 0) - (b.cal || 0));
+            break;
+          case 'cal-desc':
+            sortedItems.sort((a, b) => (b.cal || 0) - (a.cal || 0));
+            break;
+        }
+        
+        setDishes(sortedItems);
+        setTotal(typeof t === 'number' ? t : null);
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(e?.message || 'Unable to load menu');
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
-    };
+    })();
 
-    fetchMenuData();
-
-  }, [currentFilters?.selectedStore, currentFilters?.selectedDate]); 
-
-
-  const applyFiltersAndSort = useCallback((items: MenuItemDetail[], filters: FilterState | null): MenuItemDetail[] => {
-    if (!filters) {
-      return items;
-    }
-    let itemsToProcess = [...items];
-
-
-    const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[\u0300-\u036f]/g, '');
-    const q = searchQuery.trim();
-    if (q) {
-      const nq = normalize(q);
-      itemsToProcess = itemsToProcess.filter((it) => {
-        const name = normalize(it.name || '');
-        const cat = normalize(it.categoryName || '');
-        return name.includes(nq) || cat.includes(nq);
-      });
-    }
-    if (filters.selectedCategory !== 'all') {
-      itemsToProcess = itemsToProcess.filter(
-        item => item.categoryId.toString() === filters.selectedCategory
-      );
-    }
-    itemsToProcess = itemsToProcess.filter(
-      item => (item.calories ?? 0) >= filters.minCalories && (item.calories ?? 0) <= filters.maxCalories
-    );
-    const [sortKey, sortOrder] = filters.sortBy.split('-');
-    itemsToProcess.sort((a, b) => {
-      let compareA: any;
-      let compareB: any;
-      if (sortKey === 'name') {
-        compareA = a.name.toLowerCase();
-        compareB = b.name.toLowerCase();
-      } else {
-        compareA = (sortKey === 'price') ? a.price : a.calories;
-        compareB = (sortKey === 'price') ? b.price : b.calories;
-        if (isNaN(compareA)) compareA = 0;
-        if (isNaN(compareB)) compareB = 0;
-      }
-      if (compareA < compareB) return sortOrder === 'asc' ? -1 : 1;
-      if (compareA > compareB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-    return itemsToProcess;
-  }, [searchQuery]);
-
-
-  useEffect(() => {
-  if (!loading && currentFilters) { 
-        const newFilteredItems = applyFiltersAndSort(dailyMenuItems, currentFilters);
-        setFilteredItems(newFilteredItems);
-    setCurrentPage(1);
-    }
-  }, [dailyMenuItems, currentFilters, loading, applyFiltersAndSort]);
-
-  const handleFilterChange = useCallback((filters: FilterState) => {
-    setCurrentFilters(filters);
-  }, []); 
+    return () => { mounted = false; };
+  }, [pageNumber, sortBy]);
 
   return (
-    <>
-    {/* Navbar */}
-    <Navbar/>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+      <Navbar />
 
-    <div className="flex flex-col md:flex-row min-h-screen bg-white mt-15">
-      {/* Sidebar */}
-      <MenuFilterSidebar onFilterChange={handleFilterChange} initialMaxCalories={2000} />
+      <main className="max-w-7xl mx-auto px-8 py-12">
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-5xl font-bold text-gray-900 mb-2 tracking-tight mt-10">
+            Our Menu
+            <span className="inline-block ml-3 text-orange-500"></span>
+          </h1>
+          <p className="text-gray-600 text-lg">Discover our delicious dishes</p>
+        </div>
 
-      {/* Main Content*/}
-      <main className="flex-1 p-4 md:p-6 lg:p-8">
-        
-  {loading && <p className="text-center text-gray-500 mt-10">Loading menu...</p>}
-        {error && <p className="text-center text-red-600 mt-10">{error}</p>}
-
-        {!loading && !error && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-20 gap-x-8 mt-20">
-              {paginatedItems.length > 0 ? (
-                paginatedItems.map((item) => (
-                  <MenuItemCard key={item.id} item={item} storeId={selectedStoreId} />
-                ))
+        {/* Filter Section */}
+        <div className="mb-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-sm text-gray-700 font-semibold flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              </svg>
+              Sort by:
+            </span>
+            
+            {/* Name sort */}
+            <button
+              onClick={() => setSortBy(sortBy === 'name-asc' ? 'name-desc' : 'name-asc')}
+              className={`px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 font-medium transform hover:scale-105 ${
+                sortBy.startsWith('name')
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200'
+                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              {sortBy === 'name-asc' ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
               ) : (
-                <p className="col-span-full text-center text-gray-500 mt-10">
-                  {dailyMenuItems.length === 0 && !error ? 'No daily menu today.' : 'No matching menu items found.'}
-                </p>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                </svg>
               )}
+              <span>Name</span>
+            </button>
+
+            {/* Price sort */}
+            <button
+              onClick={() => setSortBy(sortBy === 'price-asc' ? 'price-desc' : 'price-asc')}
+              className={`px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 font-medium transform hover:scale-105 ${
+                sortBy.startsWith('price')
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200'
+                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              {sortBy === 'price-asc' ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                </svg>
+              )}
+              <span>Price</span>
+            </button>
+
+            {/* Calories sort */}
+            <button
+              onClick={() => setSortBy(sortBy === 'cal-asc' ? 'cal-desc' : 'cal-asc')}
+              className={`px-5 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 font-medium transform hover:scale-105 ${
+                sortBy.startsWith('cal')
+                  ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200'
+                  : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              {sortBy === 'cal-asc' ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                </svg>
+              )}
+              <span>Calories</span>
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-32">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-orange-200 border-t-orange-500"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading menu...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-32 bg-red-50 rounded-2xl border border-red-100">
+            <svg className="w-16 h-16 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-lg font-semibold">Error: {error}</p>
+          </div>
+        ) : dishes.length === 0 ? (
+          <div className="text-center text-gray-500 py-32 bg-gray-50 rounded-2xl border border-gray-200">
+            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p className="text-lg font-semibold">No dishes available.</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-4 gap-6">
+              {dishes.map((d, idx) => (
+                <Link
+                  key={d.id}
+                  to={`/menu/${d.id}`}
+                  className="group bg-white rounded-2xl overflow-hidden flex flex-col relative shadow-sm hover:shadow-2xl transition-all duration-500 border border-gray-100 hover:border-orange-200 transform hover:-translate-y-2 cursor-pointer"
+                  style={{ 
+                    animation: `fadeInUp 0.6s ease-out ${idx * 0.1}s both`
+                  }}
+                >
+                  {/* Full width image with overlay */}
+                  <div className="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                    <img
+                      src={d.imageUrl || '/images/placeholder.png'}
+                      alt={d.name}
+                      className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    {/* Badge */}
+                    {d.isCustom && (
+                      <div className="absolute top-3 left-3 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                        Special
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-5 flex flex-col flex-1">
+                    {/* Dish name */}
+                    <h3 className="text-base font-bold text-gray-900 mb-3 line-clamp-2 min-h-[3rem] leading-snug group-hover:text-orange-600 transition-colors duration-300">
+                      {d.name}
+                    </h3>
+
+                    {/* Info tags */}
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                      <span className="px-3 py-1.5 bg-orange-50 rounded-lg text-xs font-semibold text-orange-700 flex items-center gap-1 border border-orange-100">
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                        </svg>
+                        {d.cal ?? '-'} cal
+                      </span>
+                      <span className="px-3 py-1.5 bg-green-50 rounded-lg text-xs font-bold text-green-700 border border-green-100">
+                        {formatPrice(d.price)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* View details icon */}
+                  <div className="absolute bottom-4 right-4 w-11 h-11 bg-gradient-to-br from-orange-500 to-orange-600 group-hover:from-orange-600 group-hover:to-orange-700 text-white rounded-xl flex items-center justify-center transition-all duration-300 shadow-lg group-hover:shadow-xl transform group-hover:scale-110">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
             </div>
 
             {/* Pagination */}
-            {filteredItems.length > 0 && totalPages > 1 && (
-              <div className="flex justify-center items-center mt-12 gap-4">
-                <button
-                  className="p-2 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-50"
-                  disabled={currentPageClamped === 1}
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  aria-label="Previous page"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
-                </button>
-                <span className="font-bold text-lg text-emerald-700 px-2">
-                  {currentPageClamped} / {totalPages}
-                </span>
-                <button
-                  className="p-2 rounded-md hover:bg-gray-100 text-gray-600 disabled:opacity-50"
-                  disabled={currentPageClamped === totalPages}
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  aria-label="Trang sau"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-                </button>
+            <div className="mt-12 flex items-center justify-center gap-3">
+              <button
+                className="px-6 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 font-semibold text-gray-700 hover:text-orange-600 transform hover:scale-105 disabled:hover:scale-100 shadow-sm"
+                onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                disabled={pageNumber === 1}
+              >
+                ← Previous
+              </button>
+
+              <div className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-bold shadow-lg">
+                Page {pageNumber}
               </div>
-            )}
+
+              <button
+                className="px-6 py-3 bg-white border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-orange-50 hover:border-orange-300 transition-all duration-300 font-semibold text-gray-700 hover:text-orange-600 transform hover:scale-105 disabled:hover:scale-100 shadow-sm"
+                onClick={() => setPageNumber((p) => p + 1)}
+                disabled={
+                  (total !== null && pageNumber >= Math.max(1, Math.ceil(total / PAGE_SIZE))) ||
+                  (total === null && dishes.length < PAGE_SIZE)
+                }
+              >
+                Next →
+              </button>
+            </div>
           </>
         )}
       </main>
+
+      <Footer />
+      
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
-    </>
   );
-};
-export default MenuPage;
+}
