@@ -32,6 +32,7 @@ const API_ENDPOINTS = {
   CONFIRM_ORDER: "/api/orders/confirm",
   VNPAY_CALLBACK: "/api/payments/vnpay/callback",
   VNPAY_CALLBACK_LEGACY: "/api/orders/vnpay-callback",
+  MOMO_CALLBACK: "/api/payments/momo/callback",
 };
 
 export const orderPaymentService = {
@@ -64,6 +65,18 @@ export const orderPaymentService = {
   async vnpayCallback(params: Record<string, string>): Promise<any> {
     const response = await api.post<ApiResponse<any>>(
       API_ENDPOINTS.VNPAY_CALLBACK,
+      params,
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Handle MoMo callback (for webhook)
+   * @param params - MoMo callback parameters
+   */
+  async momoCallback(params: Record<string, string>): Promise<any> {
+    const response = await api.post<ApiResponse<any>>(
+      API_ENDPOINTS.MOMO_CALLBACK,
       params,
     );
     return response.data.data;
