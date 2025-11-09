@@ -6,6 +6,7 @@ import { useCurrentOrder, useUpdateDish, useDeleteDish } from '@/hooks/useOrderC
 import { useConfirmOrder } from '@/hooks/useOrderPayment';
 import { useQuery } from '@tanstack/react-query';
 import { paymentMethodService, promotionService } from '@/services';
+import type { Order } from '@/services';
 import { Link } from 'react-router-dom';
 import { APP_ROUTES } from '@/routes/route.constants';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,68 +27,34 @@ const CartPage: React.FC = () => {
   // Only fetch order if user is logged in
   const { data: order, isLoading, error } = useCurrentOrder(storeId, !!currentUser);
   
-  // Debug logging
-  React.useEffect(() => {
-    console.log('=== Cart Component Debug ===');
-    console.log('Current User:', currentUser);
-    console.log('Order Data:', order);
-    console.log('Order ID:', order?.orderId);
-    console.log('Order Dishes:', order?.dishes);
-    console.log('Is Loading:', isLoading);
-    console.log('Error:', error);
-    console.log('============================');
-  }, [order, currentUser, isLoading, error]);
-  
   const updateDish = useUpdateDish(storeId);
   const deleteDish = useDeleteDish(storeId);
   const confirmOrder = useConfirmOrder();
 
   const dishes = order?.dishes || [];
-  const isEmpty = dishes.length === 0;
+  const isEmpty = !order || dishes.length === 0;
 
   // Auto-select all items when cart loads
   React.useEffect(() => {
     if (dishes.length > 0 && selectedDishIds.size === 0) {
-      console.log('Auto-selecting all dishes:', dishes.map(d => d.dishId));
       setSelectedDishIds(new Set(dishes.map(d => d.dishId)));
     }
   }, [dishes.length]); // Only run when dishes count changes
 
   // Calculate selected items total
-  const selectedDishes = dishes.filter(d => selectedDishIds.has(d.dishId));
-  
-  console.log('Selected Dishes:', selectedDishes);
-  console.log('Selected Dish IDs:', Array.from(selectedDishIds));
+  const selectedDishes = React.useMemo(() => {
+    return dishes.filter(d => selectedDishIds.has(d.dishId));
+  }, [dishes, selectedDishIds]);
   
   const selectedTotal = React.useMemo(() => {
     const total = selectedDishes.reduce((sum, dish) => {
       const price = Number(dish.price) || 0;
-      // Quantity mặc định là 1 nếu không có hoặc = 0
       const quantity = Number(dish.quantity) > 0 ? Number(dish.quantity) : 1;
       const itemTotal = price * quantity;
-      
-      console.log('Cart Item:', {
-        id: dish.dishId,
-        name: dish.menuItemName,
-        price,
-        quantity: dish.quantity,
-        quantityUsed: quantity,
-        itemTotal,
-        currentSum: sum,
-        newSum: sum + itemTotal
-      });
-      
-      // Ensure we don't add NaN to the sum
       const newSum = sum + itemTotal;
       return isNaN(newSum) ? sum : newSum;
     }, 0);
     
-    console.log('=== Final Selected Total ===');
-    console.log('Selected Total:', total);
-    console.log('Is NaN:', isNaN(total));
-    console.log('===========================');
-    
-    // Return 0 if total is NaN
     return isNaN(total) ? 0 : total;
   }, [selectedDishes]);
   
@@ -123,33 +90,17 @@ const CartPage: React.FC = () => {
   // Calculate final total
   const finalTotal = React.useMemo(() => {
     const total = selectedTotal - discountAmount;
-    console.log('Final Total Calculation:', {
-      selectedTotal,
-      discountAmount,
-      total,
-      isNaN: isNaN(total)
-    });
     return isNaN(total) ? 0 : Math.max(0, total);
   }, [selectedTotal, discountAmount]);
 
   const handleCheckout = () => {
-    console.log('=== Checkout Debug ===');
-    console.log('Order:', order);
-    console.log('Order ID:', order?.orderId);
-    console.log('Selected Payment Method:', selectedPaymentMethod);
-    console.log('Selected Dishes:', selectedDishIds);
-    console.log('Selected Total:', selectedTotal);
-    console.log('====================');
-
     if (!order) {
       alert('No order found. Please add items to cart first.');
-      console.error('Order is null or undefined');
       return;
     }
 
     if (!order.orderId) {
       alert('Order ID is missing. Please try refreshing the page.');
-      console.error('Order exists but ID is missing:', order);
       return;
     }
 
@@ -170,24 +121,109 @@ const CartPage: React.FC = () => {
       channel: 'WEB',
     };
 
-    console.log('=== Sending Checkout Request ===');
-    console.log('Payload:', checkoutPayload);
-    console.log('================================');
-
     confirmOrder.mutate(checkoutPayload, {
       onError: (error: any) => {
-        console.error('=== Checkout Error ===');
-        console.error('Error:', error);
-        console.error('Error details:', error.response?.data);
-        console.error('======================');
-        
         const errorMessage = error.response?.data?.message || error.message || 'Please try again.';
         alert(`Checkout failed: ${errorMessage}`);
       },
     });
   };
 
-  // Show login required if not logged in
+  // Handle select all/none
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedDishIds(new Set(dishes.map(d => d.dishId)));
+    } else {
+      setSelectedDishIds(new Set());
+    }
+  };
+
+  const handleToggleDish = (dishId: number) => {
+    const newSelected = new Set(selectedDishIds);
+    if (newSelected.has(dishId)) {
+      newSelected.delete(dishId);
+    } else {
+      newSelected.add(dishId);
+    }
+    setSelectedDishIds(newSelected);
+  };
+
+  // Handle ingredient quantity change directly
+  const handleIngredientQuantityChange = (dishId: number, stepId: number, optionId: number, newQuantity: number) => {
+    if (newQuantity < 0) return;
+    
+    const dish = dishes.find(d => d.dishId === dishId);
+    if (!dish) return;
+    
+    // Handle both "selections" and "steps" data structures
+    let allSelections: any[] = [];
+    
+    if (dish.selections && dish.selections.length > 0) {
+      allSelections = dish.selections;
+    } 
+    else if ((dish as any).steps && (dish as any).steps.length > 0) {
+      allSelections = (dish as any).steps.flatMap((step: any) => 
+        (step.items || []).map((item: any) => ({
+          stepId: step.stepId,
+          stepName: step.stepName,
+          optionId: item.menuItemId,
+          optionName: item.menuItemName,
+          quantity: item.quantity,
+          extraPrice: item.extraPrice || 0,
+        }))
+      );
+    } else {
+      return;
+    }
+    
+    // Create updated selections
+    const updatedSelections = allSelections.map(sel => {
+      if (sel.stepId === stepId && sel.optionId === optionId) {
+        return { ...sel, quantity: newQuantity };
+      }
+      return sel;
+    }).filter(sel => sel.quantity > 0);
+    
+    if (updatedSelections.length === 0) {
+      alert('Cannot remove all ingredients. At least one ingredient is required.');
+      return;
+    }
+    
+    // Convert to API format
+    const groupedByStep = updatedSelections.reduce((acc, sel) => {
+      const existing = acc.find((s: any) => s.stepId === sel.stepId);
+      if (existing) {
+        existing.items.push({
+          menuItemId: sel.optionId,
+          quantity: sel.quantity,
+        });
+      } else {
+        acc.push({
+          stepId: sel.stepId,
+          items: [{
+            menuItemId: sel.optionId,
+            quantity: sel.quantity,
+          }],
+        });
+      }
+      return acc;
+    }, [] as any[]);
+    
+    // Update via API
+    updateDish.mutate(
+      {
+        dishId,
+        request: { selections: groupedByStep },
+      },
+      {
+        onError: (error: any) => {
+          alert(`Failed to update: ${error.response?.data?.message || error.message}`);
+        },
+      }
+    );
+  };
+
+  // Show login required if not logged in - check FIRST before loading/error
   if (!currentUser) {
     return (
       <>
@@ -278,136 +314,13 @@ const CartPage: React.FC = () => {
         <Navbar />
         <div className="min-h-screen bg-gray-50 py-20 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-red-600">Error loading cart: {error.message}</p>
+            <p className="text-red-600">Error loading cart: {(error as any)?.message || 'Unknown error'}</p>
           </div>
         </div>
         <Footer />
       </>
     );
   }
-
-  // Handle select all/none
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedDishIds(new Set(dishes.map(d => d.dishId)));
-    } else {
-      setSelectedDishIds(new Set());
-    }
-  };
-
-  const handleToggleDish = (dishId: number) => {
-    const newSelected = new Set(selectedDishIds);
-    if (newSelected.has(dishId)) {
-      newSelected.delete(dishId);
-    } else {
-      newSelected.add(dishId);
-    }
-    setSelectedDishIds(newSelected);
-  };
-
-  // Handle ingredient quantity change directly
-  const handleIngredientQuantityChange = (dishId: number, stepId: number, optionId: number, newQuantity: number) => {
-    console.log('=== Ingredient Quantity Change ===');
-    console.log('Dish ID:', dishId);
-    console.log('Step ID:', stepId);
-    console.log('Option ID:', optionId);
-    console.log('New Quantity:', newQuantity);
-    
-    if (newQuantity < 0) {
-      console.log('Quantity cannot be negative');
-      return;
-    }
-    
-    const dish = dishes.find(d => d.dishId === dishId);
-    if (!dish) {
-      console.error('Dish not found:', dishId);
-      return;
-    }
-    
-    // Handle both "selections" and "steps" data structures
-    let allSelections: any[] = [];
-    
-    // If dish has selections field, use it
-    if (dish.selections && dish.selections.length > 0) {
-      allSelections = dish.selections;
-      console.log('Using selections structure:', allSelections);
-    } 
-    // Otherwise, convert steps to selections format
-    else if ((dish as any).steps && (dish as any).steps.length > 0) {
-      console.log('Converting steps to selections format');
-      allSelections = (dish as any).steps.flatMap((step: any) => 
-        (step.items || []).map((item: any) => ({
-          stepId: step.stepId,
-          stepName: step.stepName,
-          optionId: item.menuItemId,
-          optionName: item.menuItemName,
-          quantity: item.quantity,
-          extraPrice: item.extraPrice || 0,
-        }))
-      );
-      console.log('Converted selections:', allSelections);
-    } else {
-      console.error('No selections or steps found for dish:', dish);
-      return;
-    }
-    
-    // Create updated selections
-    const updatedSelections = allSelections.map(sel => {
-      if (sel.stepId === stepId && sel.optionId === optionId) {
-        console.log('Updating selection:', sel, 'to quantity:', newQuantity);
-        return { ...sel, quantity: newQuantity };
-      }
-      return sel;
-    }).filter(sel => sel.quantity > 0); // Remove items with 0 quantity
-    
-    console.log('Updated selections:', updatedSelections);
-    
-    if (updatedSelections.length === 0) {
-      alert('Cannot remove all ingredients. At least one ingredient is required.');
-      return;
-    }
-    
-    // Convert to API format
-    const groupedByStep = updatedSelections.reduce((acc, sel) => {
-      const existing = acc.find((s: any) => s.stepId === sel.stepId);
-      if (existing) {
-        existing.items.push({
-          menuItemId: sel.optionId,
-          quantity: sel.quantity,
-        });
-      } else {
-        acc.push({
-          stepId: sel.stepId,
-          items: [{
-            menuItemId: sel.optionId,
-            quantity: sel.quantity,
-          }],
-        });
-      }
-      return acc;
-    }, [] as any[]);
-    
-    console.log('API payload:', groupedByStep);
-    
-    // Update via API with optimistic update to prevent reload
-    updateDish.mutate(
-      {
-        dishId,
-        request: { selections: groupedByStep },
-      },
-      {
-        onSuccess: () => {
-          console.log('Successfully updated ingredient quantity');
-          // Don't refetch - data will update automatically via cache
-        },
-        onError: (error: any) => {
-          console.error('Error updating ingredient quantity:', error);
-          console.error('Error details:', error.response?.data);
-          alert(`Failed to update: ${error.response?.data?.message || error.message}`);
-        },
-      }
-    );
-  };
 
   return (
     <>
@@ -519,6 +432,15 @@ const CartPage: React.FC = () => {
                               <h3 className="text-xl font-bold text-gray-900 mb-1 leading-tight">
                                 {dish.menuItemName}
                               </h3>
+                              {/* Calories Badge */}
+                              {dish.cal && (
+                                <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium mt-1">
+                                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                  </svg>
+                                  {dish.cal} cal
+                                </div>
+                              )}
                               {dish.note && (
                                 <div className="flex items-center gap-2 mt-2">
                                   <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -554,12 +476,34 @@ const CartPage: React.FC = () => {
                                           key={itemIdx}
                                           className="flex items-center justify-between group hover:bg-gray-50 px-2 py-2 rounded-lg transition-colors"
                                         >
-                                          <div className="flex-1 flex items-center gap-2">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
-                                            <div>
-                                              <span className="text-sm text-gray-800 font-medium">{item.menuItemName}</span>
+                                          <div className="flex-1 flex items-center gap-3">
+                                            {/* Item Image */}
+                                            {item.imageUrl && (
+                                              <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                                <img
+                                                  src={item.imageUrl}
+                                                  alt={item.menuItemName}
+                                                  className="w-full h-full object-cover"
+                                                  onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                  }}
+                                                />
+                                              </div>
+                                            )}
+                                            {!item.imageUrl && (
+                                              <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+                                            )}
+                                            <div className="flex-1">
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-sm text-gray-800 font-medium">{item.menuItemName}</span>
+                                                {item.cal && (
+                                                  <span className="text-xs text-orange-600 font-medium px-1.5 py-0.5 bg-orange-50 rounded">
+                                                    {item.cal} cal
+                                                  </span>
+                                                )}
+                                              </div>
                                               {item.extraPrice > 0 && (
-                                                <span className="text-xs text-green-600 ml-2 font-semibold">
+                                                <span className="text-xs text-green-600 font-semibold">
                                                   +{item.extraPrice.toLocaleString('vi-VN')}₫
                                                 </span>
                                               )}
@@ -714,32 +658,75 @@ const CartPage: React.FC = () => {
                 {/* Payment Methods */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment Method</h3>
-                  <div className="space-y-2">
-                    {paymentMethods.map((method) => (
-                      <label
-                        key={method.id}
-                        className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition ${
-                          selectedPaymentMethod === method.id
-                            ? 'border-red-600 bg-red-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value={method.id}
-                          checked={selectedPaymentMethod === method.id}
-                          onChange={() => setSelectedPaymentMethod(method.id)}
-                          className="mr-3 text-red-600 focus:ring-red-500"
-                        />
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-800">{method.name}</div>
-                          {method.description && (
-                            <div className="text-sm text-gray-500">{method.description}</div>
+                  <div className="space-y-3">
+                    {paymentMethods.map((method) => {
+                      // Determine payment provider icon based on method name
+                      const isVNPay = method.name.toLowerCase().includes('vnpay');
+                      const isMoMo = method.name.toLowerCase().includes('momo');
+                      
+                      return (
+                        <label
+                          key={method.id}
+                          className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                            selectedPaymentMethod === method.id
+                              ? 'border-red-600 bg-red-50 shadow-md'
+                              : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value={method.id}
+                            checked={selectedPaymentMethod === method.id}
+                            onChange={() => setSelectedPaymentMethod(method.id)}
+                            className="mr-4 w-5 h-5 text-red-600 focus:ring-red-500"
+                          />
+                          
+                          {/* Payment Icon */}
+                          <div className={`w-12 h-12 rounded-lg flex items-center justify-center mr-3 ${
+                            isVNPay ? 'bg-blue-100' :
+                            isMoMo ? 'bg-pink-100' :
+                            'bg-gray-100'
+                          }`}>
+                            {isVNPay && (
+                              <svg className="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 5h18v14H3V5zm2 2v10h14V7H5zm2 2h10v2H7V9zm0 4h7v2H7v-2z"/>
+                              </svg>
+                            )}
+                            {isMoMo && (
+                              <svg className="w-7 h-7 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                              </svg>
+                            )}
+                            {!isVNPay && !isMoMo && (
+                              <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                              </svg>
+                            )}
+                          </div>
+                          
+                          {/* Payment Details */}
+                          <div className="flex-1">
+                            <div className="font-semibold text-gray-800 flex items-center gap-2">
+                              {method.name}
+                              {isMoMo }
+                            </div>
+                            {method.description && (
+                              <div className="text-sm text-gray-500 mt-0.5">{method.description}</div>
+                            )}
+                          </div>
+                          
+                          {/* Selected Indicator */}
+                          {selectedPaymentMethod === method.id && (
+                            <div className="ml-2">
+                              <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                            </div>
                           )}
-                        </div>
-                      </label>
-                    ))}
+                        </label>
+                      );
+                    })}
                   </div>
                 </div>
 
