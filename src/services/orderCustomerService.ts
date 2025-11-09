@@ -11,6 +11,7 @@ export interface OrderDish {
   note?: string;
   price: number;
   imageUrl?: string;
+  cal?: number; // Calories
   selections?: DishSelection[];
 }
 
@@ -22,6 +23,8 @@ export interface DishSelection {
   optionName: string;
   quantity: number;
   extraPrice: number;
+  imageUrl?: string;
+  cal?: number; // Calories
 }
 
 export interface Order {
@@ -96,6 +99,39 @@ export interface CreateFeedbackRequest {
   comment?: string;
 }
 
+export interface OrderTracking {
+  orderId: number;
+  status: string; // "NEW" | "CONFIRMED" | "PROCESSING" | "READY" | "COMPLETED" | "CANCELLED"
+  progress: number; // 0-100
+  dishes: OrderDishWithSteps[];
+}
+
+export interface OrderDishWithSteps {
+  dishId: number;
+  name: string;
+  isCustom: boolean;
+  note?: string;
+  price: number;
+  cal: number;
+  updatedAt: string;
+  steps?: DishStep[];
+}
+
+export interface DishStep {
+  stepId: number;
+  stepName: string;
+  items: StepItem[];
+}
+
+export interface StepItem {
+  menuItemId: number;
+  menuItemName: string;
+  imageUrl?: string;
+  quantity: number;
+  price: number;
+  cal: number;
+}
+
 // ==================== Response Model ====================
 
 interface ApiResponse<T> {
@@ -110,10 +146,11 @@ const API_ENDPOINTS = {
   CURRENT_ORDER: "/api/orders/current",
   CURRENT_DISHES_EXISTING: "/api/orders/current/dishes/existing",
   CURRENT_DISHES_CUSTOM: "/api/orders/current/dishes/custom",
-  DISH: (dishId: number) => `/api/orders/current/dishes/${dishId}`,
+  DISH: (dishId: number) => `/api/orders/dishes/${dishId}`,
   ORDER_HISTORY: "/api/orders/history",
   ORDER_STATUSES: "/api/order-statuses",
   ORDER_FEEDBACK: (orderId: number) => `/api/orders/${orderId}/feedback`,
+  ORDER_TRACKING: (orderId: number) => `/api/orders/${orderId}/tracking`,
 };
 
 class OrderCustomerService {
@@ -121,14 +158,33 @@ class OrderCustomerService {
    * Get or create NEW order by store
    * Clears items if not in today's daily menu
    */
-  async getCurrentOrder(storeId: number): Promise<Order> {
-    const response = await api.get<ApiResponse<Order>>(
-      API_ENDPOINTS.CURRENT_ORDER,
-      {
-        params: { storeId },
-      },
-    );
-    return response.data.data;
+  async getCurrentOrder(storeId: number): Promise<Order | null> {
+    try {
+      const response = await api.get<ApiResponse<Order>>(
+        API_ENDPOINTS.CURRENT_ORDER,
+        {
+          params: { storeId },
+        },
+      );
+
+      // If no data, return null instead of throwing
+      if (
+        !response.data ||
+        response.data.data === undefined ||
+        response.data.data === null
+      ) {
+        return null;
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      // If 404 (no order found), return null instead of throwing
+      if (error.response?.status === 404) {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   /**
@@ -243,6 +299,17 @@ class OrderCustomerService {
     const response = await api.post<ApiResponse<OrderFeedback>>(
       API_ENDPOINTS.ORDER_FEEDBACK(orderId),
       request,
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Track order progress by order id
+   * Returns detailed order information including steps and customizations
+   */
+  async getOrderTracking(orderId: number): Promise<OrderTracking> {
+    const response = await api.get<ApiResponse<OrderTracking>>(
+      API_ENDPOINTS.ORDER_TRACKING(orderId),
     );
     return response.data.data;
   }
