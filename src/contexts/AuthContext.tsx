@@ -7,6 +7,7 @@ import {
 import { auth } from '@/config/firebase';
 import { authService } from '@/services/authService';
 import type { UserRole } from '@/services/authService';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Types
 export interface AuthUser {
@@ -45,6 +46,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Load user from localStorage on init
   const loadUserFromStorage = (): AuthUser | null => {
@@ -163,6 +165,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Clear current user
       setCurrentUser(null);
+      
+      // Clear all React Query cache to prevent stale data
+      queryClient.clear();
     } catch (error) {
       console.error('Error signing out:', error);
       throw error;

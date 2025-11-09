@@ -20,6 +20,8 @@ export const orderCustomerKeys = {
   orderStatuses: () => [...orderCustomerKeys.all, "statuses"] as const,
   feedback: (orderId: number) =>
     [...orderCustomerKeys.all, "feedback", orderId] as const,
+  orderTracking: (orderId: number) =>
+    [...orderCustomerKeys.all, "tracking", orderId] as const,
 };
 
 // ==================== Queries ====================
@@ -33,6 +35,8 @@ export function useCurrentOrder(storeId: number, enabled = true) {
     queryFn: () => orderCustomerService.getCurrentOrder(storeId),
     enabled: enabled && storeId > 0,
     staleTime: 1000 * 60, // 1 minute
+    retry: false, // Don't retry on auth errors
+    gcTime: 0, // Don't keep cache when disabled (formerly cacheTime)
   });
 }
 
@@ -68,6 +72,19 @@ export function useOrderFeedback(orderId: number, enabled = true) {
     queryFn: () => orderCustomerService.getFeedbackByOrder(orderId),
     enabled: enabled && orderId > 0,
     staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+/**
+ * Track order progress by order id
+ * Returns detailed order information including steps and customizations
+ */
+export function useOrderTracking(orderId: number, enabled = true) {
+  return useQuery({
+    queryKey: orderCustomerKeys.orderTracking(orderId),
+    queryFn: () => orderCustomerService.getOrderTracking(orderId),
+    enabled: enabled && orderId > 0,
+    staleTime: 1000 * 60 * 2, // 2 minutes - more frequent for live tracking
   });
 }
 

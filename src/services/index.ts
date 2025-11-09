@@ -33,11 +33,11 @@ export { transactionService } from "./transactionService";
 
 // Export types
 export type {
-  Dish,
   DishStep as CustomerDishStep,
+  Nutrient as CustomerNutrient,
+  Dish,
   DishSummary,
   MenuItemShort,
-  Nutrient as CustomerNutrient,
 } from "./dishService";
 export type {
   CreateIngredientRequest,
@@ -45,11 +45,11 @@ export type {
   UpdateIngredientRequest,
 } from "./ingredientService";
 export type {
-  Dish as ManagerDish,
   CreateDishRequest as CreateManagerDishRequest,
-  UpdateDishRequest as UpdateManagerDishRequest,
-  DishStep,
   Nutrient as DishNutrient,
+  DishStep,
+  Dish as ManagerDish,
+  UpdateDishRequest as UpdateManagerDishRequest,
 } from "./managerDishService";
 export type {
   CreateNutrientRequest,
@@ -62,9 +62,13 @@ export type {
   DishSelection,
   Order,
   OrderDish,
+  DishStep as OrderDishStep,
+  OrderDishWithSteps,
   OrderFeedback,
   OrderStatus,
+  OrderTracking,
   SelectionItem,
+  StepItem,
   StepSelection,
   UpdateDishRequest,
 } from "./orderCustomerService";
@@ -83,10 +87,6 @@ export type {
   Promotion,
   UpdatePromotionRequest,
 } from "./promotionService";
-export type {
-  CreateStepRequest,
-  Step,
-  UpdateStepRequest,
-} from "./stepService";
+export type { CreateStepRequest, Step, UpdateStepRequest } from "./stepService";
 export type { CreateStoreDto, Store, UpdateStoreDto } from "./storeService";
 export type { Transaction, TransactionStatus } from "./transactionService";

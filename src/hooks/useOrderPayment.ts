@@ -72,3 +72,37 @@ export function useCheckout() {
     error: confirmOrder.error,
   };
 }
+
+/**
+ * Hook to handle MoMo payment callback
+ */
+export function useMoMoCallback() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: Record<string, string>) =>
+      orderPaymentService.momoCallback(params),
+    onSuccess: () => {
+      // Invalidate order queries after successful payment
+      queryClient.invalidateQueries({ queryKey: ["currentOrder"] });
+      queryClient.invalidateQueries({ queryKey: ["orderHistory"] });
+    },
+  });
+}
+
+/**
+ * Hook to handle VNPay payment callback
+ */
+export function useVNPayCallback() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: Record<string, string>) =>
+      orderPaymentService.vnpayCallback(params),
+    onSuccess: () => {
+      // Invalidate order queries after successful payment
+      queryClient.invalidateQueries({ queryKey: ["currentOrder"] });
+      queryClient.invalidateQueries({ queryKey: ["orderHistory"] });
+    },
+  });
+}

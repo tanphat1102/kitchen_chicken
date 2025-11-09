@@ -5,12 +5,15 @@ import './styles/animations.css'
 import App from './App.tsx'
 import { AuthProvider } from './contexts/AuthContext'
 import { Toaster } from '@/components/ui/sonner'
+import QueryProvider from '@/providers/QueryProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-      <Toaster position="top-right" richColors />
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <App />
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
+    </QueryProvider>
   </StrictMode>,
 )
