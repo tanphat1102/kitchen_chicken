@@ -18,6 +18,7 @@ export const APP_ROUTES = {
   CART: "/cart",
   PAYMENT_CALLBACK: "/payment/callback",
   VNPAY_RETURN: "/vnpay-payment-result", // VNPay return URL
+  MOMO_RETURN: "/momo-web-return-result", // MoMo return URL
   ORDER_HISTORY: "/orders/history",
 } as const;
 
