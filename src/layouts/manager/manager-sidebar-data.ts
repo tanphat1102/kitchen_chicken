@@ -5,7 +5,6 @@ import {
   Package,
   Tag,
   TrendingUp,
-  BarChart3,
   User,
   Utensils,
   Apple,
@@ -80,13 +79,6 @@ export const managerSidebarData = {
       url: "/manager/steps",
       icon: ListOrdered,
       description: "Cooking instructions",
-      badge: undefined,
-    },
-    {
-      title: "Reports",
-      url: "/manager/reports",
-      icon: BarChart3,
-      description: "Analytics & stats",
       badge: undefined,
     },
     {

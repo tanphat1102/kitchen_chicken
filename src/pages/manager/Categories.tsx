@@ -295,6 +295,14 @@ const Categories: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleEdit(category)}
+                            className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
+                          >
+                            <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => toggleCategoryStatus(category.id)}
                             className={`!bg-white !border-gray-300 transition-colors ${
                               category.isActive !== false 
@@ -313,14 +321,6 @@ const Categories: React.FC = () => {
                                 Activate
                               </>
                             )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(category)}
-                            className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
                           </Button>
                         </div>
                       </TableCell>
