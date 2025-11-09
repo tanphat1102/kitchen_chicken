@@ -40,7 +40,6 @@ import Ingredients from "@/pages/manager/Ingredients";
 import ManagerDishes from "@/pages/manager/ManagerDishes";
 import Orders from "@/pages/manager/Orders";
 import Promotions from "@/pages/manager/Promotions";
-import Reports from "@/pages/manager/Reports";
 import ManagerProfile from "@/pages/manager/ManagerProfile";
 import Nutrients from "@/pages/manager/Nutrients";
 import Steps from "@/pages/manager/Steps";
@@ -159,10 +158,6 @@ export function AppRoutes() {
         <Route 
           path={MANAGER_ROUTES.MANAGER_STEPS} 
           element={<Steps />} 
-        />
-        <Route 
-          path={MANAGER_ROUTES.MANAGER_REPORTS} 
-          element={<Reports />} 
         />
         <Route path="profile" element={<ManagerProfile />} />
       </Route>

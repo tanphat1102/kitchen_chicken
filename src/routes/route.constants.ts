@@ -42,7 +42,6 @@ export const MANAGER_ROUTES = {
   MANAGER_DISHES: "/manager/dishes",
   MANAGER_ORDERS: "/manager/orders",
   MANAGER_PROMOTIONS: "/manager/promotions",
-  MANAGER_REPORTS: "/manager/reports",
   MANAGER_PROFILE: "/manager/profile",
   MANAGER_NUTRIENTS: "/manager/nutrients",
   MANAGER_STEPS: "/manager/steps",
@@ -207,11 +206,6 @@ export const ROUTE_METADATA = {
     description: "Quản lý chương trình khuyến mãi",
     access: ROUTE_ACCESS.ADMIN,
   },
-  [MANAGER_ROUTES.MANAGER_REPORTS]: {
-    title: "Quản lý - Báo cáo",
-    description: "Xem báo cáo và thống kê",
-    access: ROUTE_ACCESS.ADMIN,
-  },
   [MANAGER_ROUTES.MANAGER_NUTRIENTS]: {
     title: "Quản lý - Dinh dưỡng",
     description: "Quản lý thông tin dinh dưỡng",
@@ -313,11 +307,6 @@ export const MANAGER_NAVIGATION_ITEMS = [
     path: MANAGER_ROUTES.MANAGER_STEPS,
     label: "Công thức",
     icon: "ListOrdered",
-  },
-  {
-    path: MANAGER_ROUTES.MANAGER_REPORTS,
-    label: "Báo cáo",
-    icon: "FileText",
   },
 ] as const;
 

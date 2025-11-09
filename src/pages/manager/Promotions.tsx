@@ -381,11 +381,11 @@ const Promotions: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Discount</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-center">Discount</TableHead>
+                  <TableHead className="text-center">Period</TableHead>
+                  <TableHead className="text-center">Usage</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -401,8 +401,8 @@ const Promotions: React.FC = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
                         {promo.discountType === 'PERCENT' ? (
                           <Percent className="h-4 w-4 text-gray-900" />
                         ) : (
@@ -413,20 +413,20 @@ const Promotions: React.FC = () => {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <div>
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
                           <p>{formatDate(promo.startDate)} - {formatDate(promo.endDate)}</p>
-                          {isPromotionExpired(promo) && (
-                            <Badge variant="outline" className="text-xs mt-1 text-red-600">
-                              Expired
-                            </Badge>
-                          )}
                         </div>
+                        {isPromotionExpired(promo) && (
+                          <Badge variant="outline" className="text-xs mt-1 text-red-600">
+                            Expired
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <div className="text-sm">
                         <p className="font-medium">{promo.usedCount || 0} used</p>
                         {(promo.quantityLimit || promo.quantity) && (
@@ -436,43 +436,57 @@ const Promotions: React.FC = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {isPromotionValid(promo) ? (
-                        <Badge className="bg-gray-100 text-gray-700 border-gray-200">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Active & Valid
-                        </Badge>
-                      ) : promo.isActive ? (
-                        <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-700 border-gray-200">
-                          <XCircle className="h-3 w-3 mr-1" />
-                          Inactive
-                        </Badge>
-                      )}
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        {isPromotionValid(promo) ? (
+                          <Badge className="border transition-colors bg-white text-black border-black hover:bg-black hover:text-white">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Active & Valid
+                          </Badge>
+                        ) : promo.isActive ? (
+                          <Badge className="border transition-colors bg-white text-black border-black hover:bg-black hover:text-white">
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge className="border transition-colors bg-white text-gray-700 border-black hover:bg-black hover:text-white">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Inactive
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(promo)}
-                          className={promo.isActive 
-                            ? 'text-gray-900 border-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors' 
-                            : 'text-gray-900 border-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500 transition-colors'}
-                        >
-                          {promo.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(promo)}
-                          className="!bg-white !text-gray-900 !border-gray-900 hover:!bg-yellow-400 hover:!text-black hover:!border-yellow-500 transition-colors"
+                          className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleStatus(promo)}
+                          className={`!bg-white !border-gray-300 transition-colors ${
+                            promo.isActive 
+                              ? '!text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500' 
+                              : '!text-gray-900 hover:!bg-green-400 hover:!text-black hover:!border-green-400'
+                          }`}
+                        >
+                          {promo.isActive ? (
+                            <>
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Activate
+                            </>
+                          )}
                         </Button>
                       </div>
                     </TableCell>
