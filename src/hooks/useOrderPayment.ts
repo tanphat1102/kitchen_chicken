@@ -1,5 +1,6 @@
 import {
   orderPaymentService,
+  type MoMoCallbackPayload,
   type OrderConfirmRequest,
 } from "@/services/orderPaymentService";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -80,8 +81,8 @@ export function useMoMoCallback() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (params: Record<string, string>) =>
-      orderPaymentService.momoCallback(params),
+    mutationFn: (payload: MoMoCallbackPayload) =>
+      orderPaymentService.momoCallback(payload),
     onSuccess: () => {
       // Invalidate order queries after successful payment
       queryClient.invalidateQueries({ queryKey: ["currentOrder"] });
