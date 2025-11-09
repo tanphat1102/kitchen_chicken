@@ -32,7 +32,10 @@ import {
   Plus,
   Search,
   Edit,
+  Pencil,
   Trash2,
+  XCircle,
+  CheckCircle,
   ArrowUp,
   ArrowDown,
   ChefHat,
@@ -158,17 +161,17 @@ const Steps: React.FC = () => {
     }
   };
 
-  // Handle delete
+  // Handle deactivate/delete
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this step?')) return;
+    if (!window.confirm('Are you sure you want to deactivate this step?')) return;
     
     try {
       await stepService.delete(id);
-      toast.success('Step deleted successfully');
+      toast.success('Step deactivated successfully');
       fetchSteps();
     } catch (error: any) {
-      console.error('Error deleting step:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete step');
+      console.error('Error deactivating step:', error);
+      toast.error(error.response?.data?.message || 'Failed to deactivate step');
     }
   };
 
@@ -347,24 +350,24 @@ const Steps: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
-                    <TableHead className="font-semibold text-gray-700 w-[80px]">Order</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Description</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Menu Item</TableHead>
+                    <TableHead className="font-semibold text-gray-700 w-[80px] text-center">Order</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Description</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Menu Item</TableHead>
                     <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSteps.map((step, index) => (
                     <TableRow key={step.id} className="hover:bg-gray-50 border-gray-200">
-                      <TableCell>
-                        <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
+                      <TableCell className="text-center">
+                        <div className="h-10 w-10 rounded-full bg-black flex items-center justify-center flex-shrink-0 mx-auto">
                           <span className="text-white font-bold text-sm">{step.order || 0}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-md text-gray-900">
+                      <TableCell className="max-w-md text-gray-900 text-center">
                         {step.description}
                       </TableCell>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-gray-600 text-center">
                         {getMenuItemName(step.menuItemId)}
                       </TableCell>
                       <TableCell className="text-center">
@@ -393,7 +396,7 @@ const Steps: React.FC = () => {
                             onClick={() => handleEdit(step)}
                             className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
                           >
-                            <Edit className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                            <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
                           </Button>
                           <Button
                             variant="outline"
@@ -401,7 +404,8 @@ const Steps: React.FC = () => {
                             onClick={() => handleDelete(step.id)}
                             className="!bg-white !border-gray-300 !text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500 transition-colors"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Deactivate
                           </Button>
                         </div>
                       </TableCell>

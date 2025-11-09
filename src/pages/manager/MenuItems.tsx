@@ -374,29 +374,31 @@ const MenuItems: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-gray-50">
-                  <TableHead className="text-gray-700">Image</TableHead>
+                  <TableHead className="text-gray-700 text-center">Image</TableHead>
                   <TableHead className="text-gray-700">Name</TableHead>
-                  <TableHead className="text-gray-700">Category</TableHead>
-                  <TableHead className="text-gray-700">Price</TableHead>
-                  <TableHead className="text-gray-700">Status</TableHead>
-                  <TableHead className="text-right text-gray-700">Actions</TableHead>
+                  <TableHead className="text-gray-700 text-center">Category</TableHead>
+                  <TableHead className="text-gray-700 text-center">Price</TableHead>
+                  <TableHead className="text-gray-700 text-center">Status</TableHead>
+                  <TableHead className="text-gray-700 text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredItems.map((item) => (
                   <TableRow key={item.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      {item.imageUrl ? (
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.name}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">No image</span>
-                        </div>
-                      )}
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        {item.imageUrl ? (
+                          <img 
+                            src={item.imageUrl} 
+                            alt={item.name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No image</span>
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div>
@@ -408,48 +410,60 @@ const MenuItems: React.FC = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">{item.categoryName || `Cat #${item.categoryId}`}</Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <span className="font-bold text-gray-900">{formatVND(item.price)}</span>
                     </TableCell>
-                    <TableCell>
-                      <Badge className={`border ${item.isActive ? 'bg-gray-100 text-gray-900 border-gray-300' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                        {item.isActive ? (
-                          <>
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Active
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Inactive
-                          </>
-                        )}
-                      </Badge>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        <Badge className={`border transition-colors ${item.isActive ? 'bg-white text-black border-black hover:bg-black hover:text-white' : 'bg-white text-gray-700 border-black hover:bg-black hover:text-white'}`}>
+                          {item.isActive ? (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Active
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Inactive
+                            </>
+                          )}
+                        </Badge>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleToggleStatus(item)}
-                          className={`bg-white border-gray-300 transition-colors ${
-                            item.isActive 
-                              ? 'text-gray-900 hover:bg-red-500 hover:text-white hover:border-red-500' 
-                              : 'text-gray-900 hover:bg-green-500 hover:text-white hover:border-green-500'
-                          }`}
-                        >
-                          {item.isActive ? 'Deactivate' : 'Activate'}
-                        </Button>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(item)}
-                          className="!bg-white !text-gray-900 hover:!bg-yellow-400 hover:!text-black hover:!border-yellow-500 !border-gray-300 transition-colors"
+                          className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleStatus(item)}
+                          className={`!bg-white !border-gray-300 transition-colors ${
+                            item.isActive 
+                              ? '!text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500' 
+                              : '!text-gray-900 hover:!bg-green-400 hover:!text-black hover:!border-green-400'
+                          }`}
+                        >
+                          {item.isActive ? (
+                            <>
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Activate
+                            </>
+                          )}
                         </Button>
                       </div>
                     </TableCell>

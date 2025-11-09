@@ -34,7 +34,11 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
+  CheckCircle,
+  XCircle,
+  Pencil,
 } from 'lucide-react';
+import { ActionButtons } from '@/components/shared/ActionButtons';
 import { nutrientService, type Nutrient, type CreateNutrientRequest } from '@/services/nutrientService';
 import { menuItemService } from '@/services/menuItemService';
 import type { MenuItem } from '@/types/api.types';
@@ -145,17 +149,17 @@ const Nutrients: React.FC = () => {
     }
   };
 
-  // Handle delete
+  // Handle deactivate/delete
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this nutrient?')) return;
+    if (!window.confirm('Are you sure you want to deactivate this nutrient?')) return;
     
     try {
       await nutrientService.delete(id);
-      toast.success('Nutrient deleted successfully');
+      toast.success('Nutrient deactivated successfully');
       fetchNutrients();
     } catch (error: any) {
-      console.error('Error deleting nutrient:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete nutrient');
+      console.error('Error deactivating nutrient:', error);
+      toast.error(error.response?.data?.message || 'Failed to deactivate nutrient');
     }
   };
 
@@ -318,9 +322,8 @@ const Nutrients: React.FC = () => {
                 <TableHeader>
                   <TableRow className="bg-gray-50 hover:bg-gray-50 border-gray-200">
                     <TableHead className="font-semibold text-gray-700">Name</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Quantity</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Unit</TableHead>
-                    <TableHead className="font-semibold text-gray-700">Menu Item</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Unit</TableHead>
+                    <TableHead className="font-semibold text-gray-700 text-center">Menu Item</TableHead>
                     <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -338,11 +341,10 @@ const Nutrients: React.FC = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-900">{nutrient.quantity}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge className="bg-white text-black border-black">{nutrient.unit}</Badge>
                       </TableCell>
-                      <TableCell className="text-gray-600">
+                      <TableCell className="text-center text-gray-600">
                         {nutrient.menuItemId ? (
                           getMenuItemName(nutrient.menuItemId)
                         ) : (
@@ -357,7 +359,7 @@ const Nutrients: React.FC = () => {
                             onClick={() => handleEdit(nutrient)}
                             className="!bg-white !border-gray-300 hover:!bg-yellow-400 hover:!border-yellow-500 transition-colors"
                           >
-                            <Edit className="h-4 w-4 !text-gray-900 hover:!text-black" />
+                            <Pencil className="h-4 w-4 !text-gray-900 hover:!text-black" />
                           </Button>
                           <Button
                             variant="outline"
@@ -365,7 +367,8 @@ const Nutrients: React.FC = () => {
                             onClick={() => handleDelete(nutrient.id)}
                             className="!bg-white !border-gray-300 !text-gray-900 hover:!bg-red-500 hover:!text-white hover:!border-red-500 transition-colors"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Deactivate
                           </Button>
                         </div>
                       </TableCell>

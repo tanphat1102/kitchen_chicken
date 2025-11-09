@@ -1,6 +1,5 @@
 import { AppSidebar } from "@/components/ui/app-sidebar";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,11 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import type { ReactNode } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { managerSidebarData } from "./manager-sidebar-data";
-import { Bell, Search, LogOut, ChevronDown, Home } from "lucide-react";
+import { LogOut, ChevronDown, Home } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import toast from "react-hot-toast";
 
@@ -95,49 +93,6 @@ export default function ManagerLayout({ children }: Readonly<ManagerLayoutProps>
 
             {/* Right: Actions */}
             <div className="flex items-center gap-2">
-              {/* Search Button */}
-              <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-black hover:bg-gray-100">
-                <Search className="h-5 w-5" />
-              </Button>
-
-              {/* Notifications */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-black hover:bg-gray-100">
-                    <Bell className="h-5 w-5" />
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-black text-white hover:bg-black"
-                    >
-                      2
-                    </Badge>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 bg-white border-gray-200">
-                  <DropdownMenuLabel className="text-gray-900">Notifications</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-200" />
-                  <div className="max-h-[300px] overflow-y-auto">
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 focus:bg-gray-100">
-                      <p className="text-sm font-medium text-gray-900">New order received</p>
-                      <p className="text-xs text-gray-600">Order #12345 from table 5</p>
-                      <span className="text-xs text-gray-500">5 minutes ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-gray-200" />
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 focus:bg-gray-100">
-                      <p className="text-sm font-medium text-gray-900">Low inventory alert</p>
-                      <p className="text-xs text-gray-600">Chicken breast running low</p>
-                      <span className="text-xs text-gray-500">30 minutes ago</span>
-                    </DropdownMenuItem>
-                  </div>
-                  <DropdownMenuSeparator className="bg-gray-200" />
-                  <DropdownMenuItem className="justify-center text-sm text-black focus:bg-gray-100">
-                    View all notifications
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Separator orientation="vertical" className="h-6 bg-gray-300" />
-
               {/* User Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -96,7 +96,7 @@ const AdminDashboard: React.FC = () => {
       const [revenueTrendData, storePerformanceData, userGrowthData] = await Promise.all([
         dashboardService.getRevenueTrend(days),
         dashboardService.getStorePerformance(),
-        dashboardService.getUserGrowth(),
+        dashboardService.getUserGrowth(180), // 180 days = 6 months
       ]);
 
       setRevenueTrend(revenueTrendData);

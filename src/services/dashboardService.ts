@@ -78,11 +78,11 @@ export interface UserDistribution {
  */
 class DashboardService extends BaseApiService {
   constructor() {
-    super('/dashboard'); // Adjust endpoint as needed
+    super('/dashboard');
   }
 
   /**
-   * Get dashboard statistics
+   * Get dashboard statistics (deprecated - use individual endpoints)
    */
   async getStats(): Promise<DashboardStats> {
     // TODO: Replace with actual API call when backend is ready
@@ -100,7 +100,7 @@ class DashboardService extends BaseApiService {
   }
 
   /**
-   * Get revenue data for chart
+   * Get revenue data for chart (deprecated - use getRevenueTrend)
    */
   async getRevenueData(): Promise<RevenueData[]> {
     // TODO: Replace with actual API call
@@ -121,7 +121,7 @@ class DashboardService extends BaseApiService {
   }
 
   /**
-   * Get recent sales
+   * Get recent sales (deprecated - use transaction service)
    */
   async getRecentSales(): Promise<RecentSale[]> {
     // TODO: Replace with actual API call
@@ -170,77 +170,159 @@ class DashboardService extends BaseApiService {
   }
 
   /**
-   * Get revenue trend data for charts (7 or 30 days)
+   * Get revenue trend data for charts (7, 30, or 90 days)
+   * Backend: GET /api/dashboard/admin/revenue-trend?dayNumber={days}
    */
   async getRevenueTrend(days: number = 7): Promise<RevenueTrendData[]> {
-    // TODO: Replace with actual API call
-    // For now, generate mock data based on current date
-    const data: RevenueTrendData[] = [];
-    const today = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
+    try {
+      const response = await this.get<any>(
+        `/admin/revenue-trend?dayNumber=${days}`
+      );
       
-      // Mock data with some variation
-      const baseRevenue = 50000 + Math.random() * 30000;
-      const baseTx = 15 + Math.floor(Math.random() * 25);
+      // Handle ResponseModel wrapper: { success, message, data }
+      const data = response.data || response;
       
-      data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        revenue: Math.floor(baseRevenue),
-        transactions: baseTx,
-      });
+      if (!Array.isArray(data)) {
+        console.warn('Revenue trend data is not an array:', data);
+        return [];
+      }
+      
+      // Transform backend response to match frontend interface
+      return data.map((item: any) => ({
+        date: item.date || item.day || item.pickupTime,
+        revenue: item.revenue || item.totalRevenue || item.totalPrice || 0,
+        transactions: item.transactionCount || item.orderCount || item.transactions || 0,
+      }));
+    } catch (error) {
+      console.error('Error fetching revenue trend:', error);
+      // Return empty array on error
+      return [];
     }
-    
-    return data;
   }
 
   /**
    * Get store performance data
+   * Backend: GET /api/dashboard/admin/best-performance
    */
   async getStorePerformance(): Promise<StorePerformanceData[]> {
-    // TODO: Replace with actual API call
-    // For now, return mock data
-    return [
-      { storeId: 1, storeName: 'District 1 Store', revenue: 185000, transactions: 245, growth: 12.5 },
-      { storeId: 2, storeName: 'District 3 Store', revenue: 156000, transactions: 198, growth: 8.3 },
-      { storeId: 3, storeName: 'Binh Thanh Store', revenue: 142000, transactions: 187, growth: 15.7 },
-      { storeId: 4, storeName: 'Thu Duc Store', revenue: 128000, transactions: 165, growth: 5.2 },
-      { storeId: 5, storeName: 'Tan Binh Store', revenue: 119000, transactions: 152, growth: -2.1 },
-    ];
+    try {
+      const response = await this.get<any>('/admin/best-performance');
+      
+      // Handle ResponseModel wrapper
+      const data = response.data || response;
+      
+      if (!Array.isArray(data)) {
+        console.warn('Store performance data is not an array:', data);
+        return [];
+      }
+      
+      // Transform backend response to match frontend interface
+      return data.map((item: any) => ({
+        storeId: item.storeId || item.id,
+        storeName: item.storeName || item.name,
+        revenue: item.totalRevenue || item.revenue || 0,
+        transactions: item.totalOrders || item.orderCount || 0,
+        growth: item.growthRate || item.growth || 0,
+      }));
+    } catch (error) {
+      console.error('Error fetching store performance:', error);
+      // Return empty array on error
+      return [];
+    }
   }
 
   /**
-   * Get user growth data (last 6 months)
+   * Get user growth data (last N days, typically 180 for 6 months)
+   * Backend: GET /api/dashboard/admin/user-growth-trend?dayNumber={days}
    */
-  async getUserGrowth(): Promise<UserGrowthData[]> {
-    // TODO: Replace with actual API call
-    const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-    let totalUsers = 100;
-    
-    return months.map((month) => {
-      const newUsers = Math.floor(Math.random() * 30) + 10;
-      totalUsers += newUsers;
-      return {
-        month,
-        newUsers,
-        totalUsers,
-      };
-    });
+  async getUserGrowth(days: number = 180): Promise<UserGrowthData[]> {
+    try {
+      const response = await this.get<any>(
+        `/admin/user-growth-trend?dayNumber=${days}`
+      );
+      
+      // Handle ResponseModel wrapper
+      const data = response.data || response;
+      
+      if (!Array.isArray(data)) {
+        console.warn('User growth data is not an array:', data);
+        return [];
+      }
+      
+      // Transform backend response to match frontend interface
+      return data.map((item: any) => ({
+        month: item.month || item.period,
+        newUsers: item.newUserCount || item.newUsers || 0,
+        totalUsers: item.totalUserCount || item.totalUsers || 0,
+      }));
+    } catch (error) {
+      console.error('Error fetching user growth:', error);
+      // Return empty array on error
+      return [];
+    }
   }
 
   /**
-   * Get user distribution by role
+   * Get user distribution by role (deprecated - calculate from user service)
    */
   async getUserDistribution(): Promise<UserDistribution[]> {
-    // TODO: Replace with actual API call
+    // TODO: Replace with actual API call or calculate from user service
     return [
       { role: 'Customers', count: 245, percentage: 68 },
       { role: 'Employees', count: 85, percentage: 24 },
       { role: 'Managers', count: 22, percentage: 6 },
       { role: 'Admins', count: 8, percentage: 2 },
     ];
+  }
+
+  /**
+   * Get summary report for manager (revenue, orders, avg order value)
+   * Backend: GET /api/dashboard/manager/summary?startDate={date}&endDate={date}
+   */
+  async getManagerSummary(startDate: string, endDate: string): Promise<any> {
+    try {
+      const response = await this.get<any>(
+        `/manager/summary?startDate=${startDate}&endDate=${endDate}`
+      );
+      
+      // Handle ResponseModel wrapper
+      const data = response.data || response;
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching manager summary:', error);
+      return {
+        totalRevenue: 0,
+        totalOrders: 0,
+        averageOrderValue: 0,
+        completedOrders: 0,
+      };
+    }
+  }
+
+  /**
+   * Get popular dishes for manager
+   * Backend: GET /api/dashboard/manager/popular-items?startDate={date}&endDate={date}&limit={limit}
+   */
+  async getManagerPopularItems(startDate: string, endDate: string, limit: number = 5): Promise<any[]> {
+    try {
+      const response = await this.get<any>(
+        `/manager/popular-items?startDate=${startDate}&endDate=${endDate}&limit=${limit}`
+      );
+      
+      // Handle ResponseModel wrapper
+      const data = response.data || response;
+      
+      if (!Array.isArray(data)) {
+        console.warn('Popular items data is not an array:', data);
+        return [];
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error fetching popular items:', error);
+      return [];
+    }
   }
 }
 
