@@ -383,7 +383,8 @@ const CartPage: React.FC = () => {
                 <div className="border-b border-gray-200 bg-gray-50 px-6 py-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-700">
-                      Your Cart ({dishes.length} {dishes.length === 1 ? 'item' : 'items'})
+                      Your Cart ({dishes.length}{" "}
+                      {dishes.length === 1 ? "item" : "items"})
                     </span>
                     <span className="text-sm text-gray-600">
                       Total:{" "}
@@ -521,11 +522,15 @@ const CartPage: React.FC = () => {
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-xs font-medium text-gray-500">
-                                        {expandedCustomizations.has(dish.dishId) ? 'Hide' : 'Show'}
+                                        {expandedCustomizations.has(dish.dishId)
+                                          ? "Hide"
+                                          : "Show"}
                                       </span>
-                                      <div className={`rounded-full bg-gray-200 p-1 transition-all ${expandedCustomizations.has(dish.dishId) ? 'rotate-180 bg-red-100' : ''}`}>
+                                      <div
+                                        className={`rounded-full bg-gray-200 p-1 transition-all ${expandedCustomizations.has(dish.dishId) ? "rotate-180 bg-red-100" : ""}`}
+                                      >
                                         <svg
-                                          className={`h-4 w-4 transition-colors ${expandedCustomizations.has(dish.dishId) ? 'text-red-600' : 'text-gray-600'}`}
+                                          className={`h-4 w-4 transition-colors ${expandedCustomizations.has(dish.dishId) ? "text-red-600" : "text-gray-600"}`}
                                           fill="none"
                                           viewBox="0 0 24 24"
                                           stroke="currentColor"
@@ -768,7 +773,8 @@ const CartPage: React.FC = () => {
                 <div className="mb-6 space-y-3">
                   <div className="flex items-center justify-between text-gray-600">
                     <span>
-                      Subtotal ({dishes.length} {dishes.length === 1 ? 'item' : 'items'})
+                      Subtotal ({dishes.length}{" "}
+                      {dishes.length === 1 ? "item" : "items"})
                     </span>
                     <span className="font-semibold">
                       {currencyFormat(cartTotal)}
@@ -936,7 +942,7 @@ const CartPage: React.FC = () => {
                       ? "Loading order..."
                       : dishes.length === 0
                         ? "Add items to cart"
-                        : `Proceed to Checkout (${dishes.length} ${dishes.length === 1 ? 'item' : 'items'})`}
+                        : `Proceed to Checkout (${dishes.length} ${dishes.length === 1 ? "item" : "items"})`}
                 </button>
 
                 <Link
