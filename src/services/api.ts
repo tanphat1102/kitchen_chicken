@@ -1,13 +1,89 @@
-import { auth } from "@/config/firebase";
 import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
   type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from "axios";
 
 // API Base URL
 // Use proxy in development (to avoid CORS), direct URL in production
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Track if we're currently refreshing token
+let isRefreshing = false;
+// Queue of requests waiting for token refresh
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else if (token) {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
+
+// Refresh token function
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = localStorage.getItem("refreshToken");
+
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  console.log("🔄 [api.ts] Refreshing access token...");
+
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/auth/refresh`,
+      { refreshToken },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      },
+    );
+
+    const { data } = response.data;
+
+    if (!data?.accessToken) {
+      throw new Error("No access token in response");
+    }
+
+    // Save new tokens
+    localStorage.setItem("accessToken", data.accessToken);
+    if (data.refreshToken) {
+      localStorage.setItem("refreshToken", data.refreshToken);
+    }
+
+    // Update token expiry - use default 1 hour if not provided
+    const expiresIn = data.expiresIn || 3600; // 1 hour default
+    const expiresAt = Date.now() + expiresIn * 1000;
+    localStorage.setItem("tokenExpiresAt", expiresAt.toString());
+    console.log(
+      "🕐 [api.ts] Token expiry updated:",
+      new Date(expiresAt).toLocaleString(),
+    );
+
+    console.log("✅ [api.ts] Token refreshed successfully");
+    return data.accessToken;
+  } catch (error) {
+    console.error("❌ [api.ts] Token refresh failed:", error);
+    // Clear all auth data on refresh failure
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("tokenExpiresAt");
+    throw error;
+  }
+}
 
 /**
  * Create Axios instance with default config
@@ -26,7 +102,7 @@ const createAxiosInstance = (): AxiosInstance => {
     async (config) => {
       try {
         // Get JWT token from localStorage (set by authService after login)
-        const accessToken = localStorage.getItem('accessToken');
+        const accessToken = localStorage.getItem("accessToken");
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
         }
@@ -45,28 +121,49 @@ const createAxiosInstance = (): AxiosInstance => {
   instance.interceptors.response.use(
     (response) => response,
     async (error) => {
-      const originalRequest = error.config;
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      };
 
       // Handle 401 Unauthorized - Token expired or invalid
       if (error.response?.status === 401 && !originalRequest._retry) {
+        if (isRefreshing) {
+          // If already refreshing, queue this request
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          })
+            .then((token) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              return instance(originalRequest);
+            })
+            .catch((err) => {
+              return Promise.reject(err);
+            });
+        }
+
         originalRequest._retry = true;
+        isRefreshing = true;
 
         try {
-          // Try to refresh token using refreshToken from localStorage
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            // TODO: Call backend refresh endpoint
-            // For now, just clear tokens and dispatch event
-            console.warn('⚠️ Token expired, clearing auth data');
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('userInfo');
-            
-            // Dispatch event to trigger login modal
-            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-          }
+          const newToken = await refreshAccessToken();
+
+          // Update authorization header
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+          // Process queued requests
+          processQueue(null, newToken);
+
+          // Retry original request
+          return instance(originalRequest);
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
+          processQueue(refreshError, null);
+
+          // Dispatch event to show login modal
+          window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       }
 

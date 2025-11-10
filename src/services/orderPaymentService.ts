@@ -15,6 +15,23 @@ export interface OrderConfirmResponse {
   message?: string;
 }
 
+// MoMo callback payload interface
+export interface MoMoCallbackPayload {
+  partnerCode: string;
+  orderId: string;
+  requestId: string;
+  amount: number; // MoMo sends as number
+  orderInfo: string;
+  orderType: string;
+  transId: string;
+  resultCode: string;
+  message: string;
+  payType: string;
+  responseTime: number; // MoMo sends as timestamp number
+  extraData: string;
+  signature: string;
+}
+
 // Can also be a string URL directly
 export type OrderConfirmResult = OrderConfirmResponse | string;
 
@@ -60,25 +77,54 @@ export const orderPaymentService = {
   },
 
   /**
-   * Handle VNPay callback (for webhook)
+   * Handle VNPay callback (web return URL + IPN)
+   * This method is called from frontend to verify payment with backend
+   * Backend will validate signature and update order status
+   * @param params - VNPay callback parameters from URL
    */
   async vnpayCallback(params: Record<string, string>): Promise<any> {
+    console.log(
+      "📤 Sending VNPay callback to backend:",
+      API_ENDPOINTS.VNPAY_CALLBACK,
+    );
     const response = await api.post<ApiResponse<any>>(
       API_ENDPOINTS.VNPAY_CALLBACK,
       params,
     );
+    console.log("✅ VNPay callback response:", response.data);
     return response.data.data;
   },
 
   /**
-   * Handle MoMo callback (for webhook)
-   * @param params - MoMo callback parameters
+   * Handle MoMo callback (web return URL + IPN)
+   * This method is called from frontend to verify payment with backend
+   * Backend will:
+   * 1. Validate signature using MoMo secret key
+   * 2. Verify transaction with MoMo API
+   * 3. Update order status to CONFIRMED/PAID
+   * @param payload - MoMo callback payload with proper types (amount and responseTime as numbers)
+   * @returns Response with order status and message
    */
-  async momoCallback(params: Record<string, string>): Promise<any> {
+  async momoCallback(payload: MoMoCallbackPayload): Promise<any> {
+    console.log(
+      "📤 Sending MoMo callback to backend:",
+      API_ENDPOINTS.MOMO_CALLBACK,
+    );
+    console.log("📦 MoMo Payload:", {
+      orderId: payload.orderId,
+      resultCode: payload.resultCode,
+      transId: payload.transId,
+      amount: payload.amount,
+      responseTime: payload.responseTime,
+      signature: payload.signature,
+    });
+
     const response = await api.post<ApiResponse<any>>(
       API_ENDPOINTS.MOMO_CALLBACK,
-      params,
+      payload,
     );
+
+    console.log("✅ MoMo callback response:", response.data);
     return response.data.data;
   },
 };

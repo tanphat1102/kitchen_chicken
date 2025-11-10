@@ -75,6 +75,8 @@ export function AppRoutes() {
   <Route path={APP_ROUTES.PAYMENT_CALLBACK} element={<PaymentCallbackPage />} />
   {/* VNPay Return URL - same component as payment callback */}
   <Route path={APP_ROUTES.VNPAY_RETURN} element={<PaymentCallbackPage />} />
+  {/* MoMo Return URL */}
+  <Route path={APP_ROUTES.MOMO_RETURN} element={<PaymentCallbackPage />} />
   {/* Order History */}
   <Route path={APP_ROUTES.ORDER_HISTORY} element={<OrderHistoryPage />} />
   {/* Services */}

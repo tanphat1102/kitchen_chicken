@@ -16,12 +16,89 @@ export const api: AxiosInstance = axios.create({
 });
 
 const AUTH_TOKEN_KEY = "accessToken"; // Match authService key
+const REFRESH_TOKEN_KEY = "refreshToken";
+
+// Track if we're currently refreshing token
+let isRefreshing = false;
+// Queue of requests waiting for token refresh
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else if (token) {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
 
 export function setAuthToken(token?: string) {
   if (token) {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
   } else {
     localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+}
+
+// Refresh token function
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  console.log("🔄 Refreshing access token...");
+
+  try {
+    const response = await axios.post(
+      `${baseURL}/api/auth/refresh`,
+      { refreshToken },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      },
+    );
+
+    const { data } = response.data;
+
+    if (!data?.accessToken) {
+      throw new Error("No access token in response");
+    }
+
+    // Save new tokens
+    localStorage.setItem(AUTH_TOKEN_KEY, data.accessToken);
+    if (data.refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+    }
+
+    // Update token expiry - use default 1 hour if not provided
+    const expiresIn = data.expiresIn || 3600; // 1 hour default
+    const expiresAt = Date.now() + expiresIn * 1000;
+    localStorage.setItem("tokenExpiresAt", expiresAt.toString());
+    console.log(
+      "🕐 Token expiry updated:",
+      new Date(expiresAt).toLocaleString(),
+    );
+
+    console.log("✅ Token refreshed successfully");
+    return data.accessToken;
+  } catch (error) {
+    console.error("❌ Token refresh failed:", error);
+    // Clear all auth data on refresh failure
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("tokenExpiresAt");
+    throw error;
   }
 }
 
@@ -41,17 +118,51 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401) {
-      // Clear invalid token
-      localStorage.removeItem(AUTH_TOKEN_KEY);
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
-      // Optional: Redirect to login or show login modal
-      console.warn("Authentication required. Please log in.");
+    // Handle 401 Unauthorized - Token expired or invalid
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
 
-      // You can dispatch an event to open login modal
-      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const newToken = await refreshAccessToken();
+
+        // Update authorization header
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+
+        // Process queued requests
+        processQueue(null, newToken);
+
+        // Retry original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+
+        // Dispatch event to show login modal
+        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
     return Promise.reject(error);
