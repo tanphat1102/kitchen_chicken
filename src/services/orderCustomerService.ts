@@ -157,7 +157,7 @@ const API_ENDPOINTS = {
   ORDER_STATUSES: "/api/order-statuses",
   ORDER_FEEDBACK: (orderId: number) => `/api/orders/${orderId}/feedback`,
   ORDER_TRACKING: (orderId: number) => `/api/orders/${orderId}/tracking`,
-  ORDER_CANCEL: "/api/orders/cancel",
+  ORDER_CANCEL: "/api/orders/api/orders/cancel",
 };
 
 class OrderCustomerService {
