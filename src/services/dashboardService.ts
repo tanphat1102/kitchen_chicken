@@ -169,30 +169,47 @@ class DashboardService extends BaseApiService {
     ];
   }
 
-  /**
-   * Get revenue trend data for charts (7, 30, or 90 days)
-   * Backend: GET /api/dashboard/admin/revenue-trend?dayNumber={days}
-   */
   async getRevenueTrend(days: number = 7): Promise<RevenueTrendData[]> {
     try {
-      const response = await this.get<any>(
-        `/admin/revenue-trend?dayNumber=${days}`
-      );
+      // TEMPORARY: Direct URL for testing backend
+      const response = await fetch(`https://chickenkitchen.milize-lena.space/api/dashboard/admin/revenue-trend?dayNumber=${days}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      }).then(r => r.json());
       
       // Handle ResponseModel wrapper: { success, message, data }
-      const data = response.data || response;
+      const rawData = response.data || response;
       
-      if (!Array.isArray(data)) {
-        console.warn('Revenue trend data is not an array:', data);
+      if (!Array.isArray(rawData)) {
+        console.warn('Revenue trend data is not an array:', rawData);
         return [];
       }
       
-      // Transform backend response to match frontend interface
-      return data.map((item: any) => ({
-        date: item.date || item.day || item.pickupTime,
-        revenue: item.revenue || item.totalRevenue || item.totalPrice || 0,
-        transactions: item.transactionCount || item.orderCount || item.transactions || 0,
-      }));
+      // Backend returns raw transactions: { pickupTime, totalPrice }
+      // Need to aggregate by date
+      const aggregatedByDate = rawData.reduce((acc: any, item: any) => {
+        // Extract date from pickupTime (ISO string)
+        const dateStr = item.pickupTime.split('T')[0]; // "2025-11-10"
+        
+        if (!acc[dateStr]) {
+          acc[dateStr] = {
+            date: dateStr,
+            revenue: 0,
+            transactions: 0
+          };
+        }
+        
+        acc[dateStr].revenue += item.totalPrice || 0;
+        acc[dateStr].transactions += 1;
+        
+        return acc;
+      }, {});
+      
+      // Convert object to array and sort by date
+      return Object.values(aggregatedByDate)
+        .sort((a: any, b: any) => a.date.localeCompare(b.date)) as RevenueTrendData[];
     } catch (error) {
       console.error('Error fetching revenue trend:', error);
       // Return empty array on error
@@ -206,7 +223,13 @@ class DashboardService extends BaseApiService {
    */
   async getStorePerformance(): Promise<StorePerformanceData[]> {
     try {
-      const response = await this.get<any>('/admin/best-performance');
+      // TEMPORARY: Direct URL for testing backend
+      const response = await fetch('https://chickenkitchen.milize-lena.space/api/dashboard/admin/best-performance', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      }).then(r => r.json());
       
       // Handle ResponseModel wrapper
       const data = response.data || response;
@@ -234,12 +257,17 @@ class DashboardService extends BaseApiService {
   /**
    * Get user growth data (last N days, typically 180 for 6 months)
    * Backend: GET /api/dashboard/admin/user-growth-trend?dayNumber={days}
+   * Backend returns: { createdDate: string, totalUser: number }[]
    */
   async getUserGrowth(days: number = 180): Promise<UserGrowthData[]> {
     try {
-      const response = await this.get<any>(
-        `/admin/user-growth-trend?dayNumber=${days}`
-      );
+      // TEMPORARY: Direct URL for testing backend
+      const response = await fetch(`https://chickenkitchen.milize-lena.space/api/dashboard/admin/user-growth-trend?dayNumber=${days}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      }).then(r => r.json());
       
       // Handle ResponseModel wrapper
       const data = response.data || response;
@@ -249,12 +277,20 @@ class DashboardService extends BaseApiService {
         return [];
       }
       
-      // Transform backend response to match frontend interface
-      return data.map((item: any) => ({
-        month: item.month || item.period,
-        newUsers: item.newUserCount || item.newUsers || 0,
-        totalUsers: item.totalUserCount || item.totalUsers || 0,
-      }));
+      // Backend returns: { createdDate: "2025-11-09", totalUser: 36 }
+      // Transform to match frontend interface
+      return data.map((item: any, index: number, array: any[]) => {
+        // Calculate newUsers as difference from previous day
+        const prevTotalUsers = index > 0 ? (array[index - 1].totalUser || 0) : 0;
+        const currentTotalUsers = item.totalUser || 0;
+        const newUsers = currentTotalUsers - prevTotalUsers;
+        
+        return {
+          month: item.createdDate || item.month || item.period,
+          newUsers: Math.max(0, newUsers), // Ensure non-negative
+          totalUsers: currentTotalUsers,
+        };
+      });
     } catch (error) {
       console.error('Error fetching user growth:', error);
       // Return empty array on error
@@ -281,9 +317,13 @@ class DashboardService extends BaseApiService {
    */
   async getManagerSummary(startDate: string, endDate: string): Promise<any> {
     try {
-      const response = await this.get<any>(
-        `/manager/summary?startDate=${startDate}&endDate=${endDate}`
-      );
+      // TEMPORARY: Direct URL for testing backend
+      const response = await fetch(`https://chickenkitchen.milize-lena.space/api/dashboard/manager/summary?startDate=${startDate}&endDate=${endDate}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      }).then(r => r.json());
       
       // Handle ResponseModel wrapper
       const data = response.data || response;
@@ -295,7 +335,7 @@ class DashboardService extends BaseApiService {
         totalRevenue: 0,
         totalOrders: 0,
         averageOrderValue: 0,
-        completedOrders: 0,
+        totalCustomers: 0,
       };
     }
   }
@@ -306,9 +346,13 @@ class DashboardService extends BaseApiService {
    */
   async getManagerPopularItems(startDate: string, endDate: string, limit: number = 5): Promise<any[]> {
     try {
-      const response = await this.get<any>(
-        `/manager/popular-items?startDate=${startDate}&endDate=${endDate}&limit=${limit}`
-      );
+      // TEMPORARY: Direct URL for testing backend
+      const response = await fetch(`https://chickenkitchen.milize-lena.space/api/dashboard/manager/popular-items?startDate=${startDate}&endDate=${endDate}&limit=${limit}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json'
+        }
+      }).then(r => r.json());
       
       // Handle ResponseModel wrapper
       const data = response.data || response;
