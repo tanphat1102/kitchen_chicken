@@ -9,8 +9,10 @@ const currencyFormat = (value: number) =>
 
 // Order status timeline component - Shadcn style
 const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
+  // Updated to match actual API status values
   const statuses = [
     { key: 'NEW', label: 'Ordered' },
+    { key: 'CONFIRMED', label: 'Confirmed' },
     { key: 'PROCESSING', label: 'Preparing' },
     { key: 'READY', label: 'Ready' },
     { key: 'COMPLETED', label: 'Completed' },
@@ -690,100 +692,7 @@ const OrderHistoryPage: React.FC = () => {
                     <OrderStatusTimeline status={order.orderStatusName} />
                   </div>
 
-                  {/* Order Items */}
-                  <div className="px-6 pb-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">Order Details</h4>
-                      <span className="text-xs text-muted-foreground">
-                        {order.dishes?.length || 0} dish{(order.dishes?.length || 0) !== 1 ? 'es' : ''}
-                      </span>
-                    </div>
-                    {order.dishes && order.dishes.length > 0 ? (
-                      <div className="space-y-3">
-                        {order.dishes.map((dish) => {
-                          const dishTotal = dish.price * (dish.quantity || 1);
-                          
-                          return (
-                            <div key={dish.id} className="rounded-lg border bg-muted/30 overflow-hidden">
-                              {/* Dish Header */}
-                              <div className="flex items-start gap-3 p-3 bg-background/50">
-                                {dish.imageUrl && (
-                                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                    <img
-                                      src={dish.imageUrl}
-                                      alt={dish.menuItemName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-semibold leading-tight">{dish.menuItemName}</p>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {currencyFormat(dish.price)} × {dish.quantity}
-                                      </p>
-                                    </div>
-                                    <p className="text-sm font-bold text-primary shrink-0">
-                                      {currencyFormat(dishTotal)}
-                                    </p>
-                                  </div>
-                                  
-                                  {dish.note && (
-                                    <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-amber-50 border border-amber-200">
-                                      <svg className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                      </svg>
-                                      <p className="text-xs text-amber-800 leading-relaxed">{dish.note}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Customizations */}
-                              {dish.selections && dish.selections.length > 0 && (
-                                <div className="px-3 pb-3 pt-2 space-y-2">
-                                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Customizations</p>
-                                  <div className="space-y-1.5">
-                                    {/* Group selections by step */}
-                                    {Object.entries(
-                                      dish.selections.reduce((acc, sel) => {
-                                        if (!acc[sel.stepName]) acc[sel.stepName] = [];
-                                        acc[sel.stepName].push(sel);
-                                        return acc;
-                                      }, {} as Record<string, typeof dish.selections>)
-                                    ).map(([stepName, selections]) => (
-                                      <div key={stepName} className="text-xs">
-                                        <p className="font-medium text-foreground mb-1">{stepName}:</p>
-                                        <div className="flex flex-wrap gap-1.5 ml-2">
-                                          {selections.map((sel) => (
-                                            <span
-                                              key={sel.id}
-                                              className="inline-flex items-center gap-1 rounded-full bg-background border px-2.5 py-1"
-                                            >
-                                              <span className="font-medium">{sel.optionName}</span>
-                                              <span className="text-muted-foreground">×{sel.quantity}</span>
-                                              {sel.extraPrice > 0 && (
-                                                <span className="text-green-600 font-semibold">
-                                                  +{sel.extraPrice.toLocaleString()}₫
-                                                </span>
-                                              )}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">No items in this order</p>
-                    )}
-                  </div>
+                  
 
                   {/* Feedback Section - Use dedicated component */}
                   <OrderFeedbackSection 
