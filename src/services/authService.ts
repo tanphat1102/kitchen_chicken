@@ -57,10 +57,49 @@ const API_BASE_URL = import.meta.env.DEV
 class AuthService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private refreshTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     // Load tokens from localStorage on initialization
     this.loadTokensFromStorage();
+    
+    // Setup auto-refresh mechanism
+    this.setupAutoRefresh();
+    
+    // Listen for visibility change to refresh when user comes back
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this.isTokenExpiringSoon() && this.refreshToken) {
+          console.log('👁️ Tab visible again, checking token...');
+          this.refreshAuthToken().catch(err => {
+            console.error('Failed to refresh on visibility change:', err);
+          });
+        }
+      });
+    }
+  }
+
+  // Setup automatic token refresh
+  private setupAutoRefresh(): void {
+    const checkAndRefresh = () => {
+      if (this.isTokenExpiringSoon() && this.refreshToken) {
+        console.log('⏰ Auto-refresh triggered');
+        this.refreshAuthToken().catch(err => {
+          console.error('Auto-refresh failed:', err);
+        });
+      }
+    };
+
+    // Check every minute
+    this.refreshTimer = setInterval(checkAndRefresh, 60 * 1000);
+  }
+
+  // Clear auto-refresh timer
+  private clearAutoRefresh(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
   }
 
   // Save user info and tokens to localStorage
@@ -184,7 +223,7 @@ class AuthService {
     }
   }
 
-  // Check if token is expired
+  // Check if token is expired or will expire soon
   private isTokenExpired(): boolean {
     const expiresAt = localStorage.getItem('tokenExpiresAt');
     if (!expiresAt) return true;
@@ -192,14 +231,29 @@ class AuthService {
     return Date.now() >= parseInt(expiresAt);
   }
 
+  // Check if token will expire soon (within 5 minutes)
+  private isTokenExpiringSoon(): boolean {
+    const expiresAt = localStorage.getItem('tokenExpiresAt');
+    if (!expiresAt) return true;
+    
+    const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
+    return Date.now() >= (parseInt(expiresAt) - fiveMinutes);
+  }
+
   // Make authenticated API request
   private async makeAuthenticatedRequest<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ResponseModel<T>> {
-    // Refresh token if expired
-    if (this.isTokenExpired() && this.refreshToken) {
-      await this.refreshAuthToken();
+    // Proactively refresh token if it will expire soon
+    if (this.isTokenExpiringSoon() && this.refreshToken) {
+      try {
+        console.log('⏰ Token expiring soon, refreshing proactively...');
+        await this.refreshAuthToken();
+      } catch (error) {
+        console.error('⚠️ Proactive refresh failed, will retry on 401:', error);
+        // Continue with request - will retry on 401
+      }
     }
 
     const headers = {
@@ -444,6 +498,19 @@ class AuthService {
           statusText: response.statusText,
           errorText
         });
+        
+        // If refresh token is invalid (401/403), clear everything and require re-login
+        if (response.status === 401 || response.status === 403) {
+          console.log('🔒 Refresh token invalid, clearing auth data');
+          this.clearTokensFromStorage();
+          this.clearAutoRefresh();
+          
+          // Dispatch event to trigger login
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+          }
+        }
+        
         throw new Error(`Token refresh failed (${response.status}): ${errorText}`);
       }
 
@@ -463,6 +530,9 @@ class AuthService {
       }
       
       console.log('✅ Token refreshed successfully');
+      
+      // Restart auto-refresh timer after successful refresh
+      this.setupAutoRefresh();
     } catch (error: any) {
       console.error('❌ Token refresh error:', error);
       // Clear invalid tokens and user info
@@ -474,6 +544,9 @@ class AuthService {
   // Logout user and clean all data
   async logout(): Promise<void> {
     console.log('🚪 Starting logout process...');
+    
+    // Clear auto-refresh timer
+    this.clearAutoRefresh();
     
     try {
       // Call backend logout endpoint if we have a token
