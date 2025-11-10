@@ -534,35 +534,44 @@ const CartPage: React.FC = () => {
                                             </div>
                                           </div>
                                           
-                                          <div className="flex items-center gap-3 bg-gray-100 rounded-full px-3 py-1.5">
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleIngredientQuantityChange(dish.dishId, step.stepId, item.menuItemId, item.quantity - 1);
-                                              }}
-                                              className="w-7 h-7 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-600 hover:bg-red-500 hover:text-white active:scale-90 transition-all text-base font-bold shadow-sm"
-                                              title="Decrease quantity"
-                                            >
-                                              −
-                                            </button>
-                                            <span className="font-bold text-gray-800 text-sm min-w-[28px] text-center">
-                                              ×{item.quantity}
-                                            </span>
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                handleIngredientQuantityChange(dish.dishId, step.stepId, item.menuItemId, item.quantity + 1);
-                                              }}
-                                              className="w-7 h-7 rounded-full bg-white border-2 border-green-500 flex items-center justify-center text-green-600 hover:bg-green-500 hover:text-white active:scale-90 transition-all text-base font-bold shadow-sm"
-                                              title="Increase quantity"
-                                            >
-                                              +
-                                            </button>
-                                          </div>
+                                          {/* Quantity controls - only show for custom dishes */}
+                                          {dish.isCustom ? (
+                                            <div className="flex items-center gap-3 bg-gray-100 rounded-full px-3 py-1.5">
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  handleIngredientQuantityChange(dish.dishId, step.stepId, item.menuItemId, item.quantity - 1);
+                                                }}
+                                                className="w-7 h-7 rounded-full bg-white border-2 border-red-500 flex items-center justify-center text-red-600 hover:bg-red-500 hover:text-white active:scale-90 transition-all text-base font-bold shadow-sm"
+                                                title="Decrease quantity"
+                                              >
+                                                −
+                                              </button>
+                                              <span className="font-bold text-gray-800 text-sm min-w-[28px] text-center">
+                                                ×{item.quantity}
+                                              </span>
+                                              <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  handleIngredientQuantityChange(dish.dishId, step.stepId, item.menuItemId, item.quantity + 1);
+                                                }}
+                                                className="w-7 h-7 rounded-full bg-white border-2 border-green-500 flex items-center justify-center text-green-600 hover:bg-green-500 hover:text-white active:scale-90 transition-all text-base font-bold shadow-sm"
+                                                title="Increase quantity"
+                                              >
+                                                +
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1.5">
+                                              <span className="font-bold text-gray-800 text-sm">
+                                                ×{item.quantity}
+                                              </span>
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>

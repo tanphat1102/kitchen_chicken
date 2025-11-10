@@ -12,6 +12,7 @@ export interface OrderDish {
   price: number;
   imageUrl?: string;
   cal?: number; // Calories
+  isCustom?: boolean; // Whether this is a custom-built dish
   selections?: DishSelection[];
 }
 
