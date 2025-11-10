@@ -104,10 +104,7 @@ export interface OrderTracking {
   status: string; // "NEW" | "CONFIRMED" | "PROCESSING" | "READY" | "COMPLETED" | "CANCELLED"
   progress: number; // 0-100
   dishes: OrderDishWithSteps[];
-  feedback?: {
-    rating: number;
-    comment: string;
-  };
+  feedback?: OrderFeedback;
 }
 
 export interface OrderDishWithSteps {

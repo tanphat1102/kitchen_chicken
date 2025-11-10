@@ -153,6 +153,9 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
     if (tracking) {
       console.log('=== Order Tracking Data ===');
       console.log('Full tracking:', tracking);
+      console.log('Status:', tracking.status);
+      console.log('Feedback:', tracking.feedback);
+      console.log('Has feedback?', !!tracking.feedback);
       console.log('Dishes:', tracking.dishes);
       console.log('First dish:', tracking.dishes?.[0]);
       console.log('First dish steps:', tracking.dishes?.[0]?.steps);
@@ -370,6 +373,22 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
           {/* Feedback Section */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Order Feedback</h3>
+            
+            {/* Debug Panel - TEMPORARY */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <p className="font-bold mb-1">Debug Info:</p>
+                <p>Status: {tracking.status}</p>
+                <p>Has Feedback: {tracking.feedback ? 'YES' : 'NO'}</p>
+                {tracking.feedback && (
+                  <>
+                    <p>Rating: {tracking.feedback.rating}</p>
+                    <p>Comment: {tracking.feedback.comment || '(empty)'}</p>
+                  </>
+                )}
+              </div>
+            )}
+            
             {tracking.feedback ? (
               <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
                 <div className="flex items-center gap-2">
@@ -388,9 +407,15 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
                       </svg>
                     ))}
                   </div>
+                  <span className="text-xs text-muted-foreground">({tracking.feedback.rating}/5)</span>
                 </div>
-                {tracking.feedback.comment && (
+                {tracking.feedback.comment && tracking.feedback.comment.trim() !== '' && (
                   <p className="text-sm text-muted-foreground">{tracking.feedback.comment}</p>
+                )}
+                {tracking.feedback.createdAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Submitted on {new Date(tracking.feedback.createdAt).toLocaleDateString()}
+                  </p>
                 )}
               </div>
             ) : tracking.status === 'COMPLETED' ? (
