@@ -303,7 +303,7 @@ export function useCreateFeedback(orderId: number) {
 
 /**
  * Cancel an order (for customer)
- * Only NEW or CONFIRMED orders can be cancelled
+ * Only orders that are not COMPLETED can be cancelled
  */
 export function useCancelOrder() {
   const queryClient = useQueryClient();

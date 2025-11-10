@@ -712,7 +712,7 @@ const OrderHistoryPage: React.FC = () => {
                             >
                               View Details
                             </button>
-                            {(order.status === 'NEW' || order.status === 'CONFIRMED') && (
+                            {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
                               <button
                                 onClick={() => setCancelOrderId(order.orderId)}
                                 className="w-full text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md transition-colors font-medium"

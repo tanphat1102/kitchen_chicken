@@ -323,7 +323,7 @@ class OrderCustomerService {
 
   /**
    * Cancel an order (for customer)
-   * Only NEW or CONFIRMED orders can be cancelled
+   * Only orders that are not COMPLETED can be cancelled
    */
   async cancelOrder(request: CancelOrderRequest): Promise<{ message: string }> {
     const response = await api.post<ApiResponse<{ message: string }>>(
