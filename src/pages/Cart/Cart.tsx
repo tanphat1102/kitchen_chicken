@@ -22,6 +22,7 @@ const CartPage: React.FC = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<number | null>(null);
   const [selectedPromotionId, setSelectedPromotionId] = useState<number | null>(null);
   const [selectedDishIds, setSelectedDishIds] = useState<Set<number>>(new Set());
+  const [expandedCustomizations, setExpandedCustomizations] = useState<Set<number>>(new Set());
   const { currentUser } = useAuth();
   
   // Only fetch order if user is logged in
@@ -463,9 +464,32 @@ const CartPage: React.FC = () => {
                           {/* Steps (alternative structure from backend) */}
                           {(dish as any).steps && (dish as any).steps.length > 0 && (
                             <div className="mb-3">
-                              <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Customizations</p>
-                              <div className="space-y-4">
-                                {(dish as any).steps.map((step: any, stepIdx: number) => (
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedCustomizations);
+                                  if (newExpanded.has(dish.dishId)) {
+                                    newExpanded.delete(dish.dishId);
+                                  } else {
+                                    newExpanded.add(dish.dishId);
+                                  }
+                                  setExpandedCustomizations(newExpanded);
+                                }}
+                                className="w-full flex items-center justify-between text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide hover:text-gray-800 transition-colors"
+                              >
+                                <span>Customizations ({(dish as any).steps.reduce((total: number, step: any) => total + (step.items?.length || 0), 0)} items)</span>
+                                <svg
+                                  className={`w-4 h-4 transition-transform ${expandedCustomizations.has(dish.dishId) ? 'rotate-180' : ''}`}
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                              
+                              {expandedCustomizations.has(dish.dishId) && (
+                                <div className="space-y-4">
+                                  {(dish as any).steps.map((step: any, stepIdx: number) => (
                                   <div key={stepIdx} className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                                     <div className="bg-gradient-to-r from-gray-50 to-white px-3 py-2 border-b border-gray-100">
                                       <p className="text-xs font-semibold text-gray-700">{step.stepName}</p>
@@ -545,6 +569,7 @@ const CartPage: React.FC = () => {
                                   </div>
                                 ))}
                               </div>
+                              )}
                             </div>
                           )}
 
