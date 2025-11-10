@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { useOrderHistory, useCreateFeedback, useOrderTracking } from '@/hooks/useOrderCustomer';
+import { useOrderHistory, useCreateFeedback, useOrderTracking, useOrderFeedback } from '@/hooks/useOrderCustomer';
 import { useAuth } from '@/contexts/AuthContext';
 
 const currencyFormat = (value: number) =>
@@ -143,9 +143,11 @@ const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ or
 // Order Detail Tracking Component
 const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = ({ orderId, onClose }) => {
   const { data: tracking, isLoading, error, refetch } = useOrderTracking(orderId);
+  const { data: feedback, refetch: refetchFeedback } = useOrderFeedback(orderId, tracking?.status === 'COMPLETED');
 
   const handleFeedbackSuccess = () => {
     refetch();
+    refetchFeedback();
   };
 
   // Debug logging
@@ -154,19 +156,23 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
       console.log('=== Order Tracking Data ===');
       console.log('Full tracking:', tracking);
       console.log('Status:', tracking.status);
-      console.log('Feedback:', tracking.feedback);
-      console.log('Has feedback?', !!tracking.feedback);
+      console.log('Feedback from tracking:', tracking.feedback);
       console.log('Dishes:', tracking.dishes);
-      console.log('First dish:', tracking.dishes?.[0]);
-      console.log('First dish steps:', tracking.dishes?.[0]?.steps);
       console.log('==========================');
+    }
+    if (feedback) {
+      console.log('=== Order Feedback Data (Separate API) ===');
+      console.log('Feedback:', feedback);
+      console.log('Rating:', feedback.rating);
+      console.log('Comment:', feedback.comment);
+      console.log('==========================================');
     }
     if (error) {
       console.error('=== Order Tracking Error ===');
       console.error('Error:', error);
       console.error('===========================');
     }
-  }, [tracking, error]);
+  }, [tracking, feedback, error]);
 
   if (isLoading) {
     return (
@@ -379,17 +385,18 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
               <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
                 <p className="font-bold mb-1">Debug Info:</p>
                 <p>Status: {tracking.status}</p>
-                <p>Has Feedback: {tracking.feedback ? 'YES' : 'NO'}</p>
-                {tracking.feedback && (
+                <p>Has Feedback (separate API): {feedback ? 'YES' : 'NO'}</p>
+                <p>Has Feedback (in tracking): {tracking.feedback ? 'YES' : 'NO'}</p>
+                {feedback && (
                   <>
-                    <p>Rating: {tracking.feedback.rating}</p>
-                    <p>Comment: {tracking.feedback.comment || '(empty)'}</p>
+                    <p>Rating: {feedback.rating}</p>
+                    <p>Comment: {feedback.comment || '(empty)'}</p>
                   </>
                 )}
               </div>
             )}
             
-            {tracking.feedback ? (
+            {feedback ? (
               <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">Your Review</p>
@@ -398,7 +405,7 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
                       <svg
                         key={i}
                         className={`h-4 w-4 ${
-                          i < tracking.feedback!.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
+                          i < feedback.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
                         }`}
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -407,14 +414,14 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
                       </svg>
                     ))}
                   </div>
-                  <span className="text-xs text-muted-foreground">({tracking.feedback.rating}/5)</span>
+                  <span className="text-xs text-muted-foreground">({feedback.rating}/5)</span>
                 </div>
-                {tracking.feedback.comment && tracking.feedback.comment.trim() !== '' && (
-                  <p className="text-sm text-muted-foreground">{tracking.feedback.comment}</p>
+                {feedback.comment && feedback.comment.trim() !== '' && (
+                  <p className="text-sm text-muted-foreground">{feedback.comment}</p>
                 )}
-                {tracking.feedback.createdAt && (
+                {feedback.createdAt && (
                   <p className="text-xs text-muted-foreground">
-                    Submitted on {new Date(tracking.feedback.createdAt).toLocaleDateString()}
+                    Submitted on {new Date(feedback.createdAt).toLocaleDateString()}
                   </p>
                 )}
               </div>
