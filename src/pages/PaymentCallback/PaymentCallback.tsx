@@ -233,13 +233,13 @@ const PaymentCallbackPage: React.FC = () => {
       {mounted && (
         <div className="max-w-md w-full">
           {/* Debug Info - Remove in production */}
-          <div className="mb-4 p-3 bg-gray-800 text-white text-xs rounded-lg overflow-auto max-h-32">
+          {/* <div className="mb-4 p-3 bg-gray-800 text-white text-xs rounded-lg overflow-auto max-h-32">
             <div>Status: {status}</div>
             <div>Gateway: {searchParams.get('partnerCode') || searchParams.get('vnp_ResponseCode') ? 'detected' : 'unknown'}</div>
             <div>MoMo resultCode: {searchParams.get('resultCode') || 'N/A'}</div>
             <div>VNPay responseCode: {searchParams.get('vnp_ResponseCode') || 'N/A'}</div>
             <div>Mounted: {mounted ? 'Yes' : 'No'}</div>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-2xl shadow-xl p-8">
             {status === 'processing' && (
