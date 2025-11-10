@@ -31,9 +31,6 @@ const CartPage: React.FC = () => {
   const [selectedPromotionId, setSelectedPromotionId] = useState<number | null>(
     null,
   );
-  const [selectedDishIds, setSelectedDishIds] = useState<Set<number>>(
-    new Set(),
-  );
   const [expandedCustomizations, setExpandedCustomizations] = useState<
     Set<number>
   >(new Set());
@@ -53,20 +50,9 @@ const CartPage: React.FC = () => {
   const dishes = order?.dishes || [];
   const isEmpty = !order || dishes.length === 0;
 
-  // Auto-select all items when cart loads
-  React.useEffect(() => {
-    if (dishes.length > 0 && selectedDishIds.size === 0) {
-      setSelectedDishIds(new Set(dishes.map((d) => d.dishId)));
-    }
-  }, [dishes.length]); // Only run when dishes count changes
-
-  // Calculate selected items total
-  const selectedDishes = React.useMemo(() => {
-    return dishes.filter((d) => selectedDishIds.has(d.dishId));
-  }, [dishes, selectedDishIds]);
-
-  const selectedTotal = React.useMemo(() => {
-    const total = selectedDishes.reduce((sum, dish) => {
+  // Calculate total from all items in cart
+  const cartTotal = React.useMemo(() => {
+    const total = dishes.reduce((sum, dish) => {
       const price = Number(dish.price) || 0;
       const quantity = Number(dish.quantity) > 0 ? Number(dish.quantity) : 1;
       const itemTotal = price * quantity;
@@ -75,12 +61,7 @@ const CartPage: React.FC = () => {
     }, 0);
 
     return isNaN(total) ? 0 : total;
-  }, [selectedDishes]);
-
-  const allSelected =
-    dishes.length > 0 && selectedDishIds.size === dishes.length;
-  const someSelected =
-    selectedDishIds.size > 0 && selectedDishIds.size < dishes.length;
+  }, [dishes]);
 
   // Fetch payment methods
   const { data: paymentMethods = [] } = useQuery({
@@ -98,21 +79,21 @@ const CartPage: React.FC = () => {
 
   // Calculate discount amount
   const discountAmount = React.useMemo(() => {
-    if (!selectedPromotion || !selectedTotal || isNaN(selectedTotal)) return 0;
+    if (!selectedPromotion || !cartTotal || isNaN(cartTotal)) return 0;
 
     if (selectedPromotion.discountType === "PERCENT") {
-      const discount = (selectedTotal * selectedPromotion.discountValue) / 100;
+      const discount = (cartTotal * selectedPromotion.discountValue) / 100;
       return isNaN(discount) ? 0 : discount;
     }
     const discount = Number(selectedPromotion.discountValue) || 0;
     return isNaN(discount) ? 0 : discount;
-  }, [selectedPromotion, selectedTotal]);
+  }, [selectedPromotion, cartTotal]);
 
   // Calculate final total
   const finalTotal = React.useMemo(() => {
-    const total = selectedTotal - discountAmount;
+    const total = cartTotal - discountAmount;
     return isNaN(total) ? 0 : Math.max(0, total);
-  }, [selectedTotal, discountAmount]);
+  }, [cartTotal, discountAmount]);
 
   const handleCheckout = () => {
     if (!order) {
@@ -125,8 +106,8 @@ const CartPage: React.FC = () => {
       return;
     }
 
-    if (selectedDishIds.size === 0) {
-      alert("Please select at least one item to checkout.");
+    if (dishes.length === 0) {
+      alert("Please add at least one item to your cart.");
       return;
     }
 
@@ -149,25 +130,6 @@ const CartPage: React.FC = () => {
         alert(`Checkout failed: ${errorMessage}`);
       },
     });
-  };
-
-  // Handle select all/none
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedDishIds(new Set(dishes.map((d) => d.dishId)));
-    } else {
-      setSelectedDishIds(new Set());
-    }
-  };
-
-  const handleToggleDish = (dishId: number) => {
-    const newSelected = new Set(selectedDishIds);
-    if (newSelected.has(dishId)) {
-      newSelected.delete(dishId);
-    } else {
-      newSelected.add(dishId);
-    }
-    setSelectedDishIds(newSelected);
   };
 
   // Handle ingredient quantity change directly
@@ -417,33 +379,23 @@ const CartPage: React.FC = () => {
             <>
               {/* Cart Items */}
               <div className="mb-6 overflow-hidden rounded-2xl bg-white shadow-lg">
-                {/* Select All Header */}
-                <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-6 py-3">
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      ref={(input) => {
-                        if (input) input.indeterminate = someSelected;
-                      }}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                    />
+                {/* Cart Header */}
+                <div className="border-b border-gray-200 bg-gray-50 px-6 py-3">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-gray-700">
-                      Select All ({selectedDishIds.size}/{dishes.length})
+                      Your Cart ({dishes.length} {dishes.length === 1 ? 'item' : 'items'})
                     </span>
-                  </label>
-                  <span className="text-sm text-gray-600">
-                    Selected Total:{" "}
-                    <span className="font-semibold text-red-600">
-                      {currencyFormat(selectedTotal)}
+                    <span className="text-sm text-gray-600">
+                      Total:{" "}
+                      <span className="font-semibold text-red-600">
+                        {currencyFormat(cartTotal)}
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
 
                 <div className="divide-y divide-gray-200">
                   {dishes.map((dish) => {
-                    const isSelected = selectedDishIds.has(dish.dishId);
                     const dishQuantity =
                       Number(dish.quantity) > 0 ? Number(dish.quantity) : 1;
 
@@ -461,19 +413,9 @@ const CartPage: React.FC = () => {
                     return (
                       <div
                         key={dish.dishId}
-                        className={`p-6 transition-all duration-200 ${isSelected ? "bg-gradient-to-r from-red-50 to-orange-50 shadow-sm" : "hover:bg-gray-50"}`}
+                        className="p-6 transition-all duration-200 hover:bg-gray-50"
                       >
                         <div className="flex items-start gap-4">
-                          {/* Checkbox */}
-                          <div className="flex-shrink-0 pt-1">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => handleToggleDish(dish.dishId)}
-                              className="h-5 w-5 cursor-pointer rounded border-gray-300 text-red-600 transition-transform hover:scale-110 focus:ring-red-500"
-                            />
-                          </div>
-
                           {/* Details */}
                           <div className="min-w-0 flex-1">
                             <div className="mb-3 flex items-start justify-between">
@@ -826,10 +768,10 @@ const CartPage: React.FC = () => {
                 <div className="mb-6 space-y-3">
                   <div className="flex items-center justify-between text-gray-600">
                     <span>
-                      Subtotal ({selectedDishIds.size} items selected)
+                      Subtotal ({dishes.length} {dishes.length === 1 ? 'item' : 'items'})
                     </span>
                     <span className="font-semibold">
-                      {currencyFormat(selectedTotal)}
+                      {currencyFormat(cartTotal)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-gray-600">
@@ -857,18 +799,13 @@ const CartPage: React.FC = () => {
                       You save {currencyFormat(discountAmount)}!
                     </div>
                   )}
-                  {selectedDishIds.size === 0 && (
-                    <div className="rounded bg-amber-50 p-2 text-center text-sm text-amber-600">
-                      Please select items to checkout
-                    </div>
-                  )}
                 </div>
 
                 {/* Promotion Selector */}
                 <PromotionSelector
                   selectedPromotionId={selectedPromotionId}
                   onSelectPromotion={setSelectedPromotionId}
-                  orderTotal={selectedTotal}
+                  orderTotal={cartTotal}
                 />
 
                 {/* Payment Methods */}
@@ -990,16 +927,16 @@ const CartPage: React.FC = () => {
                     confirmOrder.isPending ||
                     !order?.orderId ||
                     isLoading ||
-                    selectedDishIds.size === 0
+                    dishes.length === 0
                   }
                 >
                   {confirmOrder.isPending
                     ? "Processing..."
                     : !order?.orderId
                       ? "Loading order..."
-                      : selectedDishIds.size === 0
-                        ? "Select items to checkout"
-                        : `Proceed to Checkout (${selectedDishIds.size} items)`}
+                      : dishes.length === 0
+                        ? "Add items to cart"
+                        : `Proceed to Checkout (${dishes.length} ${dishes.length === 1 ? 'item' : 'items'})`}
                 </button>
 
                 <Link
