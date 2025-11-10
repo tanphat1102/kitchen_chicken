@@ -1,4 +1,3 @@
-import { auth } from "@/config/firebase";
 import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
@@ -19,26 +18,26 @@ let failedQueue: Array<{
 }> = [];
 
 const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
     } else if (token) {
       prom.resolve(token);
     }
   });
-  
+
   failedQueue = [];
 };
 
 // Refresh token function
 async function refreshAccessToken(): Promise<string> {
-  const refreshToken = localStorage.getItem('refreshToken');
-  
+  const refreshToken = localStorage.getItem("refreshToken");
+
   if (!refreshToken) {
-    throw new Error('No refresh token available');
+    throw new Error("No refresh token available");
   }
 
-  console.log('🔄 [api.ts] Refreshing access token...');
+  console.log("🔄 [api.ts] Refreshing access token...");
 
   try {
     const response = await axios.post(
@@ -46,39 +45,42 @@ async function refreshAccessToken(): Promise<string> {
       { refreshToken },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-      }
+      },
     );
 
     const { data } = response.data;
-    
+
     if (!data?.accessToken) {
-      throw new Error('No access token in response');
+      throw new Error("No access token in response");
     }
 
     // Save new tokens
-    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem("accessToken", data.accessToken);
     if (data.refreshToken) {
-      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
     }
-    
+
     // Update token expiry - use default 1 hour if not provided
     const expiresIn = data.expiresIn || 3600; // 1 hour default
-    const expiresAt = Date.now() + (expiresIn * 1000);
-    localStorage.setItem('tokenExpiresAt', expiresAt.toString());
-    console.log('🕐 [api.ts] Token expiry updated:', new Date(expiresAt).toLocaleString());
+    const expiresAt = Date.now() + expiresIn * 1000;
+    localStorage.setItem("tokenExpiresAt", expiresAt.toString());
+    console.log(
+      "🕐 [api.ts] Token expiry updated:",
+      new Date(expiresAt).toLocaleString(),
+    );
 
-    console.log('✅ [api.ts] Token refreshed successfully');
+    console.log("✅ [api.ts] Token refreshed successfully");
     return data.accessToken;
   } catch (error) {
-    console.error('❌ [api.ts] Token refresh failed:', error);
+    console.error("❌ [api.ts] Token refresh failed:", error);
     // Clear all auth data on refresh failure
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userInfo');
-    localStorage.removeItem('tokenExpiresAt');
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userInfo");
+    localStorage.removeItem("tokenExpiresAt");
     throw error;
   }
 }
@@ -100,7 +102,7 @@ const createAxiosInstance = (): AxiosInstance => {
     async (config) => {
       try {
         // Get JWT token from localStorage (set by authService after login)
-        const accessToken = localStorage.getItem('accessToken');
+        const accessToken = localStorage.getItem("accessToken");
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
         }
@@ -119,7 +121,9 @@ const createAxiosInstance = (): AxiosInstance => {
   instance.interceptors.response.use(
     (response) => response,
     async (error) => {
-      const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+      const originalRequest = error.config as InternalAxiosRequestConfig & {
+        _retry?: boolean;
+      };
 
       // Handle 401 Unauthorized - Token expired or invalid
       if (error.response?.status === 401 && !originalRequest._retry) {
@@ -128,11 +132,11 @@ const createAxiosInstance = (): AxiosInstance => {
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
           })
-            .then(token => {
+            .then((token) => {
               originalRequest.headers.Authorization = `Bearer ${token}`;
               return instance(originalRequest);
             })
-            .catch(err => {
+            .catch((err) => {
               return Promise.reject(err);
             });
         }
@@ -142,21 +146,21 @@ const createAxiosInstance = (): AxiosInstance => {
 
         try {
           const newToken = await refreshAccessToken();
-          
+
           // Update authorization header
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          
+
           // Process queued requests
           processQueue(null, newToken);
-          
+
           // Retry original request
           return instance(originalRequest);
         } catch (refreshError) {
           processQueue(refreshError, null);
-          
+
           // Dispatch event to show login modal
-          window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-          
+          window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
