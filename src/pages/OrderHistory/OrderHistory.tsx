@@ -8,7 +8,7 @@ const currencyFormat = (value: number) =>
   value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 
 // Order status timeline component - Shadcn style
-const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
+const OrderStatusTimeline: React.FC<{ status: string; progress?: number }> = ({ status, progress: apiProgress }) => {
   // Updated to match actual API status values
   const statuses = [
     { key: 'NEW', label: 'Ordered' },
@@ -32,7 +32,14 @@ const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
     );
   }
 
-  const progress = currentIndex >= 0 ? ((currentIndex + 1) / statuses.length) * 100 : 0;
+  // Use API progress if available (from tracking), otherwise calculate from status position
+  // Order list: Calculate based on status index (NEW=20%, CONFIRMED=40%, PROCESSING=60%, READY=80%, COMPLETED=100%)
+  // Order modal: Uses actual progress from tracking API
+  const progress = apiProgress !== undefined 
+    ? apiProgress 
+    : currentIndex >= 0 
+      ? ((currentIndex + 1) / statuses.length) * 100 
+      : 0;
 
   return (
     <div className="py-6 space-y-4">
