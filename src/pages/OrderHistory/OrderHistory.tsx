@@ -140,6 +140,66 @@ const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ or
   );
 };
 
+// Order Feedback Section Component - Fetches feedback separately
+const OrderFeedbackSection: React.FC<{ 
+  orderId: number; 
+  orderStatus: string;
+  onFeedbackSuccess: () => void;
+}> = ({ orderId, orderStatus, onFeedbackSuccess }) => {
+  const { data: feedback, refetch } = useOrderFeedback(orderId, orderStatus === 'COMPLETED');
+
+  const handleSuccess = () => {
+    refetch();
+    onFeedbackSuccess();
+  };
+
+  return (
+    <div className="px-6 pb-6">
+      {feedback ? (
+        <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium">Your Review</p>
+            <div className="flex items-center gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < feedback.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
+                  }`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">({feedback.rating}/5)</span>
+          </div>
+          {feedback.comment && feedback.comment.trim() !== '' && (
+            <p className="text-sm text-muted-foreground">{feedback.comment}</p>
+          )}
+          {feedback.createdAt && (
+            <p className="text-xs text-muted-foreground">
+              Submitted on {new Date(feedback.createdAt).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+      ) : orderStatus === 'COMPLETED' ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Leave a review for this order</span>
+          </div>
+          <FeedbackForm orderId={orderId} onSuccess={handleSuccess} />
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground text-center py-2">
+          Complete this order to leave a review
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Order Detail Tracking Component
 const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = ({ orderId, onClose }) => {
   const { data: tracking, isLoading, error, refetch } = useOrderTracking(orderId);
@@ -725,44 +785,12 @@ const OrderHistoryPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Feedback Section */}
-                  <div className="px-6 pb-6">
-                    {order.feedback ? (
-                      <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">Your Review</p>
-                          <div className="flex items-center gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <svg
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < order.feedback!.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
-                                }`}
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                              </svg>
-                            ))}
-                          </div>
-                        </div>
-                        {order.feedback.comment && (
-                          <p className="text-sm text-muted-foreground">{order.feedback.comment}</p>
-                        )}
-                      </div>
-                    ) : order.orderStatusName === 'COMPLETED' ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>Leave a review for this order</span>
-                        </div>
-                        <FeedbackForm orderId={order.orderId} onSuccess={handleFeedbackSuccess} />
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground text-center py-2">
-                        Complete this order to leave a review
-                      </div>
-                    )}
-                  </div>
+                  {/* Feedback Section - Use dedicated component */}
+                  <OrderFeedbackSection 
+                    orderId={order.orderId}
+                    orderStatus={order.orderStatusName}
+                    onFeedbackSuccess={handleFeedbackSuccess}
+                  />
                 </div>
               );
               })}
