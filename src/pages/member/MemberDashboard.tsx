@@ -1,11 +1,29 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, User, ShoppingCart, Heart, Clock } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const MemberDashboard: React.FC = () => {
   const { currentUser, signOut } = useAuth();
+  const location = useLocation();
+  const hasShownToast = useRef(false); // Prevent double toast in StrictMode
+
+  // Show permission denied toast if redirected from unauthorized access
+  useEffect(() => {
+    if (location.state?.accessDenied && !hasShownToast.current) {
+      hasShownToast.current = true;
+      toast.error('Không có quyền truy cập', {
+        description: 'Bạn không có quyền truy cập vào trang này',
+        duration: 4000,
+      });
+      // Clear the state to prevent toast on refresh
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   const handleLogout = async () => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,17 +15,19 @@ import {
   Award,
   Download,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Line, LineChart, CartesianGrid } from "recharts";
 import { api } from '@/services/api';
 import { menuItemService } from '@/services/menuItemService';
 import { ingredientService } from '@/services/ingredientService';
 import { dashboardService } from '@/services/dashboardService';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { startOfDay, endOfDay, format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 const ManagerDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const hasShownToast = useRef(false); // Prevent double toast in StrictMode
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'custom'>('week');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -128,6 +130,20 @@ const ManagerDashboard: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Show permission denied toast if redirected from unauthorized access
+  useEffect(() => {
+    if (location.state?.accessDenied && !hasShownToast.current) {
+      hasShownToast.current = true;
+      toast.error('Không có quyền truy cập', {
+        description: 'Bạn không có quyền truy cập vào trang quản trị viên',
+        duration: 4000,
+      });
+      // Clear the state to prevent toast on refresh
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   useEffect(() => {
     fetchStats();
