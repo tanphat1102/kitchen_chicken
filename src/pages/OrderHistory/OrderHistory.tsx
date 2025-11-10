@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { useOrderHistory, useCreateFeedback, useOrderTracking } from '@/hooks/useOrderCustomer';
+import { useOrderHistory, useCreateFeedback, useOrderTracking, useOrderFeedback, useCancelOrder } from '@/hooks/useOrderCustomer';
 import { useAuth } from '@/contexts/AuthContext';
 
 const currencyFormat = (value: number) =>
   value.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
 
 // Order status timeline component - Shadcn style
-const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
+const OrderStatusTimeline: React.FC<{ status: string; progress?: number }> = ({ status, progress: apiProgress }) => {
+  // Updated to match actual API status values
   const statuses = [
     { key: 'NEW', label: 'Ordered' },
+    { key: 'CONFIRMED', label: 'Confirmed' },
     { key: 'PROCESSING', label: 'Preparing' },
     { key: 'READY', label: 'Ready' },
     { key: 'COMPLETED', label: 'Completed' },
@@ -30,7 +32,14 @@ const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
     );
   }
 
-  const progress = currentIndex >= 0 ? ((currentIndex + 1) / statuses.length) * 100 : 0;
+  // Use API progress if available (from tracking), otherwise calculate from status position
+  // Order list: Calculate based on status index (NEW=20%, CONFIRMED=40%, PROCESSING=60%, READY=80%, COMPLETED=100%)
+  // Order modal: Uses actual progress from tracking API
+  const progress = apiProgress !== undefined 
+    ? apiProgress 
+    : currentIndex >= 0 
+      ? ((currentIndex + 1) / statuses.length) * 100 
+      : 0;
 
   return (
     <div className="py-6 space-y-4">
@@ -77,17 +86,17 @@ const OrderStatusTimeline: React.FC<{ status: string }> = ({ status }) => {
 // Feedback form component - Shadcn style
 const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ orderId, onSuccess }) => {
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
+  const [message, setMessage] = useState('');
   const createFeedback = useCreateFeedback(orderId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createFeedback.mutate(
-      { rating, comment: comment.trim() || undefined },
+      { rating, message: message.trim() || undefined },
       {
         onSuccess: () => {
           onSuccess();
-          setComment('');
+          setMessage('');
         },
       }
     );
@@ -122,8 +131,8 @@ const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ or
       <div className="space-y-2">
         <label className="text-sm font-medium">Comment (optional)</label>
         <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           placeholder="Share your thoughts..."
           className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none"
         />
@@ -140,26 +149,99 @@ const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ or
   );
 };
 
+// Order Feedback Section Component - Fetches feedback separately
+const OrderFeedbackSection: React.FC<{ 
+  orderId: number; 
+  orderStatus: string;
+  onFeedbackSuccess: () => void;
+}> = ({ orderId, orderStatus, onFeedbackSuccess }) => {
+  const { data: feedback, refetch } = useOrderFeedback(orderId, orderStatus === 'COMPLETED');
+
+  const handleSuccess = () => {
+    refetch();
+    onFeedbackSuccess();
+  };
+
+  return (
+    <div className="px-6 pb-6">
+      {feedback ? (
+        <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium">Your Review</p>
+            <div className="flex items-center gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < feedback.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
+                  }`}
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              ))}
+            </div>
+            <span className="text-xs text-muted-foreground">({feedback.rating}/5)</span>
+          </div>
+          {feedback.message && feedback.message.trim() !== '' && (
+            <p className="text-sm text-muted-foreground">{feedback.message}</p>
+          )}
+          {feedback.createdAt && (
+            <p className="text-xs text-muted-foreground">
+              Submitted on {new Date(feedback.createdAt).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+      ) : orderStatus === 'COMPLETED' ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>Leave a review for this order</span>
+          </div>
+          <FeedbackForm orderId={orderId} onSuccess={handleSuccess} />
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground text-center py-2">
+          Complete this order to leave a review
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Order Detail Tracking Component
 const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = ({ orderId, onClose }) => {
-  const { data: tracking, isLoading, error } = useOrderTracking(orderId);
+  const { data: tracking, isLoading, error, refetch } = useOrderTracking(orderId);
+  const { data: feedback, refetch: refetchFeedback } = useOrderFeedback(orderId, tracking?.status === 'COMPLETED');
+
+  const handleFeedbackSuccess = () => {
+    refetch();
+    refetchFeedback();
+  };
 
   // Debug logging
   React.useEffect(() => {
     if (tracking) {
       console.log('=== Order Tracking Data ===');
       console.log('Full tracking:', tracking);
+      console.log('Status:', tracking.status);
+      console.log('Feedback from tracking:', tracking.feedback);
       console.log('Dishes:', tracking.dishes);
-      console.log('First dish:', tracking.dishes?.[0]);
-      console.log('First dish steps:', tracking.dishes?.[0]?.steps);
       console.log('==========================');
+    }
+    if (feedback) {
+      console.log('=== Order Feedback Data (Separate API) ===');
+      console.log('Feedback:', feedback);
+      console.log('Rating:', feedback.rating);
+      console.log('Comment:', feedback.message);
+      console.log('==========================================');
     }
     if (error) {
       console.error('=== Order Tracking Error ===');
       console.error('Error:', error);
       console.error('===========================');
     }
-  }, [tracking, error]);
+  }, [tracking, feedback, error]);
 
   if (isLoading) {
     return (
@@ -362,6 +444,69 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
               <p className="text-sm text-muted-foreground text-center py-4">No items in this order</p>
             )}
           </div>
+
+          {/* Feedback Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Order Feedback</h3>
+            
+            {/* Debug Panel - TEMPORARY */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                <p className="font-bold mb-1">Debug Info:</p>
+                <p>Status: {tracking.status}</p>
+                <p>Has Feedback (separate API): {feedback ? 'YES' : 'NO'}</p>
+                <p>Has Feedback (in tracking): {tracking.feedback ? 'YES' : 'NO'}</p>
+                {feedback && (
+                  <>
+                    <p>Rating: {feedback.rating}</p>
+                    <p>Comment: {feedback.message || '(empty)'}</p>
+                  </>
+                )}
+              </div>
+            )}
+            
+            {feedback ? (
+              <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">Your Review</p>
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < feedback.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
+                        }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-xs text-muted-foreground">({feedback.rating}/5)</span>
+                </div>
+                {feedback.message && feedback.message.trim() !== '' && (
+                  <p className="text-sm text-muted-foreground">{feedback.message}</p>
+                )}
+                {feedback.createdAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Submitted on {new Date(feedback.createdAt).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            ) : tracking.status === 'COMPLETED' ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Leave a review for this order</span>
+                </div>
+                <FeedbackForm orderId={orderId} onSuccess={handleFeedbackSuccess} />
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-2 bg-muted/30 rounded-lg">
+                Complete this order to leave a review
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -381,12 +526,33 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
 const OrderHistoryPage: React.FC = () => {
   const [storeId] = useState(1); // TODO: Get from context or user selection
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const { currentUser } = useAuth();
   
   const { data: orders = [], isLoading, error, refetch } = useOrderHistory(storeId, !!currentUser);
+  const cancelOrder = useCancelOrder();
 
   const handleFeedbackSuccess = () => {
     refetch();
+  };
+
+  const handleCancelOrder = () => {
+    if (!cancelOrderId || !cancelReason.trim()) return;
+
+    cancelOrder.mutate(
+      { orderId: cancelOrderId, reason: cancelReason },
+      {
+        onSuccess: () => {
+          setCancelOrderId(null);
+          setCancelReason('');
+          refetch();
+        },
+        onError: (error: any) => {
+          alert(error.response?.data?.message || 'Failed to cancel order');
+        },
+      }
+    );
   };
 
   // Show login required if not logged in
@@ -502,13 +668,13 @@ const OrderHistoryPage: React.FC = () => {
                               Order #{order.orderId}
                             </h3>
                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              order.orderStatusName === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                              order.orderStatusName === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                              order.orderStatusName === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
-                              order.orderStatusName === 'READY' ? 'bg-purple-100 text-purple-800' :
+                              order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                              order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                              order.status === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'READY' ? 'bg-purple-100 text-purple-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {order.orderStatusName}
+                              {order.status}
                             </span>
                           </div>
                           
@@ -539,154 +705,39 @@ const OrderHistoryPage: React.FC = () => {
                         <div className="text-right shrink-0">
                           <p className="text-2xl font-bold text-primary">{currencyFormat(order.totalPrice)}</p>
                           <p className="text-xs text-muted-foreground mt-1">Total</p>
-                          <button
-                            onClick={() => setSelectedOrderId(order.orderId)}
-                            className="mt-2 text-xs px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors font-medium"
-                          >
-                            View Full Details
-                          </button>
+                          <div className="mt-2 space-y-1">
+                            <button
+                              onClick={() => setSelectedOrderId(order.orderId)}
+                              className="w-full text-xs px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors font-medium"
+                            >
+                              View Details
+                            </button>
+                            {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                              <button
+                                onClick={() => setCancelOrderId(order.orderId)}
+                                className="w-full text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md transition-colors font-medium"
+                              >
+                                Cancel Order
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
 
                   {/* Order Status Timeline */}
                   <div className="px-6 pb-4">
-                    <OrderStatusTimeline status={order.orderStatusName} />
+                    <OrderStatusTimeline status={order.status} />
                   </div>
 
-                  {/* Order Items */}
-                  <div className="px-6 pb-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">Order Details</h4>
-                      <span className="text-xs text-muted-foreground">
-                        {order.dishes?.length || 0} dish{(order.dishes?.length || 0) !== 1 ? 'es' : ''}
-                      </span>
-                    </div>
-                    {order.dishes && order.dishes.length > 0 ? (
-                      <div className="space-y-3">
-                        {order.dishes.map((dish) => {
-                          const dishTotal = dish.price * (dish.quantity || 1);
-                          
-                          return (
-                            <div key={dish.id} className="rounded-lg border bg-muted/30 overflow-hidden">
-                              {/* Dish Header */}
-                              <div className="flex items-start gap-3 p-3 bg-background/50">
-                                {dish.imageUrl && (
-                                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                                    <img
-                                      src={dish.imageUrl}
-                                      alt={dish.menuItemName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1">
-                                      <p className="text-sm font-semibold leading-tight">{dish.menuItemName}</p>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {currencyFormat(dish.price)} × {dish.quantity}
-                                      </p>
-                                    </div>
-                                    <p className="text-sm font-bold text-primary shrink-0">
-                                      {currencyFormat(dishTotal)}
-                                    </p>
-                                  </div>
-                                  
-                                  {dish.note && (
-                                    <div className="mt-2 flex items-start gap-1.5 p-2 rounded-md bg-amber-50 border border-amber-200">
-                                      <svg className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                      </svg>
-                                      <p className="text-xs text-amber-800 leading-relaxed">{dish.note}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Customizations */}
-                              {dish.selections && dish.selections.length > 0 && (
-                                <div className="px-3 pb-3 pt-2 space-y-2">
-                                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Customizations</p>
-                                  <div className="space-y-1.5">
-                                    {/* Group selections by step */}
-                                    {Object.entries(
-                                      dish.selections.reduce((acc, sel) => {
-                                        if (!acc[sel.stepName]) acc[sel.stepName] = [];
-                                        acc[sel.stepName].push(sel);
-                                        return acc;
-                                      }, {} as Record<string, typeof dish.selections>)
-                                    ).map(([stepName, selections]) => (
-                                      <div key={stepName} className="text-xs">
-                                        <p className="font-medium text-foreground mb-1">{stepName}:</p>
-                                        <div className="flex flex-wrap gap-1.5 ml-2">
-                                          {selections.map((sel) => (
-                                            <span
-                                              key={sel.id}
-                                              className="inline-flex items-center gap-1 rounded-full bg-background border px-2.5 py-1"
-                                            >
-                                              <span className="font-medium">{sel.optionName}</span>
-                                              <span className="text-muted-foreground">×{sel.quantity}</span>
-                                              {sel.extraPrice > 0 && (
-                                                <span className="text-green-600 font-semibold">
-                                                  +{sel.extraPrice.toLocaleString()}₫
-                                                </span>
-                                              )}
-                                            </span>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground text-center py-4">No items in this order</p>
-                    )}
-                  </div>
+                  
 
-                  {/* Feedback Section */}
-                  <div className="px-6 pb-6">
-                    {order.feedback ? (
-                      <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium">Your Review</p>
-                          <div className="flex items-center gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <svg
-                                key={i}
-                                className={`h-4 w-4 ${
-                                  i < order.feedback!.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
-                                }`}
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                              >
-                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                              </svg>
-                            ))}
-                          </div>
-                        </div>
-                        {order.feedback.comment && (
-                          <p className="text-sm text-muted-foreground">{order.feedback.comment}</p>
-                        )}
-                      </div>
-                    ) : order.orderStatusName === 'COMPLETED' ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>Leave a review for this order</span>
-                        </div>
-                        <FeedbackForm orderId={order.orderId} onSuccess={handleFeedbackSuccess} />
-                      </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground text-center py-2">
-                        Complete this order to leave a review
-                      </div>
-                    )}
-                  </div>
+                  {/* Feedback Section - Use dedicated component */}
+                  <OrderFeedbackSection 
+                    orderId={order.orderId}
+                    orderStatus={order.status}
+                    onFeedbackSuccess={handleFeedbackSuccess}
+                  />
                 </div>
               );
               })}
@@ -702,6 +753,68 @@ const OrderHistoryPage: React.FC = () => {
           orderId={selectedOrderId}
           onClose={() => setSelectedOrderId(null)}
         />
+      )}
+
+      {/* Cancel Order Modal */}
+      {cancelOrderId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Cancel Order #{cancelOrderId}</h3>
+              <button
+                onClick={() => {
+                  setCancelOrderId(null);
+                  setCancelReason('');
+                }}
+                className="rounded-full p-1 hover:bg-muted transition-colors"
+                disabled={cancelOrder.isPending}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason for cancellation *</label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please provide a reason..."
+                  className="w-full min-h-[100px] px-3 py-2 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none"
+                  disabled={cancelOrder.isPending}
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setCancelOrderId(null);
+                    setCancelReason('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors"
+                  disabled={cancelOrder.isPending}
+                >
+                  Keep Order
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={!cancelReason.trim() || cancelOrder.isPending}
+                  className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cancelOrder.isPending ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

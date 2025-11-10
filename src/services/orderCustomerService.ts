@@ -12,6 +12,7 @@ export interface OrderDish {
   price: number;
   imageUrl?: string;
   cal?: number; // Calories
+  isCustom?: boolean; // Whether this is a custom-built dish
   selections?: DishSelection[];
 }
 
@@ -33,7 +34,7 @@ export interface Order {
   storeName: string;
   userId: number;
   orderStatusId: number;
-  orderStatusName: string;
+  status: string;
   totalPrice: number;
   createdAt: string;
   updatedAt: string;
@@ -51,7 +52,7 @@ export interface OrderFeedback {
   id: number;
   orderId: number;
   rating: number;
-  comment?: string;
+  message?: string;
   createdAt: string;
 }
 
@@ -96,7 +97,12 @@ export interface UpdateDishRequest {
 
 export interface CreateFeedbackRequest {
   rating: number; // 1-5
-  comment?: string;
+  message?: string;
+}
+
+export interface CancelOrderRequest {
+  orderId: number;
+  reason: string;
 }
 
 export interface OrderTracking {
@@ -104,6 +110,7 @@ export interface OrderTracking {
   status: string; // "NEW" | "CONFIRMED" | "PROCESSING" | "READY" | "COMPLETED" | "CANCELLED"
   progress: number; // 0-100
   dishes: OrderDishWithSteps[];
+  feedback?: OrderFeedback;
 }
 
 export interface OrderDishWithSteps {
@@ -151,6 +158,7 @@ const API_ENDPOINTS = {
   ORDER_STATUSES: "/api/order-statuses",
   ORDER_FEEDBACK: (orderId: number) => `/api/orders/${orderId}/feedback`,
   ORDER_TRACKING: (orderId: number) => `/api/orders/${orderId}/tracking`,
+  ORDER_CANCEL: "/api/orders/api/orders/cancel",
 };
 
 class OrderCustomerService {
@@ -310,6 +318,18 @@ class OrderCustomerService {
   async getOrderTracking(orderId: number): Promise<OrderTracking> {
     const response = await api.get<ApiResponse<OrderTracking>>(
       API_ENDPOINTS.ORDER_TRACKING(orderId),
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Cancel an order (for customer)
+   * Only orders that are not COMPLETED can be cancelled
+   */
+  async cancelOrder(request: CancelOrderRequest): Promise<{ message: string }> {
+    const response = await api.post<ApiResponse<{ message: string }>>(
+      API_ENDPOINTS.ORDER_CANCEL,
+      request,
     );
     return response.data.data;
   }
