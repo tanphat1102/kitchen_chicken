@@ -275,3 +275,20 @@ export interface UpdateProfileRequest {
   birthday?: string; // ISO date string (YYYY-MM-DD)
   imageURL?: string;
 }
+
+// Wallet Types
+export interface UserWalletResponse {
+  balance: number;
+  transactions: TransactionResponse[];
+}
+
+export interface TransactionResponse {
+  id: number;
+  amount: number;
+  transactionType: 'DEBIT' | 'CREDIT'; // DEBIT = money out, CREDIT = money in/refund
+  paymentMethod?: {
+    id: number;
+    name: string;
+  };
+  createdAt: string;
+}

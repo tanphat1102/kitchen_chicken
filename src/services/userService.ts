@@ -5,6 +5,7 @@ import type {
   User,
   UserProfile,
   UpdateProfileRequest,
+  UserWalletResponse,
 } from "@/types/api.types";
 import { api } from "./api";
 
@@ -180,6 +181,14 @@ export const userService = {
   // Update current user profile (any authenticated user)
   updateMyProfile: async (data: UpdateProfileRequest): Promise<UserProfile> => {
     const response = await api.put<ApiResponse<UserProfile>>("/api/users/me", data);
+    return response.data.data;
+  },
+
+  // ===================== WALLET =====================
+  
+  // Get current user's wallet balance and transaction history
+  getMyWallet: async (): Promise<UserWalletResponse> => {
+    const response = await api.get<ApiResponse<UserWalletResponse>>("/api/users/me/wallet");
     return response.data.data;
   },
 };
