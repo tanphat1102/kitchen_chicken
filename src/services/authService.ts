@@ -81,7 +81,13 @@ class AuthService {
 
   // Setup automatic token refresh
   private setupAutoRefresh(): void {
+    // Clear any existing timer
+    this.clearAutoRefresh();
+    
     const checkAndRefresh = () => {
+      // Reload tokens from storage to ensure we have latest
+      this.loadTokensFromStorage();
+      
       if (this.isTokenExpiringSoon() && this.refreshToken) {
         console.log('⏰ Auto-refresh triggered');
         this.refreshAuthToken().catch(err => {
@@ -92,6 +98,7 @@ class AuthService {
 
     // Check every minute
     this.refreshTimer = setInterval(checkAndRefresh, 60 * 1000);
+    console.log('✅ Auto-refresh timer started (check every 60s)');
   }
 
   // Clear auto-refresh timer
@@ -99,6 +106,7 @@ class AuthService {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
       this.refreshTimer = null;
+      console.log('⏸️ Auto-refresh timer cleared');
     }
   }
 
@@ -177,10 +185,17 @@ class AuthService {
       
       const expiresAt = localStorage.getItem('tokenExpiresAt');
       if (expiresAt && parseInt(expiresAt) <= Date.now()) {
-        console.log('🔄 Token expired, clearing storage');
+        console.log('🔄 Token expired on load, clearing storage');
         this.clearTokensFromStorage();
       } else if (this.accessToken && this.refreshToken) {
-        console.log('✅ Valid tokens loaded from localStorage');
+        const expiresAtMs = expiresAt ? parseInt(expiresAt) : null;
+        const timeToExpiry = expiresAtMs ? Math.floor((expiresAtMs - Date.now()) / 1000 / 60) : null;
+        console.log('✅ Valid tokens loaded from localStorage', {
+          hasAccessToken: !!this.accessToken,
+          hasRefreshToken: !!this.refreshToken,
+          expiresAt: expiresAtMs ? new Date(expiresAtMs).toLocaleString() : 'unknown',
+          minutesUntilExpiry: timeToExpiry
+        });
       }
     } catch (error) {
       console.error('❌ Error loading from localStorage:', error);
@@ -522,17 +537,23 @@ class AuthService {
 
       // Keep existing user info, just update tokens
       const existingUserInfo = this.getUserInfoFromStorage();
-      const savedSuccessfully = this.saveTokensToStorage(result.data, existingUserInfo);
       
-      if (!savedSuccessfully) {
-        console.error('❌ Failed to save refreshed tokens to localStorage');
-        throw new Error('Failed to save refreshed authentication data');
-      }
+      // Manually update tokens with proper expiry
+      const expiresIn = result.data.expiresIn || 3600; // 1 hour default
+      const expiresAt = Date.now() + (expiresIn * 1000);
       
-      console.log('✅ Token refreshed successfully');
+      localStorage.setItem('accessToken', result.data.accessToken);
+      localStorage.setItem('refreshToken', result.data.refreshToken);
+      localStorage.setItem('tokenExpiresAt', expiresAt.toString());
       
-      // Restart auto-refresh timer after successful refresh
-      this.setupAutoRefresh();
+      // Update in-memory tokens
+      this.accessToken = result.data.accessToken;
+      this.refreshToken = result.data.refreshToken;
+      
+      console.log('✅ Token refreshed successfully', {
+        newExpiry: new Date(expiresAt).toLocaleString(),
+        expiresIn: `${expiresIn}s (${Math.floor(expiresIn / 60)} minutes)`
+      });
     } catch (error: any) {
       console.error('❌ Token refresh error:', error);
       // Clear invalid tokens and user info

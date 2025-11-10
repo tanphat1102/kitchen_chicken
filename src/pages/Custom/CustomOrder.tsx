@@ -211,9 +211,20 @@ const CustomOrder: React.FC = () => {
   };
 
   const canNext = useMemo(() => {
-    // Always allow navigation - steps are optional
-    return true;
-  }, []);
+    if (!currentStep) return false;
+    
+    // Check if current step is optional (contains "Optional" in name)
+    const isOptional = currentStep.name.toLowerCase().includes('optional');
+    
+    if (isOptional) {
+      // Optional steps can be skipped
+      return true;
+    }
+    
+    // Required steps must have at least one selection
+    const picks = selection[currentStep.id] || [];
+    return picks.length > 0;
+  }, [currentStep, selection]);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -385,16 +396,19 @@ const CustomOrder: React.FC = () => {
                           <h2 className="text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wide">
                             {currentStep.name}
                           </h2>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                            Optional
-                          </span>
+                          
+                          {currentStep.name.toLowerCase().includes('optional') && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                              Optional
+                            </span>
+                          )}
                         </div>
-                        {currentStep.description && (
-                          <p className="text-gray-600 text-sm mt-1">{currentStep.description}</p>
+                        <p className="text-gray-600 text-sm mt-1">{currentStep.description}</p>
+                        {currentStep.name.toLowerCase().includes('optional') && (
+                          <p className="text-gray-500 text-xs mt-1 italic">
+                            💡 Bạn có thể bỏ qua bước này và chuyển sang bước tiếp theo
+                          </p>
                         )}
-                        <p className="text-gray-500 text-xs mt-1 italic">
-                          💡 Bạn có thể bỏ qua bước này và chuyển sang bước tiếp theo
-                        </p>
                       </div>
                       
                       {/* Items Grid - Horizontal layout for desktop */}
@@ -574,8 +588,9 @@ const CustomOrder: React.FC = () => {
                       </button>
                     ) : (
                       <button
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={next}
+                        disabled={!canNext}
                       >
                         Next Step
                         <ChevronRight className="w-4 h-4" />
@@ -674,8 +689,9 @@ const CustomOrder: React.FC = () => {
                   </button>
                 ) : (
                   <button
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={next}
+                    disabled={!canNext}
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />

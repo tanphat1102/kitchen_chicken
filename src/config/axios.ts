@@ -79,6 +79,12 @@ async function refreshAccessToken(): Promise<string> {
     if (data.refreshToken) {
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
     }
+    
+    // Update token expiry - use default 1 hour if not provided
+    const expiresIn = data.expiresIn || 3600; // 1 hour default
+    const expiresAt = Date.now() + (expiresIn * 1000);
+    localStorage.setItem('tokenExpiresAt', expiresAt.toString());
+    console.log('🕐 Token expiry updated:', new Date(expiresAt).toLocaleString());
 
     console.log('✅ Token refreshed successfully');
     return data.accessToken;
