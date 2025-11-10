@@ -636,11 +636,6 @@ const OrderHistoryPage: React.FC = () => {
               {orders.map((order) => {
                 const totalItems = order.dishes?.reduce((sum, dish) => sum + (dish.quantity || 0), 0) || 0;
                 
-                // Calculate progress from status (same logic as OrderStatusTimeline)
-                const statuses = ['NEW', 'CONFIRMED', 'PROCESSING', 'READY', 'COMPLETED'];
-                const currentIndex = statuses.findIndex(s => s === order.orderStatusName);
-                const calculatedProgress = currentIndex >= 0 ? ((currentIndex + 1) / statuses.length) * 100 : 0;
-                
                 return (
                   <div key={order.orderId} className="rounded-lg border bg-card shadow-sm">
                     {/* Order Header */}
@@ -652,13 +647,13 @@ const OrderHistoryPage: React.FC = () => {
                               Order #{order.orderId}
                             </h3>
                             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              order.orderStatusName === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                              order.orderStatusName === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                              order.orderStatusName === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
-                              order.orderStatusName === 'READY' ? 'bg-purple-100 text-purple-800' :
+                              order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                              order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                              order.status === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'READY' ? 'bg-purple-100 text-purple-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {order.orderStatusName}
+                              {order.status}
                             </span>
                           </div>
                           
@@ -699,27 +694,9 @@ const OrderHistoryPage: React.FC = () => {
                       </div>
                     </div>
 
-                  {/* Progress Bar - Same as modal */}
-                  {order.orderStatusName !== 'CANCELLED' && (
-                    <div className="px-6 pb-2">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">Order Progress</span>
-                          <span className="text-muted-foreground">{Math.round(calculatedProgress)}%</span>
-                        </div>
-                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all duration-500 ease-in-out"
-                            style={{ width: `${calculatedProgress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Order Status Timeline */}
                   <div className="px-6 pb-4">
-                    <OrderStatusTimeline status={order.orderStatusName} />
+                    <OrderStatusTimeline status={order.status} />
                   </div>
 
                   
@@ -727,7 +704,7 @@ const OrderHistoryPage: React.FC = () => {
                   {/* Feedback Section - Use dedicated component */}
                   <OrderFeedbackSection 
                     orderId={order.orderId}
-                    orderStatus={order.orderStatusName}
+                    orderStatus={order.status}
                     onFeedbackSuccess={handleFeedbackSuccess}
                   />
                 </div>

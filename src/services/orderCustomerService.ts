@@ -33,7 +33,7 @@ export interface Order {
   storeName: string;
   userId: number;
   orderStatusId: number;
-  orderStatusName: string;
+  status: string;
   totalPrice: number;
   createdAt: string;
   updatedAt: string;
