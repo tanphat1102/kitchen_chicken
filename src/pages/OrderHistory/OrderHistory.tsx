@@ -142,7 +142,11 @@ const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ or
 
 // Order Detail Tracking Component
 const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = ({ orderId, onClose }) => {
-  const { data: tracking, isLoading, error } = useOrderTracking(orderId);
+  const { data: tracking, isLoading, error, refetch } = useOrderTracking(orderId);
+
+  const handleFeedbackSuccess = () => {
+    refetch();
+  };
 
   // Debug logging
   React.useEffect(() => {
@@ -360,6 +364,46 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
               })
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">No items in this order</p>
+            )}
+          </div>
+
+          {/* Feedback Section */}
+          <div className="border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">Order Feedback</h3>
+            {tracking.feedback ? (
+              <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">Your Review</p>
+                  <div className="flex items-center gap-0.5">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`h-4 w-4 ${
+                          i < tracking.feedback!.rating ? 'fill-primary text-primary' : 'fill-muted text-muted-foreground'
+                        }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                {tracking.feedback.comment && (
+                  <p className="text-sm text-muted-foreground">{tracking.feedback.comment}</p>
+                )}
+              </div>
+            ) : tracking.status === 'COMPLETED' ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Leave a review for this order</span>
+                </div>
+                <FeedbackForm orderId={orderId} onSuccess={handleFeedbackSuccess} />
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground text-center py-2 bg-muted/30 rounded-lg">
+                Complete this order to leave a review
+              </div>
             )}
           </div>
         </div>
