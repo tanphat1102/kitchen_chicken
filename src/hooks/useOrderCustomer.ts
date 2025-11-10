@@ -4,6 +4,7 @@ import {
   type CreateDishRequest,
   type CreateExistingDishRequest,
   type CreateFeedbackRequest,
+  type CancelOrderRequest,
   type Order,
   type UpdateDishRequest,
 } from "@/services/orderCustomerService";
@@ -293,6 +294,25 @@ export function useCreateFeedback(orderId: number) {
       queryClient.setQueryData(orderCustomerKeys.feedback(orderId), data);
 
       // Invalidate order history as it may include feedback info
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.all,
+      });
+    },
+  });
+}
+
+/**
+ * Cancel an order (for customer)
+ * Only NEW or CONFIRMED orders can be cancelled
+ */
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CancelOrderRequest) =>
+      orderCustomerService.cancelOrder(request),
+    onSuccess: () => {
+      // Invalidate all order-related queries to refresh data
       queryClient.invalidateQueries({
         queryKey: orderCustomerKeys.all,
       });

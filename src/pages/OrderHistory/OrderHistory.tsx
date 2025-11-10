@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { useOrderHistory, useCreateFeedback, useOrderTracking, useOrderFeedback } from '@/hooks/useOrderCustomer';
+import { useOrderHistory, useCreateFeedback, useOrderTracking, useOrderFeedback, useCancelOrder } from '@/hooks/useOrderCustomer';
 import { useAuth } from '@/contexts/AuthContext';
 
 const currencyFormat = (value: number) =>
@@ -86,17 +86,17 @@ const OrderStatusTimeline: React.FC<{ status: string; progress?: number }> = ({ 
 // Feedback form component - Shadcn style
 const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ orderId, onSuccess }) => {
   const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
+  const [message, setMessage] = useState('');
   const createFeedback = useCreateFeedback(orderId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createFeedback.mutate(
-      { rating, comment: comment.trim() || undefined },
+      { rating, message: message.trim() || undefined },
       {
         onSuccess: () => {
           onSuccess();
-          setComment('');
+          setMessage('');
         },
       }
     );
@@ -131,8 +131,8 @@ const FeedbackForm: React.FC<{ orderId: number; onSuccess: () => void }> = ({ or
       <div className="space-y-2">
         <label className="text-sm font-medium">Comment (optional)</label>
         <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           placeholder="Share your thoughts..."
           className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none"
         />
@@ -184,8 +184,8 @@ const OrderFeedbackSection: React.FC<{
             </div>
             <span className="text-xs text-muted-foreground">({feedback.rating}/5)</span>
           </div>
-          {feedback.comment && feedback.comment.trim() !== '' && (
-            <p className="text-sm text-muted-foreground">{feedback.comment}</p>
+          {feedback.message && feedback.message.trim() !== '' && (
+            <p className="text-sm text-muted-foreground">{feedback.message}</p>
           )}
           {feedback.createdAt && (
             <p className="text-xs text-muted-foreground">
@@ -233,7 +233,7 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
       console.log('=== Order Feedback Data (Separate API) ===');
       console.log('Feedback:', feedback);
       console.log('Rating:', feedback.rating);
-      console.log('Comment:', feedback.comment);
+      console.log('Comment:', feedback.message);
       console.log('==========================================');
     }
     if (error) {
@@ -459,7 +459,7 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
                 {feedback && (
                   <>
                     <p>Rating: {feedback.rating}</p>
-                    <p>Comment: {feedback.comment || '(empty)'}</p>
+                    <p>Comment: {feedback.message || '(empty)'}</p>
                   </>
                 )}
               </div>
@@ -485,8 +485,8 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
                   </div>
                   <span className="text-xs text-muted-foreground">({feedback.rating}/5)</span>
                 </div>
-                {feedback.comment && feedback.comment.trim() !== '' && (
-                  <p className="text-sm text-muted-foreground">{feedback.comment}</p>
+                {feedback.message && feedback.message.trim() !== '' && (
+                  <p className="text-sm text-muted-foreground">{feedback.message}</p>
                 )}
                 {feedback.createdAt && (
                   <p className="text-xs text-muted-foreground">
@@ -526,12 +526,33 @@ const OrderDetailTracking: React.FC<{ orderId: number; onClose: () => void }> = 
 const OrderHistoryPage: React.FC = () => {
   const [storeId] = useState(1); // TODO: Get from context or user selection
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [cancelOrderId, setCancelOrderId] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const { currentUser } = useAuth();
   
   const { data: orders = [], isLoading, error, refetch } = useOrderHistory(storeId, !!currentUser);
+  const cancelOrder = useCancelOrder();
 
   const handleFeedbackSuccess = () => {
     refetch();
+  };
+
+  const handleCancelOrder = () => {
+    if (!cancelOrderId || !cancelReason.trim()) return;
+
+    cancelOrder.mutate(
+      { orderId: cancelOrderId, reason: cancelReason },
+      {
+        onSuccess: () => {
+          setCancelOrderId(null);
+          setCancelReason('');
+          refetch();
+        },
+        onError: (error: any) => {
+          alert(error.response?.data?.message || 'Failed to cancel order');
+        },
+      }
+    );
   };
 
   // Show login required if not logged in
@@ -684,12 +705,22 @@ const OrderHistoryPage: React.FC = () => {
                         <div className="text-right shrink-0">
                           <p className="text-2xl font-bold text-primary">{currencyFormat(order.totalPrice)}</p>
                           <p className="text-xs text-muted-foreground mt-1">Total</p>
-                          <button
-                            onClick={() => setSelectedOrderId(order.orderId)}
-                            className="mt-2 text-xs px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors font-medium"
-                          >
-                            View Full Details
-                          </button>
+                          <div className="mt-2 space-y-1">
+                            <button
+                              onClick={() => setSelectedOrderId(order.orderId)}
+                              className="w-full text-xs px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors font-medium"
+                            >
+                              View Details
+                            </button>
+                            {(order.status === 'NEW' || order.status === 'CONFIRMED') && (
+                              <button
+                                onClick={() => setCancelOrderId(order.orderId)}
+                                className="w-full text-xs px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-md transition-colors font-medium"
+                              >
+                                Cancel Order
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -722,6 +753,68 @@ const OrderHistoryPage: React.FC = () => {
           orderId={selectedOrderId}
           onClose={() => setSelectedOrderId(null)}
         />
+      )}
+
+      {/* Cancel Order Modal */}
+      {cancelOrderId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Cancel Order #{cancelOrderId}</h3>
+              <button
+                onClick={() => {
+                  setCancelOrderId(null);
+                  setCancelReason('');
+                }}
+                className="rounded-full p-1 hover:bg-muted transition-colors"
+                disabled={cancelOrder.isPending}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  Are you sure you want to cancel this order? This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reason for cancellation *</label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please provide a reason..."
+                  className="w-full min-h-[100px] px-3 py-2 text-sm rounded-md border border-input bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 resize-none"
+                  disabled={cancelOrder.isPending}
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => {
+                    setCancelOrderId(null);
+                    setCancelReason('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium bg-muted text-foreground rounded-md hover:bg-muted/80 transition-colors"
+                  disabled={cancelOrder.isPending}
+                >
+                  Keep Order
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={!cancelReason.trim() || cancelOrder.isPending}
+                  className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cancelOrder.isPending ? 'Cancelling...' : 'Cancel Order'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
