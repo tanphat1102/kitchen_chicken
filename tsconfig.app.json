@@ -17,6 +17,8 @@
 
     /* Path mapping */
     "baseUrl": ".",
+    // Temporary suppression for TS 6 deprecation of baseUrl; revisit when migrating to TS 7
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@/*": ["./src/*"]
     },

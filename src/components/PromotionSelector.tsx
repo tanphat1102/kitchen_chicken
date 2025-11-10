@@ -166,72 +166,73 @@ export const PromotionSelector: React.FC<PromotionSelectorProps> = ({
 
       {/* Promotions List */}
       {showPromotions && (
-        <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
+        <div className="mt-3 max-h-64 overflow-y-auto">
           {isLoading ? (
-            <div className="text-center py-4 text-gray-500">Loading promotions...</div>
+            <div className="py-4 text-center text-gray-500">Loading promotions...</div>
           ) : error ? (
-            <div className="text-center py-4 text-red-500">
+            <div className="py-4 text-center text-red-500">
               Error loading promotions. Please try again later.
             </div>
           ) : availablePromotions.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
-              {promotions.length > 0 
-                ? 'No active promotions available at the moment' 
+            <div className="py-4 text-center text-gray-500">
+              {promotions.length > 0
+                ? 'No active promotions available at the moment'
                 : 'No promotions available'}
             </div>
           ) : (
-            availablePromotions.map((promo) => {
-              const isSelected = promo.id === selectedPromotionId;
-              const discount = calculateDiscount(promo);
-              
-              const quantity = promo.quantity ?? promo.quantityLimit ?? 999999;
-              const usedCount = promo.usedCount ?? 0;
-              const remainingQuantity = quantity - usedCount;
-              const isUnlimited = quantity === 999999;
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {availablePromotions.map((promo) => {
+                const isSelected = promo.id === selectedPromotionId;
+                const discount = calculateDiscount(promo);
 
-              return (
-                <div
-                  key={promo.id}
-                  className={`p-3 border-2 rounded-lg cursor-pointer transition ${
-                    isSelected
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200 hover:border-red-300 bg-white'
-                  }`}
-                  onClick={() => onSelectPromotion(isSelected ? null : promo.id)}
-                >
-                  <div className="flex items-start justify-between">
+                const quantity = promo.quantity ?? promo.quantityLimit ?? 999999;
+                const usedCount = promo.usedCount ?? 0;
+                const remainingQuantity = quantity - usedCount;
+                const isUnlimited = quantity === 999999;
+
+                return (
+                  <div
+                    key={promo.id}
+                    className={`group flex h-full flex-col justify-between rounded-lg border-2 p-3 transition cursor-pointer ${
+                      isSelected
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 bg-white hover:border-red-300'
+                    }`}
+                    onClick={() => onSelectPromotion(isSelected ? null : promo.id)}
+                  >
                     <div className="flex-1">
-                      <div className="font-semibold text-gray-800">{promo.name}</div>
+                      <div className="font-semibold text-gray-800 group-hover:text-red-700 transition-colors">{promo.name}</div>
                       {promo.description && (
-                        <div className="text-sm text-gray-600 mt-1">{promo.description}</div>
+                        <div className="mt-1 text-sm text-gray-600 line-clamp-3">{promo.description}</div>
                       )}
                       {promo.code && (
-                        <div className="inline-block mt-2 px-2 py-1 bg-red-100 text-red-700 text-xs font-mono rounded">
+                        <div className="mt-2 inline-block rounded bg-red-100 px-2 py-1 font-mono text-xs text-red-700">
                           {promo.code}
                         </div>
                       )}
-                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                        <span>Valid until: {new Date(promo.endDate).toLocaleDateString('vi-VN')}</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                        <span>
+                          Valid until: {new Date(promo.endDate).toLocaleDateString('vi-VN')}
+                        </span>
                         {!isUnlimited && (
-                          <>
-                            <span>•</span>
-                            <span>Remaining: {remainingQuantity}</span>
-                          </>
+                          <span className="flex items-center gap-1">
+                            • Remaining: {remainingQuantity}
+                          </span>
                         )}
                       </div>
                     </div>
-                    <div className="ml-3 text-right">
+                    <div className="mt-3 flex items-end justify-between">
+                      <div className="text-xs font-medium text-gray-500">
+                        Save {currencyFormat(discount)}
+                      </div>
                       <div className="text-lg font-bold text-red-600">
                         {formatDiscountValue(promo)}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        Save {currencyFormat(discount)}
-                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       )}

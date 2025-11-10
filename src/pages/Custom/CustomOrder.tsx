@@ -4,12 +4,11 @@ import { Footer } from '@/components/Footer';
 import { stepService, type Step } from '@/services/stepService';
 import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
 import { storeService, type Store } from '@/services/storeService';
-import useEmblaCarousel from 'embla-carousel-react';
 import { useAddCustomDishToOrder } from '@/hooks/useOrderCustomer';
 import { useNavigate } from 'react-router-dom';
 import { APP_ROUTES } from '@/routes/route.constants';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, ShoppingCart, Flame, DollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShoppingCart, Flame } from 'lucide-react';
 
 interface SelectionMap {
   [stepId: number]: { menuItemId: number; quantity: number }[];
@@ -32,32 +31,9 @@ const CustomOrder: React.FC = () => {
   // Order customer mutation
   const addDish = useAddCustomDishToOrder(selectedStoreId || 0);
   
-  // Embla carousel with smooth animations
-  const [emblaRef, emblaApi] = useEmblaCarousel({ 
-    loop: false,
-    align: 'center',
-    skipSnaps: false,
-    duration: 25, // Smooth animation duration
-    dragFree: false, // Snap to slides
-  });
-
-  // Track selected index for animations
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-
-    const onSelect = () => {
-      setSelectedIndex(emblaApi.selectedScrollSnap());
-    };
-
-    emblaApi.on('select', onSelect);
-    onSelect();
-
-    return () => {
-      emblaApi.off('select', onSelect);
-    };
-  }, [emblaApi]);
+  // Pagination for items (4 columns x 3 rows = 12 items per page)
+  const ITEMS_PER_PAGE = 12;
+  const [itemsPage, setItemsPage] = useState(0);
 
   // Load store list and set default selection
   useEffect(() => {
@@ -126,6 +102,15 @@ const CustomOrder: React.FC = () => {
     if (!currentStep) return [];
     return menuItemsByCategory[currentStep.categoryId] || [];
   }, [currentStep, menuItemsByCategory]);
+
+  // Reset page when step changes
+  useEffect(() => { setItemsPage(0); }, [currentStep?.id]);
+
+  const totalItemPages = useMemo(() => Math.ceil(currentStepMenuItems.length / ITEMS_PER_PAGE), [currentStepMenuItems.length]);
+  const paginatedItems = useMemo(() => {
+    const start = itemsPage * ITEMS_PER_PAGE;
+    return currentStepMenuItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [currentStepMenuItems, itemsPage]);
 
   const total = useMemo(() => {
     let sum = 0;
@@ -226,13 +211,8 @@ const CustomOrder: React.FC = () => {
     return picks.length > 0;
   }, [currentStep, selection]);
 
-  const scrollPrev = useCallback(() => {
-    if (emblaApi) emblaApi.scrollPrev();
-  }, [emblaApi]);
-
-  const scrollNext = useCallback(() => {
-    if (emblaApi) emblaApi.scrollNext();
-  }, [emblaApi]);
+  const prevItemsPage = () => setItemsPage(p => Math.max(0, p - 1));
+  const nextItemsPage = () => setItemsPage(p => Math.min(totalItemPages - 1, p + 1));
 
   const next = () => {
     if (current < steps.length - 1) setCurrent((c) => c + 1);
@@ -311,7 +291,7 @@ const CustomOrder: React.FC = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-6 lg:py-8 overflow-x-hidden">
+  <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-28 pb-8 overflow-x-hidden">
         <div className="w-[95vw] lg:w-[80vw] mx-auto overflow-x-hidden">
           {/* Header - Compact */}
           <div className="text-center mb-4">
@@ -411,158 +391,94 @@ const CustomOrder: React.FC = () => {
                         )}
                       </div>
                       
-                      {/* Items Grid - Horizontal layout for desktop */}
-                      <div className="relative overflow-x-hidden max-w-full">
-                        <div className="overflow-hidden px-4 lg:px-10 max-w-full" ref={emblaRef}>
-                          <div className="flex gap-3 min-w-0 p-4">
-                            {currentStepMenuItems.map((item) => {
-                              const picks = selection[currentStep.id] || [];
-                              const picked = picks.find((p) => p.menuItemId === item.id);
-                              const isSelected = !!picked;
-                              
-                              return (
-                                <div
-                                  key={item.id}
-                                  className="flex-[0_0_220px] lg:flex-[0_0_240px] min-w-0"
-                                >
-                                  <div
-                                    className={`relative group bg-white rounded-lg transition-all duration-300 cursor-pointer h-full ${
-                                      isSelected 
-                                        ? 'z-10 border-red-600 shadow-lg shadow-red-100 ring-2 ring-red-500/40 ring-offset-2 ring-offset-white bg-gradient-to-b from-white to-red-50/40' 
-                                        : 'z-0 border-gray-200 hover:border-red-300 hover:shadow-md hover:shadow-red-100 hover:-translate-y-0.5'
-                                    }`}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-pressed={isSelected}
-                                    onKeyDown={(e) => {
-                                      if ((e as React.KeyboardEvent).key === 'Enter' || (e as React.KeyboardEvent).key === ' ') {
-                                        e.preventDefault();
-                                        toggleOption(item);
-                                      }
-                                    }}
-                                    onClick={() => toggleOption(item)}
-                                  >
-                                    {/* Selection Badge */}
-                                    {isSelected && (
-                                      <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shadow-md z-10 animate-scaleIn">
-                                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      </div>
-                                    )}
-                                    
-                                    {/* Image */}
-                                    <div className="relative h-32 lg:h-36 overflow-hidde flex items-center justify-center p-3">
-                                      <div className={`w-28 h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden bg-white shadow-md ${isSelected ? 'ring-2 ring-red-300 ring-offset-2 ring-offset-gray-100' : ''}` }>
-                                        <img
-                                          src={item.imageUrl || '/images/placeholder.svg'}
-                                          alt={item.name}
-                                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                                          onError={(e) => {
-                                            (e.currentTarget as HTMLImageElement).src = '/images/placeholder.svg';
-                                          }}
-                                        />
-                                      </div>
-                                      {isSelected && (
-                                        <div className="absolute inset-10 bg-opacity-10 rounded-t-lg"></div>
-                                      )}
-                                    </div>
-                                    
-                                    {/* Content */}
-                                    <div className="p-3">
-                                      <h3 className={`font-bold text-sm lg:text-base mb-1.5 line-clamp-1 ${
-                                        isSelected ? 'text-red-600' : 'text-gray-800'
-                                      }`}>
-                                        {item.name}
-                                      </h3>
-                                      
-                                      <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
-                                        <span className="flex items-center gap-1">
-                                          <Flame className="w-3 h-3 text-orange-500" />
-                                          {item.cal || 0} cal
-                                        </span>
-                                        <span className="flex items-center gap-0.5 font-semibold text-red-600">
-                                          {new Intl.NumberFormat('vi-VN').format(item.price)}đ
-                                        </span>
-                                      </div>
-                                      
-                                      {/* Quantity Controls */}
-                                      {isSelected && (
-                                        <div className="flex items-center justify-center gap-2 pt-2 border-t border-gray-200">
-                                          <button
-                                            className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition-all hover:scale-110 active:scale-95"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              dec(item);
-                                            }}
-                                          >
-                                            −
-                                          </button>
-                                          <span className="font-bold text-gray-800 text-base min-w-[24px] text-center">
-                                            {picked?.quantity || 1}
-                                          </span>
-                                          <button
-                                            className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition-all hover:scale-110 active:scale-95"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              inc(item);
-                                            }}
-                                          >
-                                            +
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Selected visual accents */}
-                                    {isSelected && (
-                                      <>
-                                        <div className="pointer-events-none absolute inset-0 rounded-lg bg-red-500/5"></div>
-                                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-red-500 to-red-600 rounded-b-lg"></div>
-                                      </>
-                                    )}
-                                  </div>
+                      {/* Items Grid - 4 columns x 3 rows pagination */}
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {paginatedItems.map(item => {
+                            const picks = selection[currentStep.id] || [];
+                            const picked = picks.find(p => p.menuItemId === item.id);
+                            const isSelected = !!picked;
+                            return (
+                              <div
+                                key={item.id}
+                                className={`flex bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer relative ${isSelected ? 'border-red-600 ring-2 ring-red-500/40' : 'border-gray-200'}`}
+                                onClick={() => toggleOption(item)}
+                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOption(item); } }}
+                                role="button"
+                                tabIndex={0}
+                                aria-pressed={isSelected}
+                              >
+                                <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-white shadow-sm mr-3 ring-1 ring-gray-200">
+                                  <img
+                                    src={item.imageUrl || '/images/placeholder.svg'}
+                                    alt={item.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/placeholder.svg'; }}
+                                  />
                                 </div>
-                              );
-                            })}
-                          </div>
+                                <div className="flex flex-col justify-between flex-1 min-w-0">
+                                  <div>
+                                    <h3 className={`font-semibold text-sm line-clamp-1 ${isSelected ? 'text-red-600' : 'text-gray-800'}`}>{item.name}</h3>
+                                    <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
+                                      <span className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-500" />{item.cal || 0} cal</span>
+                                      <span className="font-semibold text-red-600">{new Intl.NumberFormat('vi-VN').format(item.price)}đ</span>
+                                    </div>
+                                  </div>
+                                  {isSelected && (
+                                    <div className="flex items-center gap-2 pt-2">
+                                      <button
+                                        className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition active:scale-95"
+                                        onClick={(e) => { e.stopPropagation(); dec(item); }}
+                                      >
+                                        −
+                                      </button>
+                                      <span className="font-bold text-gray-800 text-sm min-w-[24px] text-center">{picked?.quantity || 1}</span>
+                                      <button
+                                        className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition active:scale-95"
+                                        onClick={(e) => { e.stopPropagation(); inc(item); }}
+                                      >
+                                        +
+                                      </button>
+                                    </div>
+                                  )}
+                                  {!isSelected && (
+                                    <div className="pt-2 text-[11px] text-gray-400">Click to select</div>
+                                  )}
+                                </div>
+                                {isSelected && (
+                                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shadow-md">
+                                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {paginatedItems.length === 0 && (
+                            <div className="col-span-full text-center py-10 text-sm text-gray-400">No items available</div>
+                          )}
                         </div>
-
-                        {/* Navigation Arrows */}
-                        {currentStepMenuItems.length > 3 && (
-                          <>
+                        {totalItemPages > 1 && (
+                          <div className="flex items-center justify-center gap-3">
                             <button
-                              onClick={scrollPrev}
-                              className="absolute left-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-300 transition-all hover:scale-110 z-10"
+                              onClick={prevItemsPage}
+                              disabled={itemsPage === 0}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border text-xs font-medium bg-white hover:bg-red-50 disabled:opacity-40"
                             >
-                              <ChevronLeft className="w-5 h-5 text-gray-700" />
+                              <ChevronLeft className="w-4 h-4" /> Prev
                             </button>
+                            <div className="text-xs font-semibold">Page {itemsPage + 1} / {totalItemPages}</div>
                             <button
-                              onClick={scrollNext}
-                              className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-300 transition-all hover:scale-110 z-10"
+                              onClick={nextItemsPage}
+                              disabled={itemsPage === totalItemPages - 1}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border text-xs font-medium bg-white hover:bg-red-50 disabled:opacity-40"
                             >
-                              <ChevronRight className="w-5 h-5 text-gray-700" />
+                              Next <ChevronRight className="w-4 h-4" />
                             </button>
-                          </>
+                          </div>
                         )}
                       </div>
-
-                      {/* Carousel Dots */}
-                      {currentStepMenuItems.length > 1 && (
-                        <div className="flex justify-center gap-1.5 mt-4">
-                          {currentStepMenuItems.map((_, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => emblaApi?.scrollTo(idx)}
-                              className={`transition-all duration-300 rounded-full ${
-                                idx === selectedIndex
-                                  ? 'w-6 h-2 bg-red-600'
-                                  : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      )}
                     </div>
                   )}
 
