@@ -211,11 +211,9 @@ const CustomOrder: React.FC = () => {
   };
 
   const canNext = useMemo(() => {
-    if (!currentStep) return false;
-    const picks = selection[currentStep.id] || [];
-    // At least one item selected
-    return picks.length > 0;
-  }, [currentStep, selection]);
+    // Always allow navigation - steps are optional
+    return true;
+  }, []);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -226,12 +224,20 @@ const CustomOrder: React.FC = () => {
   }, [emblaApi]);
 
   const next = () => {
-    if (current < steps.length - 1 && canNext) setCurrent((c) => c + 1);
+    if (current < steps.length - 1) setCurrent((c) => c + 1);
   };
   const back = () => setCurrent((c) => Math.max(0, c - 1));
 
+  const hasAnySelection = useMemo(() => {
+    // Check if user has selected at least one item in any step
+    return Object.values(selection).some(picks => picks.length > 0);
+  }, [selection]);
+
   const handleDone = () => {
-    if (!canNext) return;
+    if (!hasAnySelection) {
+      toast.error('Vui lòng chọn ít nhất một món');
+      return;
+    }
     // Directly place order instead of showing summary modal
     placeOrder();
   };
@@ -352,7 +358,7 @@ const CustomOrder: React.FC = () => {
                     <div className="flex justify-between mt-2">
                       {steps.map((s, idx) => (
                         <div key={s.id} className="flex flex-col items-center flex-1">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${
                             idx === current 
                               ? 'bg-red-600 text-white scale-110 shadow-md' 
                               : idx < current 
@@ -361,7 +367,7 @@ const CustomOrder: React.FC = () => {
                           }`}>
                             {idx < current ? '✓' : idx + 1}
                           </div>
-                          <span className={`text-[10px] mt-0.5 font-medium truncate max-w-[60px] ${
+                          <span className={`text-[10px] mt-0.5 font-medium truncate max-w-[100px] ${
                             idx === current ? 'text-red-600' : 'text-gray-500'
                           }`}>
                             {s.name}
@@ -375,18 +381,26 @@ const CustomOrder: React.FC = () => {
                   {currentStep && (
                     <div className="bg-white rounded-lg shadow-md p-4 overflow-hidden w-full max-w-full">
                       <div className="mb-3">
-                        <h2 className="text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wide">
-                          {currentStep.name}
-                        </h2>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wide">
+                            {currentStep.name}
+                          </h2>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                            Optional
+                          </span>
+                        </div>
                         {currentStep.description && (
                           <p className="text-gray-600 text-sm mt-1">{currentStep.description}</p>
                         )}
+                        <p className="text-gray-500 text-xs mt-1 italic">
+                          💡 Bạn có thể bỏ qua bước này và chuyển sang bước tiếp theo
+                        </p>
                       </div>
                       
                       {/* Items Grid - Horizontal layout for desktop */}
                       <div className="relative overflow-x-hidden max-w-full">
                         <div className="overflow-hidden px-4 lg:px-10 max-w-full" ref={emblaRef}>
-                          <div className="flex gap-3 min-w-0">
+                          <div className="flex gap-3 min-w-0 p-4">
                             {currentStepMenuItems.map((item) => {
                               const picks = selection[currentStep.id] || [];
                               const picked = picks.find((p) => p.menuItemId === item.id);
@@ -398,9 +412,9 @@ const CustomOrder: React.FC = () => {
                                   className="flex-[0_0_220px] lg:flex-[0_0_240px] min-w-0"
                                 >
                                   <div
-                                    className={`relative group bg-white rounded-lg border-2 transition-all duration-300 cursor-pointer h-full ${
+                                    className={`relative group bg-white rounded-lg transition-all duration-300 cursor-pointer h-full ${
                                       isSelected 
-                                        ? 'z-10 border-red-600 shadow-lg shadow-red-100 scale-[1.02] ring-2 ring-red-500/40 ring-offset-2 ring-offset-white bg-gradient-to-b from-white to-red-50/40' 
+                                        ? 'z-10 border-red-600 shadow-lg shadow-red-100 ring-2 ring-red-500/40 ring-offset-2 ring-offset-white bg-gradient-to-b from-white to-red-50/40' 
                                         : 'z-0 border-gray-200 hover:border-red-300 hover:shadow-md hover:shadow-red-100 hover:-translate-y-0.5'
                                     }`}
                                     role="button"
@@ -424,7 +438,7 @@ const CustomOrder: React.FC = () => {
                                     )}
                                     
                                     {/* Image */}
-                                    <div className="relative h-32 lg:h-36 overflow-hidden bg-gray-100 flex items-center justify-center p-3">
+                                    <div className="relative h-32 lg:h-36 overflow-hidde flex items-center justify-center p-3">
                                       <div className={`w-28 h-28 lg:w-32 lg:h-32 rounded-full overflow-hidden bg-white shadow-md ${isSelected ? 'ring-2 ring-red-300 ring-offset-2 ring-offset-gray-100' : ''}` }>
                                         <img
                                           src={item.imageUrl || '/images/placeholder.svg'}
@@ -553,16 +567,15 @@ const CustomOrder: React.FC = () => {
                       <button
                         className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleDone}
-                        disabled={!canNext}
+                        disabled={!hasAnySelection}
                       >
                         <ShoppingCart className="w-4 h-4" />
                         Add to Cart
                       </button>
                     ) : (
                       <button
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition"
                         onClick={next}
-                        disabled={!canNext}
                       >
                         Next Step
                         <ChevronRight className="w-4 h-4" />
@@ -654,16 +667,15 @@ const CustomOrder: React.FC = () => {
                   <button
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleDone}
-                    disabled={!canNext}
+                    disabled={!hasAnySelection}
                   >
                     <ShoppingCart className="w-4 h-4" />
                     Add to Cart
                   </button>
                 ) : (
                   <button
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition"
                     onClick={next}
-                    disabled={!canNext}
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
