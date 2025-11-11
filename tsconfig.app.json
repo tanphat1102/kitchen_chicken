@@ -17,6 +17,8 @@
 
     /* Path mapping */
     "baseUrl": ".",
+  // Suppress deprecation warnings introduced in TS 5.x while we migrate off baseUrl
+  "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": ["./src/*"]
     },
