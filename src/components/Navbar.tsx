@@ -6,6 +6,7 @@ import { FaSearch, FaShoppingCart, FaUserAlt, FaSignInAlt } from "react-icons/fa
 import LoginModal from '@/components/shared/LoginModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { APP_ROUTES, MEMBER_ROUTES, ADMIN_ROUTES, MANAGER_ROUTES } from '@/routes/route.constants';
+import { useCurrentOrder } from '@/hooks/useOrderCustomer';
 
 import {
     DropdownMenu,
@@ -30,8 +31,42 @@ export const Navbar: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser, signOut } = useAuth();
+    const [storeId] = useState(1); // TODO: Get from context or user selection
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Get cart data to display item count
+    const { data: order, isLoading: isLoadingOrder } = useCurrentOrder(storeId, !!currentUser);
+    const cartItemCount = React.useMemo(() => {
+        if (!order?.dishes) return 0;
+        
+        // Debug: Log each dish to see its structure
+        console.log('🔍 Dishes in cart:', order.dishes);
+        console.log('🔍 First dish detail:', order.dishes[0]);
+        
+        const total = order.dishes.reduce((sum, dish) => {
+            // Log all keys to understand the structure
+            console.log('🔑 Dish keys:', Object.keys(dish));
+            console.log('🔍 Full dish object:', dish);
+            
+            const qty = Number(dish.quantity) || 0;
+            console.log(`Dish ${dish.id}: quantity = ${dish.quantity}, parsed = ${qty}`);
+            return sum + qty;
+        }, 0);
+        
+        console.log('📊 Total cart items:', total);
+        return total;
+    }, [order?.dishes]);
+
+    // State for flying animation
+    const [flyingImages, setFlyingImages] = useState<Array<{
+        id: string;
+        imageUrl: string;
+        startX: number;
+        startY: number;
+    }>>([]);
+    const cartIconRef = useRef<HTMLDivElement>(null);
+    const [cartBounce, setCartBounce] = useState(false);
 
     const [showNav, setShowNav] = useState(true);
     const lastScrollY = useRef(0);
@@ -72,6 +107,38 @@ export const Navbar: React.FC = () => {
         window.removeEventListener('auth:login-required', handleLoginRequired);
         window.removeEventListener('auth:unauthorized', handleLoginRequired);
       };
+    }, []);
+
+    // Listen for dish added to cart event for flying animation
+    useEffect(() => {
+      const handleDishAdded = (event: Event) => {
+        const customEvent = event as CustomEvent;
+        const { imageUrl, element } = customEvent.detail;
+        
+        if (!element || !cartIconRef.current) return;
+
+        const rect = element.getBoundingClientRect();
+        const id = `flying-${Date.now()}-${Math.random()}`;
+        
+        setFlyingImages(prev => [...prev, {
+          id,
+          imageUrl,
+          startX: rect.left + rect.width / 2,
+          startY: rect.top + rect.height / 2,
+        }]);
+
+        // Trigger cart bounce animation
+        setCartBounce(true);
+        setTimeout(() => setCartBounce(false), 500);
+
+        // Remove after animation completes
+        setTimeout(() => {
+          setFlyingImages(prev => prev.filter(img => img.id !== id));
+        }, 1000);
+      };
+
+      window.addEventListener('dish:added-to-cart', handleDishAdded);
+      return () => window.removeEventListener('dish:added-to-cart', handleDishAdded);
     }, []);
 
 
@@ -204,11 +271,25 @@ const handleDashboardClick = () => {
             </AnimatePresence>
         </motion.div>
         <motion.div 
+            ref={cartIconRef}
             whileHover={{ scale: 1.2 }} 
-            className="cursor-pointer text-gray-700 relative"
+            className={`cursor-pointer text-gray-700 relative ${cartBounce ? 'cart-bounce-animation' : ''}`}
             onClick={() => navigate(APP_ROUTES.CART)}
+            style={{ zIndex: 10 }}
         >
             <FaShoppingCart size={20} />
+            {cartItemCount > 0 && (
+              <motion.div
+                key={`cart-badge-${cartItemCount}`}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 25 }}
+                className="absolute -bottom-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center shadow-lg border-2 border-white"
+                style={{ zIndex: 20 }}
+              >
+                {cartItemCount > 99 ? '99+' : cartItemCount}
+              </motion.div>
+            )}
         </motion.div>
 
         <div className="w-px h-6 bg-gray-300"></div>
@@ -271,6 +352,51 @@ const handleDashboardClick = () => {
     </motion.header>
 
   <LoginModal open={isModalOpen} onOpenChange={setIsModalOpen} />
+
+  {/* Flying dish animations */}
+  <AnimatePresence>
+    {flyingImages.map((item) => {
+      if (!cartIconRef.current) return null;
+      
+      const cartRect = cartIconRef.current.getBoundingClientRect();
+      const endX = cartRect.left + cartRect.width / 2;
+      const endY = cartRect.top + cartRect.height / 2;
+
+      return (
+        <motion.div
+          key={item.id}
+          initial={{ 
+            x: item.startX, 
+            y: item.startY,
+            scale: 1,
+            opacity: 1 
+          }}
+          animate={{ 
+            x: endX, 
+            y: endY,
+            scale: 0.2,
+            opacity: 0.8
+          }}
+          exit={{ opacity: 0 }}
+          transition={{ 
+            duration: 0.8,
+            ease: [0.43, 0.13, 0.23, 0.96]
+          }}
+          className="fixed pointer-events-none z-[200]"
+          style={{
+            width: '80px',
+            height: '80px',
+          }}
+        >
+          <img 
+            src={item.imageUrl} 
+            alt="Flying dish"
+            className="w-full h-full object-cover rounded-full shadow-lg"
+          />
+        </motion.div>
+      );
+    })}
+  </AnimatePresence>
     </>
   );
 };

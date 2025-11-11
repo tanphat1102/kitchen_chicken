@@ -97,6 +97,7 @@ const formatVND = (value: number) =>
 const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
   const { color, Icon } = useMemo(() => getCategoryMeta(item.categoryName), [item.categoryName]);
   const addDish = useAddExistingDishToOrder(storeId);
+  const addButtonRef = React.useRef<HTMLButtonElement>(null);
 
   const description = useMemo(() => {
     // if (item.description) return item.description; //API chưa có
@@ -117,6 +118,16 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
         onSuccess: () => {
           // Optional: Show toast notification
           console.log('Added to cart:', item.name);
+          
+          // Trigger flying animation
+          if (addButtonRef.current && item.imageUrl) {
+            window.dispatchEvent(new CustomEvent('dish:added-to-cart', {
+              detail: {
+                imageUrl: item.imageUrl,
+                element: addButtonRef.current
+              }
+            }));
+          }
         },
         onError: (error: any) => {
           console.error('Failed to add to cart:', error);
@@ -180,6 +191,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, storeId = 1 }) => {
           <div className="mt-4 flex items-center justify-between gap-2">
             <p className="text-gray-900 font-extrabold text-lg sm:text-xl">{formatVND(item.price)}</p>
             <button
+              ref={addButtonRef}
               type="button"
               onClick={handleAddToCart}
               disabled={addDish.isPending}
