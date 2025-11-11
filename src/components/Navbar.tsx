@@ -122,7 +122,16 @@ const handleDashboardClick = () => {
     >
       <div className="w-[min(95%,1100px)] mx-auto flex justify-between items-center px-4 py-2 rounded-2xl bg-white/50 backdrop-blur-md border border-white/30 shadow-lg">
       <div className="flex items-center space-x-2">
-        <img src={logo} alt="Logo" className="h-10 w-10" />
+        <img 
+          src={logo} 
+          alt="Logo" 
+          className="h-10 w-10 object-cover rounded-full" 
+          style={{ 
+            background: 'transparent',
+            filter: 'brightness(1.2) contrast(1.1)',
+            mixBlendMode: 'darken'
+          }}
+        />
         <span className="font-bold text-2xl text-red-500">Chicken Kitchen</span>
       </div>
 

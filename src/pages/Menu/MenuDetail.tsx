@@ -1,11 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import dishService from '@/services/dishService';
 import type { Dish, Nutrient } from '@/services/dishService';
-import { useAddExistingDishToOrder } from '@/hooks/useOrderCustomer';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 
 const formatPrice = (price?: number) => {
   if (typeof price !== 'number') return '';
@@ -32,15 +29,9 @@ function Badge({ children, color = 'orange' }: { children: React.ReactNode; colo
 
 const MenuDetailPage: React.FC = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
   const [dish, setDish] = useState<Dish | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [storeId] = useState(1); // TODO: Get from context or user selection
-  const [quantity, setQuantity] = useState(1);
-
-  const addDishMutation = useAddExistingDishToOrder(storeId);
 
   useEffect(() => {
     let mounted = true;
@@ -65,40 +56,6 @@ const MenuDetailPage: React.FC = () => {
     if (!dish?.nutrients) return [] as Nutrient[];
     return dish.nutrients;
   }, [dish]);
-
-  const steps = dish?.steps ?? [];
-
-  const handleAddToCart = () => {
-    if (!currentUser) {
-      toast.error('Please login to add items to cart');
-      window.dispatchEvent(new CustomEvent('auth:login-required'));
-      return;
-    }
-
-    if (!dish?.id) {
-      toast.error('Invalid dish');
-      return;
-    }
-
-    addDishMutation.mutate(
-      {
-        storeId,
-        dishId: dish.id,
-        quantity,
-      },
-      {
-        onSuccess: () => {
-          toast.success(`Added ${dish.name} to cart! (x${quantity})`);
-          // Optionally navigate to cart
-          // navigate('/cart');
-        },
-        onError: (error: any) => {
-          const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
-          toast.error(errorMessage);
-        },
-      }
-    );
-  };
 
   return (
     <>
@@ -207,7 +164,7 @@ const MenuDetailPage: React.FC = () => {
                 </div>
 
                 {/* Steps section */}
-                {steps.length > 0 && (
+                {dish.steps && dish.steps.length > 0 && (
                   <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 animate-slideInLeft" style={{ animationDelay: '0.1s' }}>
                     <div className="flex items-start gap-3 mb-6">
                       <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -219,7 +176,7 @@ const MenuDetailPage: React.FC = () => {
                     </div>
                     
                     <div className="space-y-6">
-                      {steps.map((step, idx) => (
+                      {dish.steps.map((step, idx) => (
                         <div key={step.stepId} className="relative">
                           <div className="flex items-start gap-4">
                             <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
@@ -251,7 +208,7 @@ const MenuDetailPage: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                          {idx < steps.length - 1 && (
+                          {idx < dish.steps.length - 1 && (
                             <div className="absolute left-4 top-12 bottom-0 w-0.5 bg-gradient-to-b from-orange-300 to-transparent"></div>
                           )}
                         </div>
@@ -306,46 +263,18 @@ const MenuDetailPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Quantity Selector */}
-                  <div className="mt-6">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Quantity</label>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        disabled={quantity <= 1}
-                        className="w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 flex items-center justify-center font-bold text-lg transition-all"
-                      >
-                        −
-                      </button>
-                      <span className="text-2xl font-bold text-gray-900 min-w-[60px] text-center">{quantity}</span>
-                      <button
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="w-10 h-10 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center font-bold text-lg transition-all"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Add to Cart Button */}
                   <button
-                    onClick={handleAddToCart}
-                    disabled={addDishMutation.isPending}
-                    className="mt-6 w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
+                    onClick={() => {
+                      // Add to cart logic here
+                      alert(`Added ${dish?.name} to cart!`);
+                    }}
+                    className="mt-6 w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 group"
                   >
-                    {addDishMutation.isPending ? (
-                      <>
-                        <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-lg">Adding...</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-6 h-6 transform group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <span className="text-lg">Add to Cart</span>
-                      </>
-                    )}
+                    <svg className="w-6 h-6 transform group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <span className="text-lg">Add to Cart</span>
                   </button>
                 </div>
               </aside>

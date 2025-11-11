@@ -6,7 +6,9 @@ import { Link } from 'react-router-dom';
 
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import LoadingScreen from '@/components/LoadingScreen';
 import TodayMenu from '@/modules/Homepage/TodayMenu';
+import PromotionBanner from '@/components/PromotionBanner';
 import { storeService, type Store } from '@/services/storeService';
 
 import SaladBowl from '../../assets/img/HeroImg.png';
@@ -47,10 +49,6 @@ function Homepage() {
     fetchGlobalData();
   }, []); 
 
-  if (loading) {
-    return <div>Loading menu...</div>;
-  }
-
   if (error) {
     return <div style={{ color: 'red' }}>Error: {error}</div>;
   }
@@ -66,6 +64,7 @@ function Homepage() {
 
   return (
     <>
+    <LoadingScreen isLoading={loading} />
     <Navbar />
 
     {/* Poster */}
@@ -204,7 +203,7 @@ function Homepage() {
 
         </div>
       </section>
-
+    
     {/* Today Menu */}
       <TodayMenu
         ref={todayMenuRef}
@@ -214,12 +213,12 @@ function Homepage() {
       />
 
     {/* Get Started*/}
-    <section className="bg-white py-24 px-8">
+    <section className="bg-gray-50 py-24 px-8">
       <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <p className="text-sm font-bold text-red-500 tracking-wider">CRAFT YOUR PERFECT MEAL</p>
@@ -271,7 +270,7 @@ function Homepage() {
           className="relative flex justify-center items-center"
           initial={{ opacity: 0, scale: 0.8 }}
           whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <div className="relative w-full max-w-md aspect-square bg-yellow-300 rounded-full overflow-hidden"> 
@@ -297,6 +296,8 @@ function Homepage() {
     </section>
 
     {/* Promotion */} 
+    <PromotionBanner />
+
     {/* Map Stores */}
     <Footer />
     </>

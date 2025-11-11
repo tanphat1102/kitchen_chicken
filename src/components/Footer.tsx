@@ -33,7 +33,16 @@ export const Footer: React.FC = () => {
           
           <div className="md:col-span-1">
             <div className="flex items-center space-x-2 mb-4">
-              <img src={logo} alt="Foody Logo" className="h-10 w-10" />
+              <img 
+                src={logo} 
+                alt="Foody Logo" 
+                className="h-10 w-10 object-cover rounded-full" 
+                style={{ 
+                  background: 'transparent',
+                  filter: 'brightness(1.2) contrast(1.1)',
+                  mixBlendMode: 'darken'
+                }}
+              />
               <span className="font-bold text-2xl text-red-500">Chicken Kitchen</span>
             </div>
             <p className="text-gray-600 text-sm">
