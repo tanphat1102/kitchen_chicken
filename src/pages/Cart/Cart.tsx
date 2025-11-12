@@ -4,15 +4,18 @@ import { PromotionSelector } from "@/components/PromotionSelector";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useCurrentOrder,
-  useDeleteDish,
+  useDeleteCustomDish,
+  useDeleteExistingDish,
   useUpdateDish,
+  useUpdateDishQuantity,
 } from "@/hooks/useOrderCustomer";
 import { useConfirmOrder } from "@/hooks/useOrderPayment";
 import { APP_ROUTES } from "@/routes/route.constants";
 import { paymentMethodService, promotionService } from "@/services";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const currencyFormat = (value: number) => {
   const numValue = Number(value) || 0;
@@ -24,6 +27,7 @@ const currencyFormat = (value: number) => {
 };
 
 const CartPage: React.FC = () => {
+  const navigate = useNavigate();
   const [storeId] = useState(1); // TODO: Get from context or user selection
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
     number | null
@@ -43,11 +47,61 @@ const CartPage: React.FC = () => {
     error,
   } = useCurrentOrder(storeId, !!currentUser);
 
-  const updateDish = useUpdateDish(storeId);
-  const deleteDish = useDeleteDish(storeId);
+  const updateDish = useUpdateDish(storeId); // For updating ingredient quantities
+  const updateDishQuantity = useUpdateDishQuantity(storeId); // For updating dish quantity
+  const deleteCustomDish = useDeleteCustomDish(storeId);
+  const deleteExistingDish = useDeleteExistingDish(storeId);
   const confirmOrder = useConfirmOrder();
 
   const dishes = order?.dishes || [];
+
+  // Helper function to delete dish based on type
+  const handleDeleteDish = (dishId: number, isCustom?: boolean) => {
+    if (isCustom) {
+      deleteCustomDish.mutate(dishId);
+    } else {
+      deleteExistingDish.mutate(dishId);
+    }
+  };
+
+  // Helper function to update quantity for dishes
+  const handleUpdateQuantity = (dish: any, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      // If quantity is 0 or less, delete the dish
+      handleDeleteDish(dish.dishId, dish.isCustom);
+      return;
+    }
+
+    if (dish.isCustom) {
+      // For custom dishes, redirect to Custom page with prefilled data
+      toast.info("Redirecting to Custom page to edit this dish...");
+      
+      // Navigate to Custom page with dish data as state
+      navigate(APP_ROUTES.CUSTOM_ORDER, {
+        state: {
+          editMode: true,
+          dishId: dish.dishId,
+          dishData: dish,
+        }
+      });
+      return;
+    }
+
+    // For both custom and existing dishes, use PUT API with dishId from order
+    updateDishQuantity.mutate({
+      dishId: dish.dishId, // Use dishId (order instance ID)
+      quantity: newQuantity,
+    }, {
+      onSuccess: () => {
+        toast.success(`Updated quantity to ${newQuantity}`);
+      },
+      onError: (error: any) => {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
+        toast.error(errorMessage);
+      },
+    });
+  };
+
   const isEmpty = !order || dishes.length === 0;
 
   // Calculate total from all items in cart
@@ -472,27 +526,29 @@ const CartPage: React.FC = () => {
                                   </div>
                                 </div>
 
-                                {/* Steps */}
-                                {(dish as any).steps &&
-                                  (dish as any).steps.length > 0 && (
-                                    <div className="mb-3">
-                                      <button
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          const newExpanded = new Set(
-                                            expandedCustomizations,
-                                          );
-                                          if (newExpanded.has(dish.dishId)) {
-                                            newExpanded.delete(dish.dishId);
-                                          } else {
-                                            newExpanded.add(dish.dishId);
-                                          }
-                                          setExpandedCustomizations(newExpanded);
-                                        }}
-                                        className="mb-3 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gradient-to-r from-gray-50 to-white px-4 py-3 transition-all hover:border-gray-300 hover:shadow-sm active:scale-[0.99]"
-                                      >
-                                        <div className="flex items-center gap-3">
+                                {/* Customizations - Support both steps and selections */}
+                                {((dish as any).steps && (dish as any).steps.length > 0) || 
+                                 (dish.selections && dish.selections.length > 0) ? (
+                                  <div className="mb-3">
+                                    <button
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const newExpanded = new Set(
+                                          expandedCustomizations,
+                                        );
+                                        if (newExpanded.has(dish.dishId)) {
+                                          newExpanded.delete(dish.dishId);
+                                        } else {
+                                          newExpanded.add(dish.dishId);
+                                        }
+                                        setExpandedCustomizations(newExpanded);
+                                      }}
+                                      className="mb-3 flex w-full items-center justify-between rounded-lg border border-gray-200 bg-gradient-to-r from-gray-50 to-white px-4 py-3 transition-all hover:border-gray-300 hover:shadow-sm active:scale-[0.99]"
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        {/* Different icon and color for custom vs existing dishes */}
+                                        {dish.isCustom ? (
                                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
                                             <svg
                                               className="h-4 w-4 text-red-600"
@@ -508,31 +564,10 @@ const CartPage: React.FC = () => {
                                               />
                                             </svg>
                                           </div>
-                                          <div className="text-left">
-                                            <p className="text-sm font-semibold text-gray-900">
-                                              Customizations
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                              {(dish as any).steps.reduce(
-                                                (total: number, step: any) =>
-                                                  total + (step.items?.length || 0),
-                                                0,
-                                              )}{" "}
-                                              ingredients selected
-                                            </p>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-xs font-medium text-gray-500">
-                                            {expandedCustomizations.has(dish.dishId)
-                                              ? "Hide"
-                                              : "Show"}
-                                          </span>
-                                          <div
-                                            className={`rounded-full bg-gray-200 p-1 transition-all ${expandedCustomizations.has(dish.dishId) ? "rotate-180 bg-red-100" : ""}`}
-                                          >
+                                        ) : (
+                                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
                                             <svg
-                                              className={`h-4 w-4 transition-colors ${expandedCustomizations.has(dish.dishId) ? "text-red-600" : "text-gray-600"}`}
+                                              className="h-4 w-4 text-orange-600"
                                               fill="none"
                                               viewBox="0 0 24 24"
                                               stroke="currentColor"
@@ -541,16 +576,59 @@ const CartPage: React.FC = () => {
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 strokeWidth={2}
-                                                d="M19 9l-7 7-7-7"
+                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                                               />
                                             </svg>
                                           </div>
+                                        )}
+                                        <div className="text-left">
+                                          <p className="text-sm font-semibold text-gray-900">
+                                            {dish.isCustom ? "Customizations" : "Dish Steps"}
+                                          </p>
+                                          <p className="text-xs text-gray-500">
+                                            {(dish as any).steps 
+                                              ? (dish as any).steps.reduce(
+                                                  (total: number, step: any) =>
+                                                    total + (step.items?.length || 0),
+                                                  0,
+                                                )
+                                              : dish.selections?.length || 0
+                                            }{" "}
+                                            ingredients {dish.isCustom ? "selected" : "included"}
+                                          </p>
                                         </div>
-                                      </button>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-500">
+                                          {expandedCustomizations.has(dish.dishId)
+                                            ? "Hide"
+                                            : "Show"}
+                                        </span>
+                                        <div
+                                          className={`rounded-full bg-gray-200 p-1 transition-all ${expandedCustomizations.has(dish.dishId) ? "rotate-180 bg-red-100" : ""}`}
+                                        >
+                                          <svg
+                                            className={`h-4 w-4 transition-colors ${expandedCustomizations.has(dish.dishId) ? "text-red-600" : "text-gray-600"}`}
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                          >
+                                            <path
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                              strokeWidth={2}
+                                              d="M19 9l-7 7-7-7"
+                                            />
+                                          </svg>
+                                        </div>
+                                      </div>
+                                    </button>
 
-                                      {expandedCustomizations.has(dish.dishId) && (
-                                        <div className="space-y-4">
-                                          {(dish as any).steps
+                                    {expandedCustomizations.has(dish.dishId) && (
+                                      <div className="space-y-4">
+                                        {/* Render steps format (custom dishes) */}
+                                        {(dish as any).steps && (dish as any).steps.length > 0 ? (
+                                          (dish as any).steps
                                             .slice()
                                             .sort((a: any, b: any) => {
                                               const getOrder = (s: any) =>
@@ -685,11 +763,119 @@ const CartPage: React.FC = () => {
                                                   )}
                                                 </div>
                                               </div>
-                                            ))}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
+                                            ))
+                                        ) : dish.selections && dish.selections.length > 0 ? (
+                                          /* Render selections format (existing dishes from Menu) */
+                                          (() => {
+                                            // Group selections by stepName
+                                            const groupedByStep = dish.selections.reduce((acc: any, sel: any) => {
+                                              const stepName = sel.stepName || 'Ingredients';
+                                              if (!acc[stepName]) {
+                                                acc[stepName] = {
+                                                  stepId: sel.stepId,
+                                                  stepName: stepName,
+                                                  items: []
+                                                };
+                                              }
+                                              acc[stepName].items.push({
+                                                menuItemId: sel.optionId,
+                                                menuItemName: sel.optionName,
+                                                quantity: sel.quantity,
+                                                extraPrice: sel.extraPrice,
+                                                imageUrl: sel.imageUrl,
+                                                cal: sel.cal
+                                              });
+                                              return acc;
+                                            }, {});
+
+                                            return Object.values(groupedByStep).map((step: any, stepIdx: number) => (
+                                              <div
+                                                key={step.stepId ?? stepIdx}
+                                                className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+                                              >
+                                                <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 py-2">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                                                      {stepIdx + 1}
+                                                    </span>
+                                                    <p className="text-xs font-semibold text-gray-700">
+                                                      {step.stepName}
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                                <div className="space-y-2 p-3">
+                                                  {step.items.map(
+                                                    (
+                                                      item: any,
+                                                      itemIdx: number,
+                                                    ) => (
+                                                      <div
+                                                        key={itemIdx}
+                                                        className="group flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
+                                                      >
+                                                        <div className="flex flex-1 items-center gap-3">
+                                                          {/* Item Image */}
+                                                          {item.imageUrl && (
+                                                            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                                              <img
+                                                                src={item.imageUrl}
+                                                                alt={
+                                                                  item.menuItemName
+                                                                }
+                                                                className="h-full w-full object-cover"
+                                                                onError={(e) => {
+                                                                  (
+                                                                    e.target as HTMLImageElement
+                                                                  ).style.display =
+                                                                    "none";
+                                                                }}
+                                                              />
+                                                            </div>
+                                                          )}
+                                                          {!item.imageUrl && (
+                                                            <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></div>
+                                                          )}
+                                                          <div className="flex-1">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                              <span className="text-sm font-medium text-gray-800">
+                                                                {item.menuItemName}
+                                                              </span>
+                                                              {item.cal && (
+                                                                <span className="rounded bg-orange-50 px-1.5 py-0.5 text-xs font-medium text-orange-600">
+                                                                  {item.cal} cal
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                            {item.extraPrice > 0 && (
+                                                              <span className="text-xs font-semibold text-green-600">
+                                                                +
+                                                                {item.extraPrice.toLocaleString(
+                                                                  "vi-VN",
+                                                                )}
+                                                                ₫
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        </div>
+
+                                                        {/* Show quantity - read-only for existing dishes */}
+                                                        <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
+                                                          <span className="text-sm font-bold text-gray-800">
+                                                            ×{item.quantity}
+                                                          </span>
+                                                        </div>
+                                                      </div>
+                                                    ),
+                                                  )}
+                                                </div>
+                                              </div>
+                                            ));
+                                          })()
+                                        ) : null}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : null}
 
                                 <p className="text-sm font-semibold text-red-600">
                                   {currencyFormat(dish.price)}
@@ -702,22 +888,12 @@ const CartPage: React.FC = () => {
                                 <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 shadow-md">
                                   <button
                                     onClick={() => {
-                                      if (dishQuantity > 1) {
-                                        alert(
-                                          "Quantity update coming soon. Please remove and re-add item with desired quantity.",
-                                        );
-                                      } else {
-                                        if (
-                                          confirm(
-                                            `Remove ${dish.menuItemName} from cart?`,
-                                          )
-                                        ) {
-                                          deleteDish.mutate(dish.dishId);
-                                        }
-                                      }
+                                      handleUpdateQuantity(dish, dishQuantity - 1);
                                     }}
                                     disabled={
-                                      updateDish.isPending || deleteDish.isPending
+                                      updateDishQuantity.isPending || 
+                                      deleteCustomDish.isPending || 
+                                      deleteExistingDish.isPending
                                     }
                                     className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Decrease quantity"
@@ -729,12 +905,12 @@ const CartPage: React.FC = () => {
                                   </span>
                                   <button
                                     onClick={() => {
-                                      alert(
-                                        "Quantity update coming soon. Please add the same item again to increase quantity.",
-                                      );
+                                      handleUpdateQuantity(dish, dishQuantity + 1);
                                     }}
                                     disabled={
-                                      updateDish.isPending || deleteDish.isPending
+                                      updateDishQuantity.isPending || 
+                                      deleteCustomDish.isPending || 
+                                      deleteExistingDish.isPending
                                     }
                                     className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Increase quantity"
@@ -751,10 +927,13 @@ const CartPage: React.FC = () => {
                                         `Remove ${dish.menuItemName} from cart?`,
                                       )
                                     ) {
-                                      deleteDish.mutate(dish.dishId);
+                                      handleDeleteDish(dish.dishId, dish.isCustom);
                                     }
                                   }}
-                                  disabled={deleteDish.isPending}
+                                  disabled={
+                                    deleteCustomDish.isPending || 
+                                    deleteExistingDish.isPending
+                                  }
                                   className="group flex items-center gap-2 text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
                                 >
                                   <svg
@@ -770,7 +949,9 @@ const CartPage: React.FC = () => {
                                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                     />
                                   </svg>
-                                  {deleteDish.isPending ? "Removing..." : "Remove"}
+                                  {deleteCustomDish.isPending || deleteExistingDish.isPending 
+                                    ? "Removing..." 
+                                    : "Remove"}
                                 </button>
                               </div>
                             </div>
