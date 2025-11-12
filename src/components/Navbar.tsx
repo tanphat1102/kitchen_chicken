@@ -31,7 +31,7 @@ export const Navbar: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser, signOut } = useAuth();
-    const [storeId] = useState(1); // TODO: Get from context or user selection
+    const [storeId] = useState(1); 
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -40,21 +40,11 @@ export const Navbar: React.FC = () => {
     const cartItemCount = React.useMemo(() => {
         if (!order?.dishes) return 0;
         
-        // Debug: Log each dish to see its structure
-        console.log('🔍 Dishes in cart:', order.dishes);
-        console.log('🔍 First dish detail:', order.dishes[0]);
-        
         const total = order.dishes.reduce((sum, dish) => {
-            // Log all keys to understand the structure
-            console.log('🔑 Dish keys:', Object.keys(dish));
-            console.log('🔍 Full dish object:', dish);
             
             const qty = Number(dish.quantity) || 0;
-            console.log(`Dish ${dish.id}: quantity = ${dish.quantity}, parsed = ${qty}`);
             return sum + qty;
         }, 0);
-        
-        console.log('📊 Total cart items:', total);
         return total;
     }, [order?.dishes]);
 
