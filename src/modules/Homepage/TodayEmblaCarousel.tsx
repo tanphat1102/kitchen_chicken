@@ -46,6 +46,7 @@ const TodayEmblaCarousel: React.FC<Props> = ({ items, autoplayDelay = 3000 }) =>
           {slides.map((item) => (
             <div key={item.id} className="flex-[0_0_auto]">
               <TodayMenuCard
+                id={item.id}
                 imageUrl={item.imageUrl}
                 title={item.name}
                 categoryName={item.categoryName}

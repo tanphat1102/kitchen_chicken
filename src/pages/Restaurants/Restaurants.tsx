@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -72,6 +73,7 @@ function FitOrFocus({ stores, selected }: { stores: StoreWithLocation[]; selecte
 }
 
 const RestaurantsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [stores, setStores] = useState<StoreWithLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +98,14 @@ const RestaurantsPage: React.FC = () => {
         })) as StoreWithLocation[];
         if (mounted) setStores(normalized);
 
-        if (mounted) {
+        // Check if storeId is in URL params
+        const storeIdParam = searchParams.get('storeId');
+        if (storeIdParam && mounted) {
+          const storeId = parseInt(storeIdParam, 10);
+          if (!isNaN(storeId)) {
+            setSelectedId(storeId);
+          }
+        } else if (mounted) {
           const target = normalized.find((s: any) => (s.name || '').toLowerCase().includes(defaultTargetName.toLowerCase()));
           if (target) setSelectedId(target.id);
         }
@@ -108,8 +117,16 @@ const RestaurantsPage: React.FC = () => {
           const filled = await geocodeMissing(normalized, undefined, provider);
           if (mounted) setStores(filled);
           if (mounted && !selectedId) {
-            const target = filled.find((s: any) => (s.name || '').toLowerCase().includes(defaultTargetName.toLowerCase()));
-            if (target) setSelectedId(target.id);
+            const storeIdParam = searchParams.get('storeId');
+            if (storeIdParam) {
+              const storeId = parseInt(storeIdParam, 10);
+              if (!isNaN(storeId)) {
+                setSelectedId(storeId);
+              }
+            } else {
+              const target = filled.find((s: any) => (s.name || '').toLowerCase().includes(defaultTargetName.toLowerCase()));
+              if (target) setSelectedId(target.id);
+            }
           }
           setGeocoding(false);
         }
@@ -123,7 +140,7 @@ const RestaurantsPage: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedId) return;

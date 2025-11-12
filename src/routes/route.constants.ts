@@ -11,6 +11,8 @@ export const AUTH_ROUTES = {
 export const APP_ROUTES = {
   HOME: "/",
   DASHBOARD: "/dashboard", // Legacy route for role-based redirect
+  STORY: "/story",
+  DEALS: "/deals",
   MENU: "/menu",
   MENU_DETAIL: "/menu/:id",
   RESTAURANTS: "/restaurants",

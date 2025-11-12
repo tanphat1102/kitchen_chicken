@@ -11,6 +11,8 @@ import LoginModal from "@/components/shared/LoginModal";
 import Register from "@/pages/authentication/Register";
 import Dashboard from "@/pages/Dashboard";
 import HomePage from '@/pages/Homepage/HomePage';
+import StoryPage from '@/pages/Story/Story';
+import CurrentDealsPage from '@/pages/Deals/CurrentDeals';
 import MenuPage from '@/pages/Menu/Menu';
 import MenuDetailPage from '@/pages/Menu/MenuDetail';
 import Restaurants from '@/pages/Restaurants/Restaurants';
@@ -62,6 +64,8 @@ export function AppRoutes() {
     <Routes>
   {/* Public routes - use dedicated page components */}
   <Route path={APP_ROUTES.HOME} element={<HomePage />} />
+  <Route path={APP_ROUTES.STORY} element={<StoryPage />} />
+  <Route path={APP_ROUTES.DEALS} element={<CurrentDealsPage />} />
   <Route path={APP_ROUTES.MENU} element={<MenuPage />} />
   {/* Menu detail */}
   <Route path={APP_ROUTES.MENU_DETAIL} element={<MenuDetailPage />} />

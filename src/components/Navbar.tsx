@@ -178,8 +178,13 @@ const handleDashboardClick = () => {
       className="fixed top-2 left-0 right-0 z-[100]"
     >
       <div className="w-[min(95%,1100px)] mx-auto flex justify-between items-center px-4 py-2 rounded-2xl bg-white/50 backdrop-blur-md border border-white/30 shadow-lg">
-      <div className="flex items-center space-x-2">
-        <img 
+      <div 
+        className="flex items-center space-x-2 cursor-pointer group"
+        onClick={() => navigate(APP_ROUTES.HOME)}
+      >
+        <motion.img 
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          transition={{ type: "spring", stiffness: 300 }}
           src={logo} 
           alt="Logo" 
           className="h-10 w-10 object-cover rounded-full" 
@@ -189,7 +194,9 @@ const handleDashboardClick = () => {
             mixBlendMode: 'darken'
           }}
         />
-        <span className="font-bold text-2xl text-red-500">Chicken Kitchen</span>
+        <span className="font-bold text-2xl text-red-500 group-hover:text-red-600 transition-colors">
+          Chicken Kitchen
+        </span>
       </div>
 
       <nav>

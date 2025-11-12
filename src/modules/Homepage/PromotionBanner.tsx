@@ -4,10 +4,10 @@ import { IoSpeedometer } from 'react-icons/io5';
 import { MdRestaurantMenu } from 'react-icons/md';
 import { TbTruckDelivery } from 'react-icons/tb';
 
-import healMeal from '../assets/img/healMeal.png';
-import salabowl from '../assets/img/salabowl.png';
-import deliveryPerson from '../assets/img/deliveryPerson.png';
-import leaf from '../assets/img/leaf.png';
+import healMeal from '../../assets/img/healMeal.png';
+import salabowl from '../../assets/img/salabowl.png';
+import deliveryPerson from '../../assets/img/deliveryPerson.png';
+import leaf from '../../assets/img/leaf.png';
 
 const PromotionBanner = () => {
   return (

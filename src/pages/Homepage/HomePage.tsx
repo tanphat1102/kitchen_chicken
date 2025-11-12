@@ -8,7 +8,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import LoadingScreen from '@/components/LoadingScreen';
 import TodayMenu from '@/modules/Homepage/TodayMenu';
-import PromotionBanner from '@/components/PromotionBanner';
+import PromotionBanner from '@/modules/Homepage/PromotionBanner';
 import { storeService, type Store } from '@/services/storeService';
 
 import SaladBowl from '../../assets/img/HeroImg.png';
@@ -211,6 +211,8 @@ function Homepage() {
         selectedStoreId={selectedStoreId}
         onSelect={setSelectedStoreId}
       />
+
+    {/* Nutrition Recommendations */}
 
     {/* Get Started*/}
     <section className="bg-gray-50 py-24 px-8">
