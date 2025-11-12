@@ -27,6 +27,7 @@ const CustomOrder: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+  const [note, setNote] = useState<string>('');
   
   // Order customer mutation
   const addDish = useAddCustomDishToOrder(selectedStoreId || 0);
@@ -198,17 +199,8 @@ const CustomOrder: React.FC = () => {
   const canNext = useMemo(() => {
     if (!currentStep) return false;
     
-    // Check if current step is optional (contains "Optional" in name)
-    const isOptional = currentStep.name.toLowerCase().includes('optional');
-    
-    if (isOptional) {
-      // Optional steps can be skipped
-      return true;
-    }
-    
-    // Required steps must have at least one selection
-    const picks = selection[currentStep.id] || [];
-    return picks.length > 0;
+    // Allow skipping any step - user can choose not to select items
+    return true;
   }, [currentStep, selection]);
 
   const prevItemsPage = () => setItemsPage(p => Math.max(0, p - 1));
@@ -236,20 +228,21 @@ const CustomOrder: React.FC = () => {
   const placeOrder = () => {
     if (!selectedStoreId) return;
 
-    // Convert selection to API format
-    const selections = Object.entries(selection).map(([stepId, picks]) => ({
-      stepId: Number(stepId),
-      items: picks.map((pick: { menuItemId: number; quantity: number }) => ({
-        menuItemId: pick.menuItemId,
-        quantity: pick.quantity || 1,
-      })),
-    }));
+    const selections = Object.entries(selection)
+      .filter(([_, picks]) => picks.length > 0) // Filter out empty selections
+      .map(([stepId, picks]) => ({
+        stepId: Number(stepId),
+        items: picks.map((pick: { menuItemId: number; quantity: number }) => ({
+          menuItemId: pick.menuItemId,
+          quantity: pick.quantity || 1,
+        })),
+      }));
 
     // Add custom bowl to order
     addDish.mutate(
       {
         storeId: selectedStoreId,
-        note: 'Custom bowl',
+        note: note.trim() || 'Custom bowl',
         selections,
         isCustom: true,
       },
@@ -258,6 +251,7 @@ const CustomOrder: React.FC = () => {
           // Reset builder
           setSelection({});
           setCurrent(0);
+          setNote('');
           // Show success toast
           toast.success('Custom bowl added to order!', {
             description: 'Your custom dish has been added successfully.',
@@ -376,19 +370,8 @@ const CustomOrder: React.FC = () => {
                           <h2 className="text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wide">
                             {currentStep.name}
                           </h2>
-                          
-                          {currentStep.name.toLowerCase().includes('optional') && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                              Optional
-                            </span>
-                          )}
                         </div>
                         <p className="text-gray-600 text-sm mt-1">{currentStep.description}</p>
-                        {currentStep.name.toLowerCase().includes('optional') && (
-                          <p className="text-gray-500 text-xs mt-1 italic">
-                            💡 Bạn có thể bỏ qua bước này và chuyển sang bước tiếp theo
-                          </p>
-                        )}
                       </div>
                       
                       {/* Items Grid - 4 columns x 3 rows pagination */}
@@ -401,26 +384,30 @@ const CustomOrder: React.FC = () => {
                             return (
                               <div
                                 key={item.id}
-                                className={`flex bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer relative ${isSelected ? 'border-red-600 ring-2 ring-red-500/40' : 'border-gray-200'}`}
+                                className={`flex bg-white border-2 rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer relative ${isSelected ? 'border-red-600 border-dashed' : 'border-gray-200 border-solid'}`}
                                 onClick={() => toggleOption(item)}
                                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOption(item); } }}
                                 role="button"
                                 tabIndex={0}
                                 aria-pressed={isSelected}
                               >
-                                <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-white shadow-sm mr-3 ring-1 ring-gray-200">
+                                <div className="w-20 h-20 rounded-full overflow-visible flex-shrink-0 bg-white shadow-sm mr-3 ring-1 ring-gray-200 relative">
                                   <img
                                     src={item.imageUrl || '/images/placeholder.svg'}
                                     alt={item.name}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover rounded-full"
                                     onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/placeholder.svg'; }}
                                   />
+                                  {/* Calories badge overlay on image - bottom left */}
+                                  <div className="absolute bottom-0 left-0 bg-orange-500/95 backdrop-blur-sm text-white rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg z-10">
+                                    <Flame className="w-3 h-3" />
+                                    <span className="text-[10px] font-bold">{item.cal || 0}</span>
+                                  </div>
                                 </div>
                                 <div className="flex flex-col justify-between flex-1 min-w-0">
                                   <div>
-                                    <h3 className={`font-semibold text-sm line-clamp-1 ${isSelected ? 'text-red-600' : 'text-gray-800'}`}>{item.name}</h3>
-                                    <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
-                                      <span className="flex items-center gap-1"><Flame className="w-3 h-3 text-orange-500" />{item.cal || 0} cal</span>
+                                    <h3 className={`font-semibold text-sm ${isSelected ? 'text-red-600' : 'text-gray-800'}`}>{item.name}</h3>
+                                    <div className="text-xs mt-1">
                                       <span className="font-semibold text-red-600">{new Intl.NumberFormat('vi-VN').format(item.price)}đ</span>
                                     </div>
                                   </div>
@@ -578,6 +565,22 @@ const CustomOrder: React.FC = () => {
                           {currencyFormat(total, 'VND')}
                         </span>
                       </div>
+                    </div>
+
+                    {/* Note input - Below Summary */}
+                    <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                      <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                        Note
+                      </label>
+                      <textarea
+                        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:border-dashed transition resize-none"
+                        placeholder="Add special instructions or notes..."
+                        rows={3}
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        maxLength={500}
+                      />
+                      <span className="text-xs text-gray-500 mt-1 block text-right">{note.length}/500</span>
                     </div>
                   </div>
                 </div>

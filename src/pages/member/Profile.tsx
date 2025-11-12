@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   User, Mail, Calendar, Clock, Camera, Loader2, 
-  Edit3, Check, X, Image as ImageIcon, ArrowLeft
+  Edit3, Check, X, Image as ImageIcon, ArrowLeft,
+  Wallet, TrendingUp, TrendingDown, DollarSign, History
 } from 'lucide-react';
 import { useProfileLogic } from '@/hooks/useProfileLogic';
 import { APP_ROUTES } from '@/routes/route.constants';
+import { userService } from '@/services/userService';
+import type { UserWalletResponse } from '@/types/api.types';
 
 export const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +27,27 @@ export const Profile: React.FC = () => {
     cancelEdit,
     formatDate,
   } = useProfileLogic();
+
+  const [wallet, setWallet] = useState<UserWalletResponse | null>(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchWallet = async () => {
+      try {
+        setWalletLoading(true);
+        const walletData = await userService.getMyWallet();
+        setWallet(walletData);
+      } catch (error) {
+        console.error('Failed to fetch wallet:', error);
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+
+    if (profile) {
+      fetchWallet();
+    }
+  }, [profile]);
 
   if (isLoading) {
     return (
@@ -288,6 +312,137 @@ export const Profile: React.FC = () => {
             </div>
           </motion.div>
         </div>
+
+        {/* Wallet Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-8"
+        >
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            {/* Wallet Header */}
+            <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                    <Wallet className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">My Wallet</h2>
+                    <p className="text-green-100 text-sm">Your balance and transactions</p>
+                  </div>
+                </div>
+                {walletLoading && (
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
+                )}
+              </div>
+            </div>
+
+            {/* Balance Card */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 border-2 border-dashed border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1 flex items-center space-x-2">
+                      <DollarSign className="w-4 h-4" />
+                      <span>Current Balance</span>
+                    </p>
+                    <p className="text-4xl font-bold text-gray-900">
+                      {new Intl.NumberFormat('vi-VN', { 
+                        style: 'currency', 
+                        currency: 'VND' 
+                      }).format(wallet?.balance || 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-full">
+                    <Wallet className="w-12 h-12 text-green-600" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Transaction History */}
+            <div className="p-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <History className="w-5 h-5 text-gray-700" />
+                <h3 className="text-lg font-bold text-gray-900">Transaction History</h3>
+              </div>
+
+              {walletLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+                </div>
+              ) : wallet?.transactions && wallet.transactions.length > 0 ? (
+                <div className="space-y-3">
+                  {wallet.transactions.map((transaction: any, index: number) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors border border-gray-200"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-full ${
+                          transaction.type === 'DEPOSIT' || transaction.amount > 0
+                            ? 'bg-green-100'
+                            : 'bg-red-100'
+                        }`}>
+                          {transaction.type === 'DEPOSIT' || transaction.amount > 0 ? (
+                            <TrendingUp className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <TrendingDown className="w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {transaction.description || 'Transaction'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {transaction.createdAt ? new Date(transaction.createdAt).toLocaleString('vi-VN') : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-bold ${
+                          transaction.type === 'DEPOSIT' || transaction.amount > 0
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}>
+                          {transaction.type === 'DEPOSIT' || transaction.amount > 0 ? '+' : '-'}
+                          {new Intl.NumberFormat('vi-VN', { 
+                            style: 'currency', 
+                            currency: 'VND' 
+                          }).format(Math.abs(transaction.amount || 0))}
+                        </p>
+                        {transaction.status && (
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                            transaction.status === 'COMPLETED' 
+                              ? 'bg-green-100 text-green-700'
+                              : transaction.status === 'PENDING'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {transaction.status}
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
+                    <History className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 font-medium">No transactions yet</p>
+                  <p className="text-sm text-gray-400 mt-1">Your transaction history will appear here</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );

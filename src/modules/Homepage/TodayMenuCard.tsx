@@ -1,6 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface TodayMenuCardProps {
+  id: number;
   imageUrl: string;
   title: string;
   categoryName?: string;
@@ -13,9 +15,9 @@ function formatVND(value?: number) {
   return `${parts} VND`;
 }
 
-export const TodayMenuCard: React.FC<TodayMenuCardProps> = ({ imageUrl, title, categoryName, price }) => {
+export const TodayMenuCard: React.FC<TodayMenuCardProps> = ({ id, imageUrl, title, categoryName, price }) => {
   return (
-    <div className="group relative w-56 sm:w-60 flex-shrink-0 select-none">
+    <Link to={`/menu/${id}`} className="block group relative w-56 sm:w-60 flex-shrink-0 select-none cursor-pointer">
       {/* Image */}
       <div className="relative w-full aspect-square overflow-hidden rounded-2xl shadow-md">
         <img
@@ -43,7 +45,7 @@ export const TodayMenuCard: React.FC<TodayMenuCardProps> = ({ imageUrl, title, c
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

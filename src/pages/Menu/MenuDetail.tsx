@@ -41,6 +41,7 @@ const MenuDetailPage: React.FC = () => {
   const [quantity, setQuantity] = useState(1);
 
   const addDishMutation = useAddExistingDishToOrder(storeId);
+  const addToCartButtonRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -89,8 +90,16 @@ const MenuDetailPage: React.FC = () => {
       {
         onSuccess: () => {
           toast.success(`Added ${dish.name} to cart! (x${quantity})`);
-          // Optionally navigate to cart
-          // navigate('/cart');
+          
+          // Trigger flying animation
+          if (addToCartButtonRef.current && dish.imageUrl) {
+            window.dispatchEvent(new CustomEvent('dish:added-to-cart', {
+              detail: {
+                imageUrl: dish.imageUrl,
+                element: addToCartButtonRef.current
+              }
+            }));
+          }
         },
         onError: (error: any) => {
           const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
@@ -329,6 +338,7 @@ const MenuDetailPage: React.FC = () => {
 
                   {/* Add to Cart Button */}
                   <button
+                    ref={addToCartButtonRef}
                     onClick={handleAddToCart}
                     disabled={addDishMutation.isPending}
                     className="mt-6 w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"

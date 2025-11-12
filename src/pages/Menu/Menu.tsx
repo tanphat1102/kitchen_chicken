@@ -23,6 +23,7 @@ export default function Menu() {
   const PAGE_SIZE = 12;
   const [total, setTotal] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('name-asc');
+  const [searchKeyword, setSearchKeyword] = useState<string>('');
 
   useEffect(() => {
     let mounted = true;
@@ -30,7 +31,11 @@ export default function Menu() {
       try {
         setLoading(true);
         setError(null);
-        const { items, total: t } = await dishService.searchDishes({ size: PAGE_SIZE, pageNumber });
+        const { items, total: t } = await dishService.searchDishes({ 
+          size: PAGE_SIZE, 
+          pageNumber,
+          keyword: searchKeyword.trim() || undefined
+        });
         if (!mounted) return;
         
         let sortedItems = [...(items || [])];
@@ -66,7 +71,7 @@ export default function Menu() {
     })();
 
     return () => { mounted = false; };
-  }, [pageNumber, sortBy]);
+  }, [pageNumber, sortBy, searchKeyword]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
@@ -74,12 +79,49 @@ export default function Menu() {
 
       <main className="max-w-7xl mx-auto px-8 py-12">
         {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold text-gray-900 mb-2 tracking-tight mt-10">
-            Our Menu
-            <span className="inline-block ml-3 text-orange-500"></span>
-          </h1>
-          <p className="text-gray-600 text-lg">Discover our delicious dishes</p>
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-5xl font-bold text-gray-900 mb-2 tracking-tight mt-10">
+              Our Menu
+              <span className="inline-block ml-3 text-orange-500"></span>
+            </h1>
+            <p className="text-gray-600 text-lg">Discover our delicious dishes</p>
+          </div>
+          
+          {/* Search Box */}
+          <div className="relative flex-shrink-0 w-80">
+            <input
+              type="text"
+              placeholder="Search dishes..."
+              value={searchKeyword}
+              onChange={(e) => {
+                setSearchKeyword(e.target.value);
+                setPageNumber(1); // Reset to page 1 on search
+              }}
+              className="w-full pl-12 pr-4 py-3 text-sm border-2 border-dashed border-red-600 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-600 transition outline-none"
+            />
+            <svg 
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-red-600" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            {searchKeyword && (
+              <button
+                onClick={() => {
+                  setSearchKeyword('');
+                  setPageNumber(1);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-600 transition"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filter Section */}
