@@ -154,6 +154,8 @@ const API_ENDPOINTS = {
   CURRENT_DISHES_EXISTING: "/api/orders/current/dishes/existing",
   CURRENT_DISHES_CUSTOM: "/api/orders/current/dishes/custom",
   DISH: (dishId: number) => `/api/orders/dishes/${dishId}`,
+  DISH_QUANTITY: (dishId: number) => `/api/orders/dishes/${dishId}/quantity`,
+  DELETE_EXISTING_DISH: (dishId: number) => `/api/orders/current/dishes/existing/${dishId}`,
   ORDER_HISTORY: "/api/orders/history",
   ORDER_STATUSES: "/api/order-statuses",
   ORDER_FEEDBACK: (orderId: number) => `/api/orders/${orderId}/feedback`,
@@ -199,6 +201,38 @@ class OrderCustomerService {
    * Add an existing menu item to current NEW order
    */
   async addExistingDishToOrder(
+    request: CreateExistingDishRequest,
+  ): Promise<Order> {
+    const response = await api.post<ApiResponse<Order>>(
+      API_ENDPOINTS.CURRENT_DISHES_EXISTING,
+      request,
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Update quantity for a dish (custom or existing) in current order
+   * Uses PUT /api/orders/dishes/{dishId}/quantity
+   * quantity=0 will remove the dish from order
+   */
+  async updateDishQuantity(
+    dishId: number,
+    quantity: number,
+    storeId: number,
+  ): Promise<Order> {
+    const response = await api.put<ApiResponse<Order>>(
+      API_ENDPOINTS.DISH_QUANTITY(dishId),
+      { quantity },
+      { params: { storeId } }
+    );
+    return response.data.data;
+  }
+
+  /**
+   * @deprecated Use updateDishQuantity instead
+   * Update quantity for an existing dish (re-add with new quantity)
+   */
+  async updateExistingDishQuantity(
     request: CreateExistingDishRequest,
   ): Promise<Order> {
     const response = await api.post<ApiResponse<Order>>(
@@ -255,7 +289,31 @@ class OrderCustomerService {
   }
 
   /**
-   * Delete a dish from order
+   * Delete a custom dish from order
+   */
+  async deleteCustomDish(dishId: number): Promise<Order> {
+    const response = await api.delete<ApiResponse<Order>>(
+      API_ENDPOINTS.DISH(dishId),
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Delete an existing (non-custom) dish from order
+   */
+  async deleteExistingDish(dishId: number, storeId: number): Promise<Order> {
+    const response = await api.delete<ApiResponse<Order>>(
+      API_ENDPOINTS.DELETE_EXISTING_DISH(dishId),
+      {
+        params: { storeId },
+      },
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Delete a dish from order (auto-detect type)
+   * @deprecated Use deleteCustomDish or deleteExistingDish for explicit control
    */
   async deleteDish(dishId: number): Promise<Order> {
     const response = await api.delete<ApiResponse<Order>>(
