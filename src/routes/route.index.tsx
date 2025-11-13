@@ -1,4 +1,5 @@
 import { Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { 
   AUTH_ROUTES, 
   APP_ROUTES, 
@@ -7,62 +8,70 @@ import {
   MEMBER_ROUTES 
 } from "@/routes/route.constants";
 import RoleBasedRoute from "@/components/shared/RoleBasedRoute";
-import LoginModal from "@/components/shared/LoginModal";
-import Register from "@/pages/authentication/Register";
-import Dashboard from "@/pages/Dashboard";
+
+// Eagerly load critical components (above the fold)
 import HomePage from '@/pages/Homepage/HomePage';
-import StoryPage from '@/pages/Story/Story';
-import CurrentDealsPage from '@/pages/Deals/CurrentDeals';
-import MenuPage from '@/pages/Menu/Menu';
-import MenuDetailPage from '@/pages/Menu/MenuDetail';
-import Restaurants from '@/pages/Restaurants/Restaurants';
-import CustomOrder from '@/pages/Custom/CustomOrder';
-import CartPage from '@/pages/Cart/Cart';
-import PaymentCallbackPage from '@/pages/PaymentCallback/PaymentCallback';
-import OrderHistoryPage from '@/pages/OrderHistory/OrderHistory';
-import ServicesPage from '@/pages/Services/Services';
-import ChatHistoryPage from '@/pages/ChatHistory/ChatHistory';
 
-// Admin pages
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminDashboardRealtime from "@/pages/admin/AdminDashboard-realtime";
-import Stores from "@/pages/admin/Stores";
-import Users from "@/pages/admin/Users";
-import Transactions from "@/pages/admin/Transactions";
-import PaymentMethods from "@/pages/admin/PaymentMethods";
-import AdminProfile from "@/pages/admin/AdminProfile";
+// Lazy load non-critical pages
+const LoginModal = lazy(() => import("@/components/shared/LoginModal"));
+const Register = lazy(() => import("@/pages/authentication/Register"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const StoryPage = lazy(() => import('@/pages/Story/Story'));
+const CurrentDealsPage = lazy(() => import('@/pages/Deals/CurrentDeals'));
+const MenuPage = lazy(() => import('@/pages/Menu/Menu'));
+const MenuDetailPage = lazy(() => import('@/pages/Menu/MenuDetail'));
+const Restaurants = lazy(() => import('@/pages/Restaurants/Restaurants'));
+const CustomOrder = lazy(() => import('@/pages/Custom/CustomOrder'));
+const CartPage = lazy(() => import('@/pages/Cart/Cart'));
+const PaymentCallbackPage = lazy(() => import('@/pages/PaymentCallback/PaymentCallback'));
+const OrderHistoryPage = lazy(() => import('@/pages/OrderHistory/OrderHistory'));
+const ServicesPage = lazy(() => import('@/pages/Services/Services'));
+const ChatHistoryPage = lazy(() => import('@/pages/ChatHistory/ChatHistory'));
 
-// Admin layout
-import AdminLayout from "@/layouts/admin/AdminLayout";
+// Admin pages - lazy load entire admin bundle
+const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminDashboardRealtime = lazy(() => import("@/pages/admin/AdminDashboard-realtime"));
+const Stores = lazy(() => import("@/pages/admin/Stores"));
+const Users = lazy(() => import("@/pages/admin/Users"));
+const Transactions = lazy(() => import("@/pages/admin/Transactions"));
+const PaymentMethods = lazy(() => import("@/pages/admin/PaymentMethods"));
+const AdminProfile = lazy(() => import("@/pages/admin/AdminProfile"));
+const AdminLayout = lazy(() => import("@/layouts/admin/AdminLayout"));
 
-// Manager pages
-import ManagerDashboard from "@/pages/manager/ManagerDashboard";
-import MenuItems from "@/pages/manager/MenuItems";
-import Categories from "@/pages/manager/Categories";
-import Ingredients from "@/pages/manager/Ingredients";
-import ManagerDishes from "@/pages/manager/ManagerDishes";
-import Orders from "@/pages/manager/Orders";
-import Promotions from "@/pages/manager/Promotions";
-import ManagerProfile from "@/pages/manager/ManagerProfile";
-import Nutrients from "@/pages/manager/Nutrients";
-import Steps from "@/pages/manager/Steps";
+// Manager pages - lazy load
+const ManagerDashboard = lazy(() => import("@/pages/manager/ManagerDashboard"));
+const MenuItems = lazy(() => import("@/pages/manager/MenuItems"));
+const Categories = lazy(() => import("@/pages/manager/Categories"));
+const Ingredients = lazy(() => import("@/pages/manager/Ingredients"));
+const ManagerDishes = lazy(() => import("@/pages/manager/ManagerDishes"));
+const Orders = lazy(() => import("@/pages/manager/Orders"));
+const Promotions = lazy(() => import("@/pages/manager/Promotions"));
+const ManagerProfile = lazy(() => import("@/pages/manager/ManagerProfile"));
+const Nutrients = lazy(() => import("@/pages/manager/Nutrients"));
+const Steps = lazy(() => import("@/pages/manager/Steps"));
+const ManagerLayout = lazy(() => import("@/layouts/manager/ManagerLayout"));
 
-// Manager layout
-import ManagerLayout from "@/layouts/manager/ManagerLayout";
+// Member pages - lazy load
+const MemberDashboard = lazy(() => import("@/pages/member/MemberDashboard"));
+const Profile = lazy(() => import("@/pages/member/Profile"));
 
-// Member pages
-import MemberDashboard from "@/pages/member/MemberDashboard";
-import Profile from "@/pages/member/Profile";
+const LocalStorageTest = lazy(() => import("@/components/LocalStorageTest"));
 
-import LocalStorageTest from "@/components/LocalStorageTest";
-import { useState } from "react";
-
-// Using dedicated page components from `src/pages/*`
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="text-center">
+      <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+      <p className="text-gray-600">Loading...</p>
+    </div>
+  </div>
+);
 
 // Main App Routes component
 export function AppRoutes() {
   return (
-    <Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
   {/* Public routes - use dedicated page components */}
   <Route path={APP_ROUTES.HOME} element={<HomePage />} />
   <Route path="/story" element={<StoryPage />} />
@@ -199,5 +208,6 @@ export function AppRoutes() {
         } 
       />
     </Routes>
+    </Suspense>
   );
 }

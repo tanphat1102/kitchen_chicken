@@ -11,6 +11,45 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'query-vendor': ['@tanstack/react-query'],
+          // Admin bundle
+          'admin': [
+            './src/pages/admin/AdminDashboard.tsx',
+            './src/pages/admin/AdminDashboard-realtime.tsx',
+            './src/pages/admin/Stores.tsx',
+            './src/pages/admin/Users.tsx',
+            './src/pages/admin/Transactions.tsx',
+            './src/pages/admin/PaymentMethods.tsx',
+            './src/pages/admin/AdminProfile.tsx',
+          ],
+          // Manager bundle
+          'manager': [
+            './src/pages/manager/ManagerDashboard.tsx',
+            './src/pages/manager/MenuItems.tsx',
+            './src/pages/manager/Categories.tsx',
+            './src/pages/manager/Ingredients.tsx',
+            './src/pages/manager/ManagerDishes.tsx',
+            './src/pages/manager/Orders.tsx',
+            './src/pages/manager/Promotions.tsx',
+            './src/pages/manager/ManagerProfile.tsx',
+            './src/pages/manager/Nutrients.tsx',
+            './src/pages/manager/Steps.tsx',
+          ],
+        },
+      },
+    },
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
+    // Enable minification
+    minify: 'esbuild', // Use esbuild for faster builds
+    target: 'es2015', // Support modern browsers
+  },
   server: {
     proxy: {
       '/api': {
