@@ -64,37 +64,28 @@ const CartPage: React.FC = () => {
     }
   };
 
+  // Helper function to edit custom dish
+  const handleEditCustomDish = (dish: any) => {
+    toast.info("Redirecting to Custom page to edit this dish...");
+    
+    // Navigate to Custom page with dish data as state
+    navigate(APP_ROUTES.CUSTOM_ORDER, {
+      state: {
+        editMode: true,
+        dishId: dish.dishId,
+        dishData: dish,
+      }
+    });
+  };
+
   // Helper function to update quantity for dishes
   const handleUpdateQuantity = (dish: any, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      // If quantity is 0 or less, delete the dish
-      handleDeleteDish(dish.dishId, dish.isCustom);
-      return;
-    }
-
-    if (dish.isCustom) {
-      // For custom dishes, redirect to Custom page with prefilled data
-      toast.info("Redirecting to Custom page to edit this dish...");
-      
-      // Navigate to Custom page with dish data as state
-      navigate(APP_ROUTES.CUSTOM_ORDER, {
-        state: {
-          editMode: true,
-          dishId: dish.dishId,
-          dishData: dish,
-        }
-      });
-      return;
-    }
-
     // For both custom and existing dishes, use PUT API with dishId from order
+    // API will automatically remove dish if quantity=0
     updateDishQuantity.mutate({
       dishId: dish.dishId, // Use dishId (order instance ID)
       quantity: newQuantity,
     }, {
-      onSuccess: () => {
-        toast.success(`Updated quantity to ${newQuantity}`);
-      },
       onError: (error: any) => {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
         toast.error(errorMessage);
@@ -876,11 +867,6 @@ const CartPage: React.FC = () => {
                                     )}
                                   </div>
                                 ) : null}
-
-                                <p className="text-sm font-semibold text-red-600">
-                                  {currencyFormat(dish.price)}
-                                  {dishQuantity > 1 && ` × ${dishQuantity}`}
-                                </p>
                               </div>
 
                               {/* Quantity Controls */}
@@ -888,10 +874,17 @@ const CartPage: React.FC = () => {
                                 <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 shadow-md">
                                   <button
                                     onClick={() => {
-                                      handleUpdateQuantity(dish, dishQuantity - 1);
+                                      const newQuantity = dishQuantity - 1;
+                                      if (newQuantity === 0) {
+                                        // Confirm before removing dish
+                                        if (confirm(`Remove ${dish.menuItemName} from cart?`)) {
+                                          handleUpdateQuantity(dish, 0);
+                                        }
+                                      } else {
+                                        handleUpdateQuantity(dish, newQuantity);
+                                      }
                                     }}
                                     disabled={
-                                      updateDishQuantity.isPending || 
                                       deleteCustomDish.isPending || 
                                       deleteExistingDish.isPending
                                     }
@@ -908,7 +901,6 @@ const CartPage: React.FC = () => {
                                       handleUpdateQuantity(dish, dishQuantity + 1);
                                     }}
                                     disabled={
-                                      updateDishQuantity.isPending || 
                                       deleteCustomDish.isPending || 
                                       deleteExistingDish.isPending
                                     }
@@ -953,6 +945,29 @@ const CartPage: React.FC = () => {
                                     ? "Removing..." 
                                     : "Remove"}
                                 </button>
+
+                                {/* Edit Button - Only for Custom Dishes */}
+                                {dish.isCustom && (
+                                  <button
+                                    onClick={() => handleEditCustomDish(dish)}
+                                    className="group flex items-center gap-2 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
+                                  >
+                                    <svg
+                                      className="h-4 w-4 transition-transform group-hover:scale-110"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
+                                    </svg>
+                                    Edit
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
