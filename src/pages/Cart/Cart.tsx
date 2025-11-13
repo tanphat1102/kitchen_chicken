@@ -38,6 +38,8 @@ const CartPage: React.FC = () => {
   const [expandedCustomizations, setExpandedCustomizations] = useState<
     Set<number>
   >(new Set());
+  // Stage quantity changes per dishId until user confirms
+  const [stagedQuantities, setStagedQuantities] = useState<Record<number, number>>({});
   const { currentUser } = useAuth();
 
   // Only fetch order if user is logged in
@@ -86,6 +88,39 @@ const CartPage: React.FC = () => {
       dishId: dish.dishId, // Use dishId (order instance ID)
       quantity: newQuantity,
     }, {
+      onError: (error: any) => {
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
+        toast.error(errorMessage);
+      },
+    });
+  };
+
+  // Helpers for staged quantity flow
+  const getDisplayQuantity = (dishId: number, currentQty: number) =>
+    stagedQuantities[dishId] !== undefined ? stagedQuantities[dishId] : currentQty;
+
+  const stageQuantity = (dishId: number, qty: number) => {
+    setStagedQuantities((prev) => ({ ...prev, [dishId]: Math.max(0, qty) }));
+  };
+
+  const clearStaged = (dishId: number) => {
+    setStagedQuantities(({ [dishId]: _omit, ...rest }) => rest);
+  };
+
+  const confirmStagedQuantity = (dish: any, baseQuantity: number) => {
+    const staged = stagedQuantities[dish.dishId];
+    if (staged === undefined || staged === baseQuantity) return;
+    if (staged === 0) {
+      const ok = confirm(`Remove ${dish.menuItemName} from cart?`);
+      if (!ok) return;
+    }
+    updateDishQuantity.mutate({
+      dishId: dish.dishId,
+      quantity: staged,
+    }, {
+      onSuccess: () => {
+        clearStaged(dish.dishId);
+      },
       onError: (error: any) => {
         const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
         toast.error(errorMessage);
@@ -446,6 +481,7 @@ const CartPage: React.FC = () => {
                       {dishes.map((dish) => {
                         const dishQuantity =
                           Number(dish.quantity) > 0 ? Number(dish.quantity) : 1;
+                        const displayQuantity = getDisplayQuantity(dish.dishId, dishQuantity);
 
                         // Debug log for dish structure
                         console.log("Dish structure:", {
@@ -871,44 +907,53 @@ const CartPage: React.FC = () => {
 
                               {/* Quantity Controls */}
                               <div className="ml-4 flex flex-col items-end gap-3">
-                                <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 shadow-md">
+                                <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 shadow-md">
                                   <button
                                     onClick={() => {
-                                      const newQuantity = dishQuantity - 1;
-                                      if (newQuantity === 0) {
-                                        // Confirm before removing dish
-                                        if (confirm(`Remove ${dish.menuItemName} from cart?`)) {
-                                          handleUpdateQuantity(dish, 0);
-                                        }
-                                      } else {
-                                        handleUpdateQuantity(dish, newQuantity);
-                                      }
+                                      const newQuantity = displayQuantity - 1;
+                                      stageQuantity(dish.dishId, newQuantity);
                                     }}
                                     disabled={
                                       deleteCustomDish.isPending || 
-                                      deleteExistingDish.isPending
+                                      deleteExistingDish.isPending ||
+                                      updateDishQuantity.isPending
                                     }
-                                    className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Decrease quantity"
                                   >
-                                    <span className="text-lg font-bold">−</span>
+                                    <span className="text-base font-bold">−</span>
                                   </button>
                                   <span className="min-w-[32px] text-center text-lg font-bold text-gray-900">
-                                    {dishQuantity}
+                                    {displayQuantity}
                                   </span>
                                   <button
                                     onClick={() => {
-                                      handleUpdateQuantity(dish, dishQuantity + 1);
+                                      stageQuantity(dish.dishId, displayQuantity + 1);
                                     }}
                                     disabled={
                                       deleteCustomDish.isPending || 
-                                      deleteExistingDish.isPending
+                                      deleteExistingDish.isPending ||
+                                      updateDishQuantity.isPending
                                     }
-                                    className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Increase quantity"
                                   >
-                                    <span className="text-lg font-bold">+</span>
+                                    <span className="text-base font-bold">+</span>
                                   </button>
+                                  {/* Confirm button appears when staged differs */}
+                                  {stagedQuantities[dish.dishId] !== undefined && stagedQuantities[dish.dishId] !== dishQuantity && (
+                                    <button
+                                      onClick={() => confirmStagedQuantity(dish, dishQuantity)}
+                                      disabled={updateDishQuantity.isPending}
+                                      className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:opacity-60"
+                                      title="Confirm quantity"
+                                    >
+                                      <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293A1 1 0 106.293 10.707l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                      </svg>
+                                      Confirm
+                                    </button>
+                                  )}
                                 </div>
 
                                 {/* Remove Button */}
