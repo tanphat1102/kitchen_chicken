@@ -317,6 +317,10 @@ const handleDashboardClick = () => {
                             My Profile
                         </DropdownMenuItem>
                         <div className="h-px bg-gray-200 my-1 -mx-1" />
+                        <DropdownMenuItem onClick={() => navigate('/chat-history')}>
+                            Chat History
+                        </DropdownMenuItem>
+                        <div className="h-px bg-gray-200 my-1 -mx-1" />
                         <DropdownMenuItem onClick={handleDashboardClick}>
                             Dashboard
                         </DropdownMenuItem>

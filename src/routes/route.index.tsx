@@ -21,6 +21,7 @@ import CartPage from '@/pages/Cart/Cart';
 import PaymentCallbackPage from '@/pages/PaymentCallback/PaymentCallback';
 import OrderHistoryPage from '@/pages/OrderHistory/OrderHistory';
 import ServicesPage from '@/pages/Services/Services';
+import ChatHistoryPage from '@/pages/ChatHistory/ChatHistory';
 
 // Admin pages
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -85,6 +86,8 @@ export function AppRoutes() {
   <Route path={APP_ROUTES.ORDER_HISTORY} element={<OrderHistoryPage />} />
   {/* Services */}
   <Route path="/services" element={<ServicesPage />} />
+  {/* Chat History */}
+  <Route path="/chat-history" element={<ChatHistoryPage />} />
       
       {/* Auth routes - accessible to guests only */}
       <Route 
