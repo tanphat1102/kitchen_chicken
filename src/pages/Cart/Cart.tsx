@@ -432,7 +432,7 @@ const CartPage: React.FC = () => {
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 py-20">
-        <div className="mx-auto max-w-7xl px-4">
+        <div className="mx-auto max-w-[85vw] px-4">
           {/* Header */}
           <div className="mb-8">
             <h1 className="mb-2 text-4xl font-bold text-gray-800">Your Cart</h1>
