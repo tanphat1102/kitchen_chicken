@@ -113,6 +113,50 @@ export function useAddExistingDishToOrder(storeId: number) {
 }
 
 /**
+ * Update quantity for a dish (custom or existing) using PUT API
+ * This sets the absolute quantity, not increment
+ */
+export function useUpdateDishQuantity(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ dishId, quantity }: { dishId: number; quantity: number }) =>
+      orderCustomerService.updateDishQuantity(dishId, quantity, storeId),
+    onSuccess: (data) => {
+      // Update the current order cache with the new data
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * @deprecated Use useUpdateDishQuantity instead
+ * Update quantity for an existing dish (re-add with new quantity)
+ */
+export function useUpdateExistingDishQuantity(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateExistingDishRequest) =>
+      orderCustomerService.updateExistingDishQuantity(request),
+    onSuccess: (data) => {
+      // Update the current order cache with the new data
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      // Invalidate to ensure fresh data
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
  * Add a custom dish to current NEW order
  */
 export function useAddCustomDishToOrder(storeId: number) {
@@ -262,7 +306,46 @@ export function useUpdateDish(storeId: number) {
 }
 
 /**
- * Delete a dish from order
+ * Delete a custom dish from order
+ */
+export function useDeleteCustomDish(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dishId: number) => orderCustomerService.deleteCustomDish(dishId),
+    onSuccess: (data) => {
+      // Update the current order cache
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * Delete an existing (non-custom) dish from order
+ */
+export function useDeleteExistingDish(storeId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dishId: number) => orderCustomerService.deleteExistingDish(dishId, storeId),
+    onSuccess: (data) => {
+      // Update the current order cache
+      queryClient.setQueryData(orderCustomerKeys.currentOrder(storeId), data);
+
+      queryClient.invalidateQueries({
+        queryKey: orderCustomerKeys.currentOrder(storeId),
+      });
+    },
+  });
+}
+
+/**
+ * Delete a dish from order (auto-detect type)
+ * @deprecated Use useDeleteCustomDish or useDeleteExistingDish for explicit control
  */
 export function useDeleteDish(storeId: number) {
   const queryClient = useQueryClient();
