@@ -197,6 +197,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Helper function to check if current route is public
+  const isPublicRoute = (): boolean => {
+    const currentPath = window.location.pathname;
+    const PUBLIC_ROUTES = [
+      "/",
+      "/story",
+      "/deals",
+      "/menu",
+      "/restaurants",
+      "/register",
+      "/auth-test",
+      "/auth-debug",
+      "/cors-test",
+      "/storage-test",
+      "/payment/callback",
+      "/vnpay-payment-result",
+      "/momo-web-return-result",
+    ];
+    
+    // Check exact match or if path starts with /menu/ (menu detail pages)
+    return PUBLIC_ROUTES.some(route => 
+      currentPath === route || 
+      (route === "/menu" && currentPath.startsWith("/menu/"))
+    );
+  };
+
   // Initialize user from localStorage or Firebase
   useEffect(() => {
     // First, try to load from localStorage for instant UI
@@ -225,17 +251,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Clear user state
       setCurrentUser(null);
       
-      // Show alert
-      alert(message);
-      
-      // Trigger login modal
-      window.dispatchEvent(new CustomEvent('auth:login-required'));
+      // Only show alert and login modal if NOT on a public page
+      if (!isPublicRoute()) {
+        // Show alert
+        alert(message);
+        
+        // Trigger login modal
+        window.dispatchEvent(new CustomEvent('auth:login-required'));
+      } else {
+        // On public pages, just log the session expiry
+        console.log('🔐 Session expired on public page, login modal suppressed');
+      }
     }) as EventListener;
 
     const handleUnauthorized = (() => {
       console.warn('🔐 Unauthorized event received');
       setCurrentUser(null);
-      window.dispatchEvent(new CustomEvent('auth:login-required'));
+      
+      // Only trigger login modal if NOT on a public page
+      if (!isPublicRoute()) {
+        window.dispatchEvent(new CustomEvent('auth:login-required'));
+      } else {
+        console.log('🔐 Unauthorized on public page, login modal suppressed');
+      }
     }) as EventListener;
 
     window.addEventListener('auth:session-expired', handleSessionExpired);

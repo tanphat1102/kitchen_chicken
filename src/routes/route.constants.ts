@@ -1,3 +1,20 @@
+// Public routes (no authentication required)
+export const PUBLIC_ROUTES = [
+  "/",
+  "/story",
+  "/deals",
+  "/menu",
+  "/restaurants",
+  "/register",
+  "/auth-test",
+  "/auth-debug",
+  "/cors-test",
+  "/storage-test",
+  "/payment/callback",
+  "/vnpay-payment-result",
+  "/momo-web-return-result",
+] as const;
+
 // Authentication routes
 export const AUTH_ROUTES = {
   REGISTER: "/register",
