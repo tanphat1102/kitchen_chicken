@@ -20,6 +20,32 @@ const REFRESH_TOKEN_KEY = "refreshToken";
 const TOKEN_EXPIRY_KEY = "tokenExpiresAt";
 const MAX_REFRESH_RETRIES = 1;
 
+// Public routes that don't require authentication
+const PUBLIC_ROUTES = [
+  "/",
+  "/story",
+  "/deals",
+  "/menu",
+  "/restaurants",
+  "/register",
+  "/auth-test",
+  "/auth-debug",
+  "/cors-test",
+  "/storage-test",
+  "/payment/callback",
+  "/vnpay-payment-result",
+  "/momo-web-return-result",
+];
+
+// Helper to check if current route is public
+function isPublicRoute(): boolean {
+  const currentPath = window.location.pathname;
+  return PUBLIC_ROUTES.some(route => 
+    currentPath === route || 
+    (route === "/menu" && currentPath.startsWith("/menu/"))
+  );
+}
+
 // Track if we're currently refreshing token
 let isRefreshing = false;
 // Queue of requests waiting for token refresh
@@ -224,13 +250,22 @@ api.interceptors.response.use(
         // Check if refresh token expired
         if (refreshError.message === "REFRESH_TOKEN_EXPIRED") {
           console.log("🔑 Refresh token expired, requiring login");
-          // Dispatch event to show login modal
-          window.dispatchEvent(new CustomEvent("auth:session-expired", {
-            detail: { message: "Your session has expired. Please login again." }
-          }));
+          
+          // Only dispatch event if NOT on a public page
+          if (!isPublicRoute()) {
+            window.dispatchEvent(new CustomEvent("auth:session-expired", {
+              detail: { message: "Your session has expired. Please login again." }
+            }));
+          } else {
+            console.log("🔐 Session expired on public page, login modal suppressed");
+          }
         } else {
-          // Other errors - still show login
-          window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+          // Other errors - only show login if NOT on public page
+          if (!isPublicRoute()) {
+            window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+          } else {
+            console.log("🔐 Unauthorized on public page, login modal suppressed");
+          }
         }
 
         return Promise.reject(refreshError);
@@ -243,7 +278,13 @@ api.interceptors.response.use(
     if (error.response?.status === 403) {
       console.error("🚫 403 Forbidden - possible invalid token");
       clearAuthData();
-      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+      
+      // Only dispatch event if NOT on a public page
+      if (!isPublicRoute()) {
+        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+      } else {
+        console.log("🔐 403 on public page, login modal suppressed");
+      }
     }
 
     return Promise.reject(error);
