@@ -65,8 +65,8 @@ export function AppRoutes() {
     <Routes>
   {/* Public routes - use dedicated page components */}
   <Route path={APP_ROUTES.HOME} element={<HomePage />} />
-  <Route path={APP_ROUTES.STORY} element={<StoryPage />} />
-  <Route path={APP_ROUTES.DEALS} element={<CurrentDealsPage />} />
+  <Route path="/story" element={<StoryPage />} />
+  <Route path="/deals" element={<CurrentDealsPage />} />
   <Route path={APP_ROUTES.MENU} element={<MenuPage />} />
   {/* Menu detail */}
   <Route path={APP_ROUTES.MENU_DETAIL} element={<MenuDetailPage />} />
