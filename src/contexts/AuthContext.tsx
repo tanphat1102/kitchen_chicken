@@ -217,8 +217,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     });
 
+    // Listen for session expired events from axios interceptor
+    const handleSessionExpired = ((event: CustomEvent) => {
+      console.warn('🔐 Session expired event received');
+      const message = event.detail?.message || 'Your session has expired. Please login again.';
+      
+      // Clear user state
+      setCurrentUser(null);
+      
+      // Show alert
+      alert(message);
+      
+      // Trigger login modal
+      window.dispatchEvent(new CustomEvent('auth:login-required'));
+    }) as EventListener;
+
+    const handleUnauthorized = (() => {
+      console.warn('🔐 Unauthorized event received');
+      setCurrentUser(null);
+      window.dispatchEvent(new CustomEvent('auth:login-required'));
+    }) as EventListener;
+
+    window.addEventListener('auth:session-expired', handleSessionExpired);
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+
     // Cleanup subscription on unmount
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      window.removeEventListener('auth:session-expired', handleSessionExpired);
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
   }, []);
 
   const value: AuthContextType = {
