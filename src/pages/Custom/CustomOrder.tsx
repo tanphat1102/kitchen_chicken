@@ -1,44 +1,52 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { stepService, type Step } from '@/services/stepService';
-import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
-import { storeService, type Store } from '@/services/storeService';
-import { useAddCustomDishToOrder, useUpdateDish } from '@/hooks/useOrderCustomer';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { APP_ROUTES } from '@/routes/route.constants';
-import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, ShoppingCart, Flame } from 'lucide-react';
+import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
+import {
+  useAddCustomDishToOrder,
+  useUpdateDish,
+} from "@/hooks/useOrderCustomer";
+import { APP_ROUTES } from "@/routes/route.constants";
+import { menuItemsService, type MenuItem } from "@/services/menuItemsService";
+import { stepService, type Step } from "@/services/stepService";
+import { storeService, type Store } from "@/services/storeService";
+import { ChevronLeft, ChevronRight, Flame, ShoppingCart } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface SelectionMap {
   [stepId: number]: { menuItemId: number; quantity: number }[];
 }
 
 const currencyFormat = (v: number, currency: string) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: currency === 'USD' ? 'USD' : 'VND' }).format(v);
+  new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: currency === "USD" ? "USD" : "VND",
+  }).format(v);
 
 const CustomOrder: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [steps, setSteps] = useState<Step[]>([]);
-  const [menuItemsByCategory, setMenuItemsByCategory] = useState<Record<number, MenuItem[]>>({});
+  const [menuItemsByCategory, setMenuItemsByCategory] = useState<
+    Record<number, MenuItem[]>
+  >({});
   const [current, setCurrent] = useState(0);
   const [selection, setSelection] = useState<SelectionMap>({});
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [stores, setStores] = useState<Store[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
-  const [note, setNote] = useState<string>('');
-  
+  const [note, setNote] = useState<string>("");
+
   // Check if we're in edit mode
   const editMode = location.state?.editMode;
   const editDishId = location.state?.dishId;
   const editDishData = location.state?.dishData;
-  
+
   // Order customer mutations
   const addDish = useAddCustomDishToOrder(selectedStoreId || 0);
   const updateDish = useUpdateDish(selectedStoreId || 0);
-  
+
   // Pagination for items (4 columns x 3 rows = 12 items per page)
   const ITEMS_PER_PAGE = 12;
   const [itemsPage, setItemsPage] = useState(0);
@@ -53,10 +61,12 @@ const CustomOrder: React.FC = () => {
         setStores(all);
         if (all.length > 0) setSelectedStoreId(all[0].id);
       } catch (e: any) {
-        if (mounted) setError(e?.message || 'Failed to load stores');
+        if (mounted) setError(e?.message || "Failed to load stores");
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Fetch steps and menu items
@@ -69,15 +79,17 @@ const CustomOrder: React.FC = () => {
         setError(null);
         setSelection({});
         setCurrent(0);
-        
+
         // Fetch all steps
         const allSteps = await stepService.getAll();
         if (!mounted) return;
-        
+
         // Sort steps by stepNumber
-        const sortedSteps = allSteps.sort((a, b) => a.stepNumber - b.stepNumber);
+        const sortedSteps = allSteps.sort(
+          (a, b) => a.stepNumber - b.stepNumber,
+        );
         setSteps(sortedSteps);
-        
+
         // Fetch menu items for each category
         const menuItemsMap: Record<number, MenuItem[]> = {};
         for (const step of sortedSteps) {
@@ -86,23 +98,30 @@ const CustomOrder: React.FC = () => {
               categoryId: step.categoryId,
               size: 100,
             });
-            menuItemsMap[step.categoryId] = items.items.filter(item => item.isActive);
+            menuItemsMap[step.categoryId] = items.items.filter(
+              (item) => item.isActive,
+            );
           } catch (err) {
-            console.error(`Failed to fetch items for category ${step.categoryId}:`, err);
+            console.error(
+              `Failed to fetch items for category ${step.categoryId}:`,
+              err,
+            );
             menuItemsMap[step.categoryId] = [];
           }
         }
-        
+
         if (mounted) {
           setMenuItemsByCategory(menuItemsMap);
         }
       } catch (e: any) {
-        if (mounted) setError(e?.message || 'Failed to load custom builder');
+        if (mounted) setError(e?.message || "Failed to load custom builder");
       } finally {
         if (mounted) setLoading(false);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [selectedStoreId]);
 
   // Prefill data when in edit mode
@@ -111,7 +130,7 @@ const CustomOrder: React.FC = () => {
       try {
         // Convert dish.steps format to SelectionMap format
         const prefillSelection: SelectionMap = {};
-        
+
         if (editDishData.steps && Array.isArray(editDishData.steps)) {
           editDishData.steps.forEach((step: any) => {
             if (step.stepId && step.items && Array.isArray(step.items)) {
@@ -122,18 +141,18 @@ const CustomOrder: React.FC = () => {
             }
           });
         }
-        
+
         setSelection(prefillSelection);
-        
+
         // Also prefill note if exists
         if (editDishData.note) {
           setNote(editDishData.note);
         }
-        
-        toast.success('Dish data loaded for editing');
+
+        toast.success("Dish data loaded for editing");
       } catch (err) {
-        console.error('Failed to prefill edit data:', err);
-        toast.error('Failed to load dish data');
+        console.error("Failed to prefill edit data:", err);
+        toast.error("Failed to load dish data");
       }
     }
   }, [editMode, editDishData, steps, loading]);
@@ -145,9 +164,14 @@ const CustomOrder: React.FC = () => {
   }, [currentStep, menuItemsByCategory]);
 
   // Reset page when step changes
-  useEffect(() => { setItemsPage(0); }, [currentStep?.id]);
+  useEffect(() => {
+    setItemsPage(0);
+  }, [currentStep?.id]);
 
-  const totalItemPages = useMemo(() => Math.ceil(currentStepMenuItems.length / ITEMS_PER_PAGE), [currentStepMenuItems.length]);
+  const totalItemPages = useMemo(
+    () => Math.ceil(currentStepMenuItems.length / ITEMS_PER_PAGE),
+    [currentStepMenuItems.length],
+  );
   const paginatedItems = useMemo(() => {
     const start = itemsPage * ITEMS_PER_PAGE;
     return currentStepMenuItems.slice(start, start + ITEMS_PER_PAGE);
@@ -160,7 +184,9 @@ const CustomOrder: React.FC = () => {
       for (const pick of picks) {
         // Find the menu item across all categories
         for (const categoryId in menuItemsByCategory) {
-          const item = menuItemsByCategory[categoryId].find(m => m.id === pick.menuItemId);
+          const item = menuItemsByCategory[categoryId].find(
+            (m) => m.id === pick.menuItemId,
+          );
           if (item) {
             sum += item.price * (pick.quantity || 1);
             break;
@@ -178,7 +204,9 @@ const CustomOrder: React.FC = () => {
       for (const pick of picks) {
         // Find the menu item across all categories
         for (const categoryId in menuItemsByCategory) {
-          const item = menuItemsByCategory[categoryId].find(m => m.id === pick.menuItemId);
+          const item = menuItemsByCategory[categoryId].find(
+            (m) => m.id === pick.menuItemId,
+          );
           if (item) {
             kcal += (item.cal || 0) * (pick.quantity || 1);
             break;
@@ -191,7 +219,7 @@ const CustomOrder: React.FC = () => {
 
   const toggleOption = (item: MenuItem) => {
     if (!currentStep) return;
-    
+
     setSelection((prev) => {
       const curr = prev[currentStep.id] || [];
       const idx = curr.findIndex((x) => x.menuItemId === item.id);
@@ -203,14 +231,17 @@ const CustomOrder: React.FC = () => {
         copy.splice(idx, 1);
         return { ...prev, [currentStep.id]: copy };
       } else {
-        return { ...prev, [currentStep.id]: [...curr, { menuItemId: item.id, quantity: 1 }] };
+        return {
+          ...prev,
+          [currentStep.id]: [...curr, { menuItemId: item.id, quantity: 1 }],
+        };
       }
     });
   };
 
   const inc = (item: MenuItem) => {
     if (!currentStep) return;
-    
+
     setSelection((prev) => {
       const curr = prev[currentStep.id] || [];
       const idx = curr.findIndex((x) => x.menuItemId === item.id);
@@ -223,7 +254,7 @@ const CustomOrder: React.FC = () => {
 
   const dec = (item: MenuItem) => {
     if (!currentStep) return;
-    
+
     setSelection((prev) => {
       const curr = prev[currentStep.id] || [];
       const idx = curr.findIndex((x) => x.menuItemId === item.id);
@@ -238,13 +269,14 @@ const CustomOrder: React.FC = () => {
 
   const canNext = useMemo(() => {
     if (!currentStep) return false;
-    
+
     // Allow skipping any step - user can choose not to select items
     return true;
   }, [currentStep, selection]);
 
-  const prevItemsPage = () => setItemsPage(p => Math.max(0, p - 1));
-  const nextItemsPage = () => setItemsPage(p => Math.min(totalItemPages - 1, p + 1));
+  const prevItemsPage = () => setItemsPage((p) => Math.max(0, p - 1));
+  const nextItemsPage = () =>
+    setItemsPage((p) => Math.min(totalItemPages - 1, p + 1));
 
   const next = () => {
     if (current < steps.length - 1) setCurrent((c) => c + 1);
@@ -253,12 +285,12 @@ const CustomOrder: React.FC = () => {
 
   const hasAnySelection = useMemo(() => {
     // Check if user has selected at least one item in any step
-    return Object.values(selection).some(picks => picks.length > 0);
+    return Object.values(selection).some((picks) => picks.length > 0);
   }, [selection]);
 
   const handleDone = () => {
     if (!hasAnySelection) {
-      toast.error('Vui lòng chọn ít nhất một món');
+      toast.error("Vui lòng chọn ít nhất một món");
       return;
     }
     // Directly place order instead of showing summary modal
@@ -284,36 +316,39 @@ const CustomOrder: React.FC = () => {
         {
           dishId: editDishId,
           request: {
-            note: note.trim() || 'Custom bowl',
+            note: note.trim() || "Custom bowl",
             selections,
           },
         },
         {
           onSuccess: () => {
-            toast.success('Custom dish updated!', {
-              description: 'Your changes have been saved successfully.',
+            toast.success("Custom dish updated!", {
+              description: "Your changes have been saved successfully.",
               duration: 3000,
             });
             // Navigate back to cart
             navigate(APP_ROUTES.CART);
           },
           onError: (error: any) => {
-            console.error('Failed to update custom dish:', error);
-            
+            console.error("Failed to update custom dish:", error);
+
             if (error.response?.status === 401) {
-              toast.error('Authentication required', {
-                description: 'Please login to update items in cart',
+              toast.error("Authentication required", {
+                description: "Please login to update items in cart",
                 duration: 4000,
               });
             } else {
-              const errorMsg = error.response?.data?.message || error.message || 'Failed to update dish';
-              toast.error('Update failed', {
+              const errorMsg =
+                error.response?.data?.message ||
+                error.message ||
+                "Failed to update dish";
+              toast.error("Update failed", {
                 description: errorMsg,
                 duration: 4000,
               });
             }
           },
-        }
+        },
       );
       return;
     }
@@ -322,7 +357,7 @@ const CustomOrder: React.FC = () => {
     addDish.mutate(
       {
         storeId: selectedStoreId,
-        note: note.trim() || 'Custom bowl',
+        note: note.trim() || "Custom bowl",
         selections,
         isCustom: true,
       },
@@ -331,53 +366,65 @@ const CustomOrder: React.FC = () => {
           // Reset builder
           setSelection({});
           setCurrent(0);
-          setNote('');
-          
+          setNote("");
+
           // Show add success toast
-          toast.success('Custom bowl added to order!', {
-            description: 'Your custom dish has been added successfully.',
+          toast.success("Custom bowl added to order!", {
+            description: "Your custom dish has been added successfully.",
             duration: 3000,
           });
         },
         onError: (error: any) => {
-          console.error('Failed to add custom bowl:', error);
-          
+          console.error("Failed to add custom bowl:", error);
+
           // Handle 401 Unauthorized
           if (error.response?.status === 401) {
-            toast.error('Authentication required', {
-              description: 'Please login to add items to cart',
+            toast.error("Authentication required", {
+              description: "Please login to add items to cart",
               duration: 4000,
             });
             // Optional: Trigger login modal
-            window.dispatchEvent(new CustomEvent('auth:login-required'));
+            window.dispatchEvent(new CustomEvent("auth:login-required"));
           } else {
-            toast.error('Failed to add to order', {
-              description: 'Please try again or contact support.',
+            toast.error("Failed to add to order", {
+              description: "Please try again or contact support.",
               duration: 4000,
             });
           }
         },
-      }
+      },
     );
   };
 
   return (
     <>
       <Navbar />
-  <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-28 pb-8 overflow-x-hidden">
-        <div className="w-[95vw] lg:w-[80vw] mx-auto overflow-x-hidden">
+      <div className="min-h-screen overflow-x-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100 pt-28 pb-8">
+        <div className="mx-auto w-[95vw] overflow-x-hidden lg:w-[90vw]">
           {/* Header - Compact */}
-          <div className="text-center mb-4">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
-              {editMode ? 'Edit Your Custom Dish' : 'Build Your Perfect Bowl'}
+          <div className="mb-4 text-center">
+            <h1 className="mb-1 text-2xl font-bold text-gray-900 lg:text-3xl">
+              {editMode ? "Edit Your Custom Dish" : "Build Your Perfect Bowl"}
             </h1>
             <p className="text-sm text-gray-600">
-              {editMode ? 'Update your customizations below' : 'Customize your meal step by step'}
+              {editMode
+                ? "Update your customizations below"
+                : "Customize your meal step by step"}
             </p>
             {editMode && (
               <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
                 </svg>
                 Editing existing dish
               </div>
@@ -386,38 +433,46 @@ const CustomOrder: React.FC = () => {
 
           {/* Store selector - Compact */}
           <div className="mb-4 flex items-center justify-center gap-2">
-            <label className="text-xs lg:text-sm font-medium text-gray-700">Store:</label>
+            <label className="text-xs font-medium text-gray-700 lg:text-sm">
+              Store:
+            </label>
             <select
-              className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 bg-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
-              value={selectedStoreId ?? ''}
-              onChange={(e) => setSelectedStoreId(Number(e.target.value) || null)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm transition focus:border-transparent focus:ring-2 focus:ring-red-500"
+              value={selectedStoreId ?? ""}
+              onChange={(e) =>
+                setSelectedStoreId(Number(e.target.value) || null)
+              }
             >
               {stores.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </select>
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-red-700 text-center text-sm">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
               {error}
             </div>
           )}
 
           {loading ? (
-            <div className="text-center py-16">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-4 border-red-600"></div>
-              <p className="mt-4 text-gray-600">Loading your custom builder...</p>
+            <div className="py-16 text-center">
+              <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-4 border-red-600"></div>
+              <p className="mt-4 text-gray-600">
+                Loading your custom builder...
+              </p>
             </div>
           ) : (
             <>
               {/* Desktop Layout (Horizontal) - ưu tiên cho màn hình ngang */}
-              <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-4 lg:items-start">
+              <div className="lg:grid lg:grid-cols-[1fr_340px] lg:items-start lg:gap-4">
                 {/* Left Side: Step Builder */}
-                <div className="space-y-4 min-w-0">
+                <div className="min-w-0 space-y-4">
                   {/* Progress Indicator - More Compact */}
-                  <div className="bg-white rounded-lg shadow-sm p-3">
-                    <div className="flex items-center justify-between mb-2">
+                  <div className="rounded-lg bg-white p-3 shadow-sm">
+                    <div className="mb-2 flex items-center justify-between">
                       <span className="text-xs font-semibold text-gray-700">
                         Step {current + 1} of {steps.length}
                       </span>
@@ -425,27 +480,36 @@ const CustomOrder: React.FC = () => {
                         {Math.round(((current + 1) / steps.length) * 100)}%
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-gradient-to-r from-red-500 to-red-600 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${((current + 1) / steps.length) * 100}%` }}
+                    <div className="h-1.5 w-full rounded-full bg-gray-200">
+                      <div
+                        className="h-1.5 rounded-full bg-gradient-to-r from-red-500 to-red-600 transition-all duration-500"
+                        style={{
+                          width: `${((current + 1) / steps.length) * 100}%`,
+                        }}
                       ></div>
                     </div>
-                    <div className="flex justify-between mt-2">
+                    <div className="mt-2 flex justify-between">
                       {steps.map((s, idx) => (
-                        <div key={s.id} className="flex flex-col items-center flex-1">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-bold transition-all duration-300 ${
-                            idx === current 
-                              ? 'bg-red-600 text-white scale-110 shadow-md' 
-                              : idx < current 
-                              ? 'bg-red-400 text-white' 
-                              : 'bg-gray-300 text-gray-600'
-                          }`}>
-                            {idx < current ? '✓' : idx + 1}
+                        <div
+                          key={s.id}
+                          className="flex flex-1 flex-col items-center"
+                        >
+                          <div
+                            className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold transition-all duration-300 ${
+                              idx === current
+                                ? "scale-110 bg-red-600 text-white shadow-md"
+                                : idx < current
+                                  ? "bg-red-400 text-white"
+                                  : "bg-gray-300 text-gray-600"
+                            }`}
+                          >
+                            {idx < current ? "✓" : idx + 1}
                           </div>
-                          <span className={`text-[10px] mt-0.5 font-medium truncate max-w-[100px] ${
-                            idx === current ? 'text-red-600' : 'text-gray-500'
-                          }`}>
+                          <span
+                            className={`mt-0.5 max-w-[100px] truncate text-[10px] font-medium ${
+                              idx === current ? "text-red-600" : "text-gray-500"
+                            }`}
+                          >
                             {s.name}
                           </span>
                         </div>
@@ -455,78 +519,124 @@ const CustomOrder: React.FC = () => {
 
                   {/* Current Step Display */}
                   {currentStep && (
-                    <div className="bg-white rounded-lg shadow-md p-4 overflow-hidden w-full max-w-full">
+                    <div className="w-full max-w-full overflow-hidden rounded-lg bg-white p-4 shadow-md">
                       <div className="mb-3">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-xl lg:text-2xl font-bold text-red-600 uppercase tracking-wide">
+                          <h2 className="text-xl font-bold tracking-wide text-red-600 uppercase lg:text-2xl">
                             {currentStep.name}
                           </h2>
                         </div>
-                        <p className="text-gray-600 text-sm mt-1">{currentStep.description}</p>
+                        <p className="mt-1 text-sm text-gray-600">
+                          {currentStep.description}
+                        </p>
                       </div>
-                      
+
                       {/* Items Grid - 4 columns x 3 rows pagination */}
                       <div className="space-y-4">
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                          {paginatedItems.map(item => {
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+                          {paginatedItems.map((item) => {
                             const picks = selection[currentStep.id] || [];
-                            const picked = picks.find(p => p.menuItemId === item.id);
+                            const picked = picks.find(
+                              (p) => p.menuItemId === item.id,
+                            );
                             const isSelected = !!picked;
                             return (
                               <div
                                 key={item.id}
-                                className={`flex bg-white border-2 rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer relative ${isSelected ? 'border-red-600 border-dashed' : 'border-gray-200 border-solid'}`}
+                                className={`relative flex cursor-pointer rounded-lg border-2 bg-white p-3 shadow-sm transition hover:shadow-md ${isSelected ? "border-dashed border-red-600" : "border-solid border-gray-200"}`}
                                 onClick={() => toggleOption(item)}
-                                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOption(item); } }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    toggleOption(item);
+                                  }
+                                }}
                                 role="button"
                                 tabIndex={0}
                                 aria-pressed={isSelected}
                               >
-                                <div className="w-20 h-20 rounded-full overflow-visible flex-shrink-0 bg-white shadow-sm mr-3 ring-1 ring-gray-200 relative">
+                                <div className="relative mr-3 h-20 w-20 flex-shrink-0 overflow-visible rounded-full bg-white shadow-sm ring-1 ring-gray-200">
                                   <img
-                                    src={item.imageUrl || '/images/placeholder.svg'}
+                                    src={
+                                      item.imageUrl || "/images/placeholder.svg"
+                                    }
                                     alt={item.name}
-                                    className="w-full h-full object-cover rounded-full"
-                                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/placeholder.svg'; }}
+                                    className="h-full w-full rounded-full object-cover"
+                                    onError={(e) => {
+                                      (
+                                        e.currentTarget as HTMLImageElement
+                                      ).src = "/images/placeholder.svg";
+                                    }}
                                   />
                                   {/* Calories badge overlay on image - bottom left */}
-                                  <div className="absolute bottom-0 left-0 bg-orange-500/95 backdrop-blur-sm text-white rounded-full px-1.5 py-0.5 flex items-center gap-0.5 shadow-lg z-10">
-                                    <Flame className="w-3 h-3" />
-                                    <span className="text-[10px] font-bold">{item.cal || 0}</span>
+                                  <div className="absolute bottom-0 left-0 z-10 flex items-center gap-0.5 rounded-full bg-orange-500/95 px-1.5 py-0.5 text-white shadow-lg backdrop-blur-sm">
+                                    <Flame className="h-3 w-3" />
+                                    <span className="text-[10px] font-bold">
+                                      {item.cal || 0}
+                                    </span>
                                   </div>
                                 </div>
-                                <div className="flex flex-col justify-between flex-1 min-w-0">
+                                <div className="flex min-w-0 flex-1 flex-col justify-between">
                                   <div>
-                                    <h3 className={`font-semibold text-sm ${isSelected ? 'text-red-600' : 'text-gray-800'}`}>{item.name}</h3>
-                                    <div className="text-xs mt-1">
-                                      <span className="font-semibold text-red-600">{new Intl.NumberFormat('vi-VN').format(item.price)}đ</span>
+                                    <h3
+                                      className={`text-sm font-semibold ${isSelected ? "text-red-600" : "text-gray-800"}`}
+                                    >
+                                      {item.name}
+                                    </h3>
+                                    <div className="mt-1 text-xs">
+                                      <span className="font-semibold text-red-600">
+                                        {new Intl.NumberFormat("vi-VN").format(
+                                          item.price,
+                                        )}
+                                        đ
+                                      </span>
                                     </div>
                                   </div>
                                   {isSelected && (
                                     <div className="flex items-center gap-2 pt-2">
                                       <button
-                                        className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition active:scale-95"
-                                        onClick={(e) => { e.stopPropagation(); dec(item); }}
+                                        className="flex h-7 w-7 items-center justify-center rounded-md bg-red-50 font-bold text-red-600 transition hover:bg-red-100 active:scale-95"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          dec(item);
+                                        }}
                                       >
                                         −
                                       </button>
-                                      <span className="font-bold text-gray-800 text-sm min-w-[24px] text-center">{picked?.quantity || 1}</span>
+                                      <span className="min-w-[24px] text-center text-sm font-bold text-gray-800">
+                                        {picked?.quantity || 1}
+                                      </span>
                                       <button
-                                        className="w-7 h-7 rounded-md bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 font-bold transition active:scale-95"
-                                        onClick={(e) => { e.stopPropagation(); inc(item); }}
+                                        className="flex h-7 w-7 items-center justify-center rounded-md bg-red-50 font-bold text-red-600 transition hover:bg-red-100 active:scale-95"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          inc(item);
+                                        }}
                                       >
                                         +
                                       </button>
                                     </div>
                                   )}
                                   {!isSelected && (
-                                    <div className="pt-2 text-[11px] text-gray-400">Click to select</div>
+                                    <div className="pt-2 text-[11px] text-gray-400">
+                                      Click to select
+                                    </div>
                                   )}
                                 </div>
                                 {isSelected && (
-                                  <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600 flex items-center justify-center shadow-md">
-                                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 shadow-md">
+                                    <svg
+                                      className="h-3.5 w-3.5 text-white"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={3}
+                                        d="M5 13l4 4L19 7"
+                                      />
                                     </svg>
                                   </div>
                                 )}
@@ -534,7 +644,9 @@ const CustomOrder: React.FC = () => {
                             );
                           })}
                           {paginatedItems.length === 0 && (
-                            <div className="col-span-full text-center py-10 text-sm text-gray-400">No items available</div>
+                            <div className="col-span-full py-10 text-center text-sm text-gray-400">
+                              No items available
+                            </div>
                           )}
                         </div>
                         {totalItemPages > 1 && (
@@ -542,17 +654,19 @@ const CustomOrder: React.FC = () => {
                             <button
                               onClick={prevItemsPage}
                               disabled={itemsPage === 0}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border text-xs font-medium bg-white hover:bg-red-50 disabled:opacity-40"
+                              className="flex items-center gap-1 rounded-md border bg-white px-3 py-1.5 text-xs font-medium hover:bg-red-50 disabled:opacity-40"
                             >
-                              <ChevronLeft className="w-4 h-4" /> Prev
+                              <ChevronLeft className="h-4 w-4" /> Prev
                             </button>
-                            <div className="text-xs font-semibold">Page {itemsPage + 1} / {totalItemPages}</div>
+                            <div className="text-xs font-semibold">
+                              Page {itemsPage + 1} / {totalItemPages}
+                            </div>
                             <button
                               onClick={nextItemsPage}
                               disabled={itemsPage === totalItemPages - 1}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-md border text-xs font-medium bg-white hover:bg-red-50 disabled:opacity-40"
+                              className="flex items-center gap-1 rounded-md border bg-white px-3 py-1.5 text-xs font-medium hover:bg-red-50 disabled:opacity-40"
                             >
-                              Next <ChevronRight className="w-4 h-4" />
+                              Next <ChevronRight className="h-4 w-4" />
                             </button>
                           </div>
                         )}
@@ -561,71 +675,93 @@ const CustomOrder: React.FC = () => {
                   )}
 
                   {/* Navigation Buttons - Desktop */}
-                  <div className="hidden lg:flex items-center justify-between gap-3">
+                  <div className="hidden items-center justify-between gap-3 lg:flex">
                     <button
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 font-semibold text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                      className="flex items-center gap-2 rounded-lg border-2 border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                       onClick={back}
                       disabled={current === 0}
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <ChevronLeft className="h-4 w-4" />
                       Back
                     </button>
 
                     {current === steps.length - 1 ? (
                       <button
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-red-700 hover:to-red-800 disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={handleDone}
-                        disabled={!hasAnySelection || addDish.isPending || updateDish.isPending}
+                        disabled={
+                          !hasAnySelection ||
+                          addDish.isPending ||
+                          updateDish.isPending
+                        }
                       >
-                        <ShoppingCart className="w-4 h-4" />
-                        {addDish.isPending || updateDish.isPending 
-                          ? 'Processing...' 
-                          : editMode ? 'Update Dish' : 'Add to Cart'}
+                        <ShoppingCart className="h-4 w-4" />
+                        {addDish.isPending || updateDish.isPending
+                          ? "Processing..."
+                          : editMode
+                            ? "Update Dish"
+                            : "Add to Cart"}
                       </button>
                     ) : (
                       <button
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-red-700 hover:to-red-800 disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={next}
                         disabled={!canNext}
                       >
                         Next Step
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
                   </div>
                 </div>
 
                 {/* Right Side: Summary Panel - Sticky on desktop */}
-                <div className="lg:sticky lg:top-20 mt-4 lg:mt-0">
-                  <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
-                    <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <ShoppingCart className="w-4 h-4 text-red-600" />
+                <div className="mt-4 lg:sticky lg:top-20 lg:mt-0">
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md">
+                    <h3 className="mb-3 flex items-center gap-2 text-lg font-bold text-gray-900">
+                      <ShoppingCart className="h-4 w-4 text-red-600" />
                       Your Selection
                     </h3>
 
                     {/* Summary Items */}
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto mb-3">
+                    <div className="mb-3 max-h-[500px] space-y-3 overflow-y-auto">
                       {steps.map((s) => {
                         const picks = selection[s.id] || [];
                         if (picks.length === 0) return null;
-                        const stepMenuItems = menuItemsByCategory[s.categoryId] || [];
+                        const stepMenuItems =
+                          menuItemsByCategory[s.categoryId] || [];
                         return (
-                          <div key={s.id} className="border-b border-gray-100 pb-2.5">
-                            <div className="font-semibold text-red-600 text-xs mb-1.5">{s.name}</div>
+                          <div
+                            key={s.id}
+                            className="border-b border-gray-100 pb-2.5"
+                          >
+                            <div className="mb-1.5 text-xs font-semibold text-red-600">
+                              {s.name}
+                            </div>
                             <ul className="space-y-1">
                               {picks.map((p) => {
-                                const menuItem = stepMenuItems.find((x) => x.id === p.menuItemId);
+                                const menuItem = stepMenuItems.find(
+                                  (x) => x.id === p.menuItemId,
+                                );
                                 if (!menuItem) return null;
                                 return (
-                                  <li key={p.menuItemId} className="flex items-center justify-between text-xs text-gray-700">
-                                    <span className="flex-1 line-clamp-1">
+                                  <li
+                                    key={p.menuItemId}
+                                    className="flex items-center justify-between text-xs text-gray-700"
+                                  >
+                                    <span className="line-clamp-1 flex-1">
                                       {menuItem.name}
                                       {p.quantity > 1 && (
-                                        <span className="text-red-600 font-semibold ml-1">×{p.quantity}</span>
+                                        <span className="ml-1 font-semibold text-red-600">
+                                          ×{p.quantity}
+                                        </span>
                                       )}
                                     </span>
-                                    <span className="text-xs text-gray-500 ml-2 whitespace-nowrap">
-                                      {new Intl.NumberFormat('vi-VN').format(menuItem.price * p.quantity)}đ
+                                    <span className="ml-2 text-xs whitespace-nowrap text-gray-500">
+                                      {new Intl.NumberFormat("vi-VN").format(
+                                        menuItem.price * p.quantity,
+                                      )}
+                                      đ
                                     </span>
                                   </li>
                                 );
@@ -634,81 +770,89 @@ const CustomOrder: React.FC = () => {
                           </div>
                         );
                       })}
-                      
+
                       {Object.keys(selection).length === 0 && (
-                        <p className="text-gray-400 text-xs text-center py-6">
+                        <p className="py-6 text-center text-xs text-gray-400">
                           No items selected yet
                         </p>
                       )}
                     </div>
 
                     {/* Totals */}
-                    <div className="space-y-2 pt-3 border-t-2 border-gray-200">
-                      <div className="flex items-center justify-between text-gray-700 text-sm">
+                    <div className="space-y-2 border-t-2 border-gray-200 pt-3">
+                      <div className="flex items-center justify-between text-sm text-gray-700">
                         <span className="flex items-center gap-1.5">
-                          <Flame className="w-4 h-4 text-orange-500" />
+                          <Flame className="h-4 w-4 text-orange-500" />
                           <span className="font-medium">Calories</span>
                         </span>
                         <span className="font-bold">{totalKcal}</span>
                       </div>
-                      
-                      <div className="flex items-center justify-between text-gray-900 pt-1">
+
+                      <div className="flex items-center justify-between pt-1 text-gray-900">
                         <span className="text-sm font-semibold">Total</span>
                         <span className="text-xl font-bold text-red-600">
-                          {currencyFormat(total, 'VND')}
+                          {currencyFormat(total, "VND")}
                         </span>
                       </div>
                     </div>
 
                     {/* Note input - Below Summary */}
-                    <div className="mt-4 pt-4 border-t-2 border-gray-200">
-                      <label className="text-sm font-semibold text-gray-900 mb-2 block">
+                    <div className="mt-4 border-t-2 border-gray-200 pt-4">
+                      <label className="mb-2 block text-sm font-semibold text-gray-900">
                         Note
                       </label>
                       <textarea
-                        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:border-dashed transition resize-none"
+                        className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm transition focus:border-dashed focus:border-red-500 focus:ring-2 focus:ring-red-500"
                         placeholder="Add special instructions or notes..."
                         rows={3}
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
                         maxLength={500}
                       />
-                      <span className="text-xs text-gray-500 mt-1 block text-right">{note.length}/500</span>
+                      <span className="mt-1 block text-right text-xs text-gray-500">
+                        {note.length}/500
+                      </span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Mobile Navigation Buttons - shown only on mobile */}
-              <div className="lg:hidden flex items-center justify-between gap-3 mt-4">
+              <div className="mt-4 flex items-center justify-between gap-3 lg:hidden">
                 <button
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg border-2 border-gray-300 font-semibold text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="flex items-center gap-2 rounded-lg border-2 border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                   onClick={back}
                   disabled={current === 0}
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="h-4 w-4" />
                   Back
                 </button>
 
                 {current === steps.length - 1 ? (
                   <button
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-red-700 hover:to-red-800 disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={handleDone}
-                    disabled={!hasAnySelection || addDish.isPending || updateDish.isPending}
+                    disabled={
+                      !hasAnySelection ||
+                      addDish.isPending ||
+                      updateDish.isPending
+                    }
                   >
-                    <ShoppingCart className="w-4 h-4" />
-                    {addDish.isPending || updateDish.isPending 
-                      ? 'Processing...' 
-                      : editMode ? 'Update Dish' : 'Add to Cart'}
+                    <ShoppingCart className="h-4 w-4" />
+                    {addDish.isPending || updateDish.isPending
+                      ? "Processing..."
+                      : editMode
+                        ? "Update Dish"
+                        : "Add to Cart"}
                   </button>
                 ) : (
                   <button
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:from-red-700 hover:to-red-800 disabled:cursor-not-allowed disabled:opacity-50"
                     onClick={next}
                     disabled={!canNext}
                   >
                     Next
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -716,7 +860,7 @@ const CustomOrder: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       <Footer />
     </>
   );

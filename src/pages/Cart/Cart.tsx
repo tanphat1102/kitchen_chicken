@@ -39,7 +39,9 @@ const CartPage: React.FC = () => {
     Set<number>
   >(new Set());
   // Stage quantity changes per dishId until user confirms
-  const [stagedQuantities, setStagedQuantities] = useState<Record<number, number>>({});
+  const [stagedQuantities, setStagedQuantities] = useState<
+    Record<number, number>
+  >({});
   const { currentUser } = useAuth();
 
   // Only fetch order if user is logged in
@@ -69,14 +71,14 @@ const CartPage: React.FC = () => {
   // Helper function to edit custom dish
   const handleEditCustomDish = (dish: any) => {
     toast.info("Redirecting to Custom page to edit this dish...");
-    
+
     // Navigate to Custom page with dish data as state
     navigate(APP_ROUTES.CUSTOM_ORDER, {
       state: {
         editMode: true,
         dishId: dish.dishId,
         dishData: dish,
-      }
+      },
     });
   };
 
@@ -84,20 +86,28 @@ const CartPage: React.FC = () => {
   const handleUpdateQuantity = (dish: any, newQuantity: number) => {
     // For both custom and existing dishes, use PUT API with dishId from order
     // API will automatically remove dish if quantity=0
-    updateDishQuantity.mutate({
-      dishId: dish.dishId, // Use dishId (order instance ID)
-      quantity: newQuantity,
-    }, {
-      onError: (error: any) => {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
-        toast.error(errorMessage);
+    updateDishQuantity.mutate(
+      {
+        dishId: dish.dishId, // Use dishId (order instance ID)
+        quantity: newQuantity,
       },
-    });
+      {
+        onError: (error: any) => {
+          const errorMessage =
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to update quantity";
+          toast.error(errorMessage);
+        },
+      },
+    );
   };
 
   // Helpers for staged quantity flow
   const getDisplayQuantity = (dishId: number, currentQty: number) =>
-    stagedQuantities[dishId] !== undefined ? stagedQuantities[dishId] : currentQty;
+    stagedQuantities[dishId] !== undefined
+      ? stagedQuantities[dishId]
+      : currentQty;
 
   const stageQuantity = (dishId: number, qty: number) => {
     setStagedQuantities((prev) => ({ ...prev, [dishId]: Math.max(0, qty) }));
@@ -114,18 +124,24 @@ const CartPage: React.FC = () => {
       const ok = confirm(`Remove ${dish.menuItemName} from cart?`);
       if (!ok) return;
     }
-    updateDishQuantity.mutate({
-      dishId: dish.dishId,
-      quantity: staged,
-    }, {
-      onSuccess: () => {
-        clearStaged(dish.dishId);
+    updateDishQuantity.mutate(
+      {
+        dishId: dish.dishId,
+        quantity: staged,
       },
-      onError: (error: any) => {
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
-        toast.error(errorMessage);
+      {
+        onSuccess: () => {
+          clearStaged(dish.dishId);
+        },
+        onError: (error: any) => {
+          const errorMessage =
+            error.response?.data?.message ||
+            error.message ||
+            "Failed to update quantity";
+          toast.error(errorMessage);
+        },
       },
-    });
+    );
   };
 
   const isEmpty = !order || dishes.length === 0;
@@ -416,7 +432,7 @@ const CartPage: React.FC = () => {
     <>
       <Navbar />
       <div className="min-h-screen bg-gray-50 py-20">
-        <div className="mx-auto max-w-6xl px-4">
+        <div className="mx-auto max-w-7xl px-4">
           {/* Header */}
           <div className="mb-8">
             <h1 className="mb-2 text-4xl font-bold text-gray-800">Your Cart</h1>
@@ -481,7 +497,10 @@ const CartPage: React.FC = () => {
                       {dishes.map((dish) => {
                         const dishQuantity =
                           Number(dish.quantity) > 0 ? Number(dish.quantity) : 1;
-                        const displayQuantity = getDisplayQuantity(dish.dishId, dishQuantity);
+                        const displayQuantity = getDisplayQuantity(
+                          dish.dishId,
+                          dishQuantity,
+                        );
 
                         // Debug log for dish structure
                         console.log("Dish structure:", {
@@ -554,8 +573,10 @@ const CartPage: React.FC = () => {
                                 </div>
 
                                 {/* Customizations - Support both steps and selections */}
-                                {((dish as any).steps && (dish as any).steps.length > 0) || 
-                                 (dish.selections && dish.selections.length > 0) ? (
+                                {((dish as any).steps &&
+                                  (dish as any).steps.length > 0) ||
+                                (dish.selections &&
+                                  dish.selections.length > 0) ? (
                                   <div className="mb-3">
                                     <button
                                       onClick={(e) => {
@@ -610,24 +631,32 @@ const CartPage: React.FC = () => {
                                         )}
                                         <div className="text-left">
                                           <p className="text-sm font-semibold text-gray-900">
-                                            {dish.isCustom ? "Customizations" : "Dish Steps"}
+                                            {dish.isCustom
+                                              ? "Customizations"
+                                              : "Dish Steps"}
                                           </p>
                                           <p className="text-xs text-gray-500">
-                                            {(dish as any).steps 
+                                            {(dish as any).steps
                                               ? (dish as any).steps.reduce(
                                                   (total: number, step: any) =>
-                                                    total + (step.items?.length || 0),
+                                                    total +
+                                                    (step.items?.length || 0),
                                                   0,
                                                 )
-                                              : dish.selections?.length || 0
-                                            }{" "}
-                                            ingredients {dish.isCustom ? "selected" : "included"}
+                                              : dish.selections?.length ||
+                                                0}{" "}
+                                            ingredients{" "}
+                                            {dish.isCustom
+                                              ? "selected"
+                                              : "included"}
                                           </p>
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2">
                                         <span className="text-xs font-medium text-gray-500">
-                                          {expandedCustomizations.has(dish.dishId)
+                                          {expandedCustomizations.has(
+                                            dish.dishId,
+                                          )
                                             ? "Hide"
                                             : "Show"}
                                         </span>
@@ -651,254 +680,316 @@ const CartPage: React.FC = () => {
                                       </div>
                                     </button>
 
-                                    {expandedCustomizations.has(dish.dishId) && (
+                                    {expandedCustomizations.has(
+                                      dish.dishId,
+                                    ) && (
                                       <div className="space-y-4">
                                         {/* Render steps format (custom dishes) */}
-                                        {(dish as any).steps && (dish as any).steps.length > 0 ? (
-                                          (dish as any).steps
-                                            .slice()
-                                            .sort((a: any, b: any) => {
-                                              const getOrder = (s: any) =>
-                                                s?.stepOrder ??
-                                                s?.order ??
-                                                s?.sortOrder ??
-                                                s?.index ??
-                                                s?.stepIndex ??
-                                                0;
-                                              return getOrder(a) - getOrder(b);
-                                            })
-                                            .map((step: any, stepIdx: number) => (
-                                              <div
-                                                key={step.stepId ?? stepIdx}
-                                                className="overflow-hidden rounded-lg border border-gray-200 bg-white"
-                                              >
-                                                <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 py-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                                                      {stepIdx + 1}
-                                                    </span>
-                                                    <p className="text-xs font-semibold text-gray-700">
-                                                      {step.stepName}
-                                                    </p>
-                                                  </div>
-                                                </div>
-                                                <div className="space-y-2 p-3">
-                                                  {step.items?.map(
-                                                    (
-                                                      item: any,
-                                                      itemIdx: number,
-                                                    ) => (
-                                                      <div
-                                                        key={itemIdx}
-                                                        className="group flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
-                                                      >
-                                                        <div className="flex flex-1 items-center gap-3">
-                                                          {/* Item Image */}
-                                                          {item.imageUrl && (
-                                                            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                                                              <img
-                                                                src={item.imageUrl}
-                                                                alt={
-                                                                  item.menuItemName
-                                                                }
-                                                                className="h-full w-full object-cover"
-                                                                onError={(e) => {
-                                                                  (
-                                                                    e.target as HTMLImageElement
-                                                                  ).style.display =
-                                                                    "none";
-                                                                }}
-                                                              />
-                                                            </div>
-                                                          )}
-                                                          {!item.imageUrl && (
-                                                            <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></div>
-                                                          )}
-                                                          <div className="flex-1">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                              <span className="text-sm font-medium text-gray-800">
-                                                                {item.menuItemName}
-                                                              </span>
-                                                              {item.cal && (
-                                                                <span className="rounded bg-orange-50 px-1.5 py-0.5 text-xs font-medium text-orange-600">
-                                                                  {item.cal} cal
-                                                                </span>
+                                        {(dish as any).steps &&
+                                        (dish as any).steps.length > 0
+                                          ? (dish as any).steps
+                                              .slice()
+                                              .sort((a: any, b: any) => {
+                                                const getOrder = (s: any) =>
+                                                  s?.stepOrder ??
+                                                  s?.order ??
+                                                  s?.sortOrder ??
+                                                  s?.index ??
+                                                  s?.stepIndex ??
+                                                  0;
+                                                return (
+                                                  getOrder(a) - getOrder(b)
+                                                );
+                                              })
+                                              .map(
+                                                (
+                                                  step: any,
+                                                  stepIdx: number,
+                                                ) => (
+                                                  <div
+                                                    key={step.stepId ?? stepIdx}
+                                                    className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+                                                  >
+                                                    <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 py-2">
+                                                      <div className="flex items-center gap-2">
+                                                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                                                          {stepIdx + 1}
+                                                        </span>
+                                                        <p className="text-xs font-semibold text-gray-700">
+                                                          {step.stepName}
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                    <div className="space-y-2 p-3">
+                                                      {step.items?.map(
+                                                        (
+                                                          item: any,
+                                                          itemIdx: number,
+                                                        ) => (
+                                                          <div
+                                                            key={itemIdx}
+                                                            className="group flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
+                                                          >
+                                                            <div className="flex flex-1 items-center gap-3">
+                                                              {/* Item Image */}
+                                                              {item.imageUrl && (
+                                                                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                                                  <img
+                                                                    src={
+                                                                      item.imageUrl
+                                                                    }
+                                                                    alt={
+                                                                      item.menuItemName
+                                                                    }
+                                                                    className="h-full w-full object-cover"
+                                                                    onError={(
+                                                                      e,
+                                                                    ) => {
+                                                                      (
+                                                                        e.target as HTMLImageElement
+                                                                      ).style.display =
+                                                                        "none";
+                                                                    }}
+                                                                  />
+                                                                </div>
                                                               )}
-                                                            </div>
-                                                            {item.extraPrice > 0 && (
-                                                              <span className="text-xs font-semibold text-green-600">
-                                                                +
-                                                                {item.extraPrice.toLocaleString(
-                                                                  "vi-VN",
+                                                              {!item.imageUrl && (
+                                                                <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></div>
+                                                              )}
+                                                              <div className="flex-1">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                  <span className="text-sm font-medium text-gray-800">
+                                                                    {
+                                                                      item.menuItemName
+                                                                    }
+                                                                  </span>
+                                                                  {item.cal && (
+                                                                    <span className="rounded bg-orange-50 px-1.5 py-0.5 text-xs font-medium text-orange-600">
+                                                                      {item.cal}{" "}
+                                                                      cal
+                                                                    </span>
+                                                                  )}
+                                                                </div>
+                                                                {item.extraPrice >
+                                                                  0 && (
+                                                                  <span className="text-xs font-semibold text-green-600">
+                                                                    +
+                                                                    {item.extraPrice.toLocaleString(
+                                                                      "vi-VN",
+                                                                    )}
+                                                                    ₫
+                                                                  </span>
                                                                 )}
-                                                                ₫
-                                                              </span>
+                                                              </div>
+                                                            </div>
+
+                                                            {/* Quantity controls - only show for custom dishes */}
+                                                            {dish.isCustom ? (
+                                                              <div className="flex items-center gap-3 rounded-full bg-gray-100 px-3 py-1.5">
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={(
+                                                                    e,
+                                                                  ) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    handleIngredientQuantityChange(
+                                                                      dish.dishId,
+                                                                      step.stepId,
+                                                                      item.menuItemId,
+                                                                      item.quantity -
+                                                                        1,
+                                                                    );
+                                                                  }}
+                                                                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-red-500 bg-white text-base font-bold text-red-600 shadow-sm transition-all hover:bg-red-500 hover:text-white active:scale-90"
+                                                                  title="Decrease quantity"
+                                                                >
+                                                                  −
+                                                                </button>
+                                                                <span className="min-w-[28px] text-center text-sm font-bold text-gray-800">
+                                                                  ×
+                                                                  {
+                                                                    item.quantity
+                                                                  }
+                                                                </span>
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={(
+                                                                    e,
+                                                                  ) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    handleIngredientQuantityChange(
+                                                                      dish.dishId,
+                                                                      step.stepId,
+                                                                      item.menuItemId,
+                                                                      item.quantity +
+                                                                        1,
+                                                                    );
+                                                                  }}
+                                                                  className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-green-500 bg-white text-base font-bold text-green-600 shadow-sm transition-all hover:bg-green-500 hover:text-white active:scale-90"
+                                                                  title="Increase quantity"
+                                                                >
+                                                                  +
+                                                                </button>
+                                                              </div>
+                                                            ) : (
+                                                              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
+                                                                <span className="text-sm font-bold text-gray-800">
+                                                                  ×
+                                                                  {
+                                                                    item.quantity
+                                                                  }
+                                                                </span>
+                                                              </div>
                                                             )}
                                                           </div>
-                                                        </div>
+                                                        ),
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ),
+                                              )
+                                          : dish.selections &&
+                                              dish.selections.length > 0
+                                            ? /* Render selections format (existing dishes from Menu) */
+                                              (() => {
+                                                // Group selections by stepName
+                                                const groupedByStep =
+                                                  dish.selections.reduce(
+                                                    (acc: any, sel: any) => {
+                                                      const stepName =
+                                                        sel.stepName ||
+                                                        "Ingredients";
+                                                      if (!acc[stepName]) {
+                                                        acc[stepName] = {
+                                                          stepId: sel.stepId,
+                                                          stepName: stepName,
+                                                          items: [],
+                                                        };
+                                                      }
+                                                      acc[stepName].items.push({
+                                                        menuItemId:
+                                                          sel.optionId,
+                                                        menuItemName:
+                                                          sel.optionName,
+                                                        quantity: sel.quantity,
+                                                        extraPrice:
+                                                          sel.extraPrice,
+                                                        imageUrl: sel.imageUrl,
+                                                        cal: sel.cal,
+                                                      });
+                                                      return acc;
+                                                    },
+                                                    {},
+                                                  );
 
-                                                        {/* Quantity controls - only show for custom dishes */}
-                                                        {dish.isCustom ? (
-                                                          <div className="flex items-center gap-3 rounded-full bg-gray-100 px-3 py-1.5">
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                handleIngredientQuantityChange(
-                                                                  dish.dishId,
-                                                                  step.stepId,
-                                                                  item.menuItemId,
-                                                                  item.quantity - 1,
-                                                                );
-                                                              }}
-                                                              className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-red-500 bg-white text-base font-bold text-red-600 shadow-sm transition-all hover:bg-red-500 hover:text-white active:scale-90"
-                                                              title="Decrease quantity"
+                                                return Object.values(
+                                                  groupedByStep,
+                                                ).map(
+                                                  (
+                                                    step: any,
+                                                    stepIdx: number,
+                                                  ) => (
+                                                    <div
+                                                      key={
+                                                        step.stepId ?? stepIdx
+                                                      }
+                                                      className="overflow-hidden rounded-lg border border-gray-200 bg-white"
+                                                    >
+                                                      <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 py-2">
+                                                        <div className="flex items-center gap-2">
+                                                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                                                            {stepIdx + 1}
+                                                          </span>
+                                                          <p className="text-xs font-semibold text-gray-700">
+                                                            {step.stepName}
+                                                          </p>
+                                                        </div>
+                                                      </div>
+                                                      <div className="space-y-2 p-3">
+                                                        {step.items.map(
+                                                          (
+                                                            item: any,
+                                                            itemIdx: number,
+                                                          ) => (
+                                                            <div
+                                                              key={itemIdx}
+                                                              className="group flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
                                                             >
-                                                              −
-                                                            </button>
-                                                            <span className="min-w-[28px] text-center text-sm font-bold text-gray-800">
-                                                              ×{item.quantity}
-                                                            </span>
-                                                            <button
-                                                              type="button"
-                                                              onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                handleIngredientQuantityChange(
-                                                                  dish.dishId,
-                                                                  step.stepId,
-                                                                  item.menuItemId,
-                                                                  item.quantity + 1,
-                                                                );
-                                                              }}
-                                                              className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-green-500 bg-white text-base font-bold text-green-600 shadow-sm transition-all hover:bg-green-500 hover:text-white active:scale-90"
-                                                              title="Increase quantity"
-                                                            >
-                                                              +
-                                                            </button>
-                                                          </div>
-                                                        ) : (
-                                                          <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
-                                                            <span className="text-sm font-bold text-gray-800">
-                                                              ×{item.quantity}
-                                                            </span>
-                                                          </div>
+                                                              <div className="flex flex-1 items-center gap-3">
+                                                                {/* Item Image */}
+                                                                {item.imageUrl && (
+                                                                  <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                                                    <img
+                                                                      src={
+                                                                        item.imageUrl
+                                                                      }
+                                                                      alt={
+                                                                        item.menuItemName
+                                                                      }
+                                                                      className="h-full w-full object-cover"
+                                                                      onError={(
+                                                                        e,
+                                                                      ) => {
+                                                                        (
+                                                                          e.target as HTMLImageElement
+                                                                        ).style.display =
+                                                                          "none";
+                                                                      }}
+                                                                    />
+                                                                  </div>
+                                                                )}
+                                                                {!item.imageUrl && (
+                                                                  <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></div>
+                                                                )}
+                                                                <div className="flex-1">
+                                                                  <div className="flex flex-wrap items-center gap-2">
+                                                                    <span className="text-sm font-medium text-gray-800">
+                                                                      {
+                                                                        item.menuItemName
+                                                                      }
+                                                                    </span>
+                                                                    {item.cal && (
+                                                                      <span className="rounded bg-orange-50 px-1.5 py-0.5 text-xs font-medium text-orange-600">
+                                                                        {
+                                                                          item.cal
+                                                                        }{" "}
+                                                                        cal
+                                                                      </span>
+                                                                    )}
+                                                                  </div>
+                                                                  {item.extraPrice >
+                                                                    0 && (
+                                                                    <span className="text-xs font-semibold text-green-600">
+                                                                      +
+                                                                      {item.extraPrice.toLocaleString(
+                                                                        "vi-VN",
+                                                                      )}
+                                                                      ₫
+                                                                    </span>
+                                                                  )}
+                                                                </div>
+                                                              </div>
+
+                                                              {/* Show quantity - read-only for existing dishes */}
+                                                              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
+                                                                <span className="text-sm font-bold text-gray-800">
+                                                                  ×
+                                                                  {
+                                                                    item.quantity
+                                                                  }
+                                                                </span>
+                                                              </div>
+                                                            </div>
+                                                          ),
                                                         )}
                                                       </div>
-                                                    ),
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ))
-                                        ) : dish.selections && dish.selections.length > 0 ? (
-                                          /* Render selections format (existing dishes from Menu) */
-                                          (() => {
-                                            // Group selections by stepName
-                                            const groupedByStep = dish.selections.reduce((acc: any, sel: any) => {
-                                              const stepName = sel.stepName || 'Ingredients';
-                                              if (!acc[stepName]) {
-                                                acc[stepName] = {
-                                                  stepId: sel.stepId,
-                                                  stepName: stepName,
-                                                  items: []
-                                                };
-                                              }
-                                              acc[stepName].items.push({
-                                                menuItemId: sel.optionId,
-                                                menuItemName: sel.optionName,
-                                                quantity: sel.quantity,
-                                                extraPrice: sel.extraPrice,
-                                                imageUrl: sel.imageUrl,
-                                                cal: sel.cal
-                                              });
-                                              return acc;
-                                            }, {});
-
-                                            return Object.values(groupedByStep).map((step: any, stepIdx: number) => (
-                                              <div
-                                                key={step.stepId ?? stepIdx}
-                                                className="overflow-hidden rounded-lg border border-gray-200 bg-white"
-                                              >
-                                                <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-3 py-2">
-                                                  <div className="flex items-center gap-2">
-                                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
-                                                      {stepIdx + 1}
-                                                    </span>
-                                                    <p className="text-xs font-semibold text-gray-700">
-                                                      {step.stepName}
-                                                    </p>
-                                                  </div>
-                                                </div>
-                                                <div className="space-y-2 p-3">
-                                                  {step.items.map(
-                                                    (
-                                                      item: any,
-                                                      itemIdx: number,
-                                                    ) => (
-                                                      <div
-                                                        key={itemIdx}
-                                                        className="group flex items-center justify-between rounded-lg px-2 py-2 transition-colors hover:bg-gray-50"
-                                                      >
-                                                        <div className="flex flex-1 items-center gap-3">
-                                                          {/* Item Image */}
-                                                          {item.imageUrl && (
-                                                            <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
-                                                              <img
-                                                                src={item.imageUrl}
-                                                                alt={
-                                                                  item.menuItemName
-                                                                }
-                                                                className="h-full w-full object-cover"
-                                                                onError={(e) => {
-                                                                  (
-                                                                    e.target as HTMLImageElement
-                                                                  ).style.display =
-                                                                    "none";
-                                                                }}
-                                                              />
-                                                            </div>
-                                                          )}
-                                                          {!item.imageUrl && (
-                                                            <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-red-500"></div>
-                                                          )}
-                                                          <div className="flex-1">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                              <span className="text-sm font-medium text-gray-800">
-                                                                {item.menuItemName}
-                                                              </span>
-                                                              {item.cal && (
-                                                                <span className="rounded bg-orange-50 px-1.5 py-0.5 text-xs font-medium text-orange-600">
-                                                                  {item.cal} cal
-                                                                </span>
-                                                              )}
-                                                            </div>
-                                                            {item.extraPrice > 0 && (
-                                                              <span className="text-xs font-semibold text-green-600">
-                                                                +
-                                                                {item.extraPrice.toLocaleString(
-                                                                  "vi-VN",
-                                                                )}
-                                                                ₫
-                                                              </span>
-                                                            )}
-                                                          </div>
-                                                        </div>
-
-                                                        {/* Show quantity - read-only for existing dishes */}
-                                                        <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
-                                                          <span className="text-sm font-bold text-gray-800">
-                                                            ×{item.quantity}
-                                                          </span>
-                                                        </div>
-                                                      </div>
-                                                    ),
-                                                  )}
-                                                </div>
-                                              </div>
-                                            ));
-                                          })()
-                                        ) : null}
+                                                    </div>
+                                                  ),
+                                                );
+                                              })()
+                                            : null}
                                       </div>
                                     )}
                                   </div>
@@ -914,46 +1005,69 @@ const CartPage: React.FC = () => {
                                       stageQuantity(dish.dishId, newQuantity);
                                     }}
                                     disabled={
-                                      deleteCustomDish.isPending || 
+                                      deleteCustomDish.isPending ||
                                       deleteExistingDish.isPending ||
                                       updateDishQuantity.isPending
                                     }
                                     className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Decrease quantity"
                                   >
-                                    <span className="text-base font-bold">−</span>
+                                    <span className="text-base font-bold">
+                                      −
+                                    </span>
                                   </button>
                                   <span className="min-w-[32px] text-center text-lg font-bold text-gray-900">
                                     {displayQuantity}
                                   </span>
                                   <button
                                     onClick={() => {
-                                      stageQuantity(dish.dishId, displayQuantity + 1);
+                                      stageQuantity(
+                                        dish.dishId,
+                                        displayQuantity + 1,
+                                      );
                                     }}
                                     disabled={
-                                      deleteCustomDish.isPending || 
+                                      deleteCustomDish.isPending ||
                                       deleteExistingDish.isPending ||
                                       updateDishQuantity.isPending
                                     }
                                     className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-700 transition-all hover:from-gray-100 hover:to-gray-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                                     title="Increase quantity"
                                   >
-                                    <span className="text-base font-bold">+</span>
+                                    <span className="text-base font-bold">
+                                      +
+                                    </span>
                                   </button>
                                   {/* Confirm button appears when staged differs */}
-                                  {stagedQuantities[dish.dishId] !== undefined && stagedQuantities[dish.dishId] !== dishQuantity && (
-                                    <button
-                                      onClick={() => confirmStagedQuantity(dish, dishQuantity)}
-                                      disabled={updateDishQuantity.isPending}
-                                      className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:opacity-60"
-                                      title="Confirm quantity"
-                                    >
-                                      <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293A1 1 0 106.293 10.707l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                      </svg>
-                                      Confirm
-                                    </button>
-                                  )}
+                                  {stagedQuantities[dish.dishId] !==
+                                    undefined &&
+                                    stagedQuantities[dish.dishId] !==
+                                      dishQuantity && (
+                                      <button
+                                        onClick={() =>
+                                          confirmStagedQuantity(
+                                            dish,
+                                            dishQuantity,
+                                          )
+                                        }
+                                        disabled={updateDishQuantity.isPending}
+                                        className="ml-1 inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:opacity-60"
+                                        title="Confirm quantity"
+                                      >
+                                        <svg
+                                          className="h-3.5 w-3.5"
+                                          viewBox="0 0 20 20"
+                                          fill="currentColor"
+                                        >
+                                          <path
+                                            fillRule="evenodd"
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293A1 1 0 106.293 10.707l2 2a1 1 0 001.414 0l4-4z"
+                                            clipRule="evenodd"
+                                          />
+                                        </svg>
+                                        Confirm
+                                      </button>
+                                    )}
                                 </div>
 
                                 {/* Remove Button */}
@@ -964,11 +1078,14 @@ const CartPage: React.FC = () => {
                                         `Remove ${dish.menuItemName} from cart?`,
                                       )
                                     ) {
-                                      handleDeleteDish(dish.dishId, dish.isCustom);
+                                      handleDeleteDish(
+                                        dish.dishId,
+                                        dish.isCustom,
+                                      );
                                     }
                                   }}
                                   disabled={
-                                    deleteCustomDish.isPending || 
+                                    deleteCustomDish.isPending ||
                                     deleteExistingDish.isPending
                                   }
                                   className="group flex items-center gap-2 text-sm font-medium text-red-600 transition-colors hover:text-red-700 disabled:opacity-50"
@@ -986,8 +1103,9 @@ const CartPage: React.FC = () => {
                                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                     />
                                   </svg>
-                                  {deleteCustomDish.isPending || deleteExistingDish.isPending 
-                                    ? "Removing..." 
+                                  {deleteCustomDish.isPending ||
+                                  deleteExistingDish.isPending
+                                    ? "Removing..."
                                     : "Remove"}
                                 </button>
 
@@ -1103,7 +1221,9 @@ const CartPage: React.FC = () => {
                                   name="paymentMethod"
                                   value={method.id}
                                   checked={selectedPaymentMethod === method.id}
-                                  onChange={() => setSelectedPaymentMethod(method.id)}
+                                  onChange={() =>
+                                    setSelectedPaymentMethod(method.id)
+                                  }
                                   className="mr-4 h-5 w-5 text-red-600 focus:ring-red-500"
                                 />
 
