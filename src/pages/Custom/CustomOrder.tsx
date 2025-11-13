@@ -4,8 +4,8 @@ import { Footer } from '@/components/Footer';
 import { stepService, type Step } from '@/services/stepService';
 import { menuItemsService, type MenuItem } from '@/services/menuItemsService';
 import { storeService, type Store } from '@/services/storeService';
-import { useAddCustomDishToOrder } from '@/hooks/useOrderCustomer';
-import { useNavigate } from 'react-router-dom';
+import { useAddCustomDishToOrder, useUpdateDish } from '@/hooks/useOrderCustomer';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_ROUTES } from '@/routes/route.constants';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, ShoppingCart, Flame } from 'lucide-react';
@@ -19,6 +19,7 @@ const currencyFormat = (v: number, currency: string) =>
 
 const CustomOrder: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [steps, setSteps] = useState<Step[]>([]);
   const [menuItemsByCategory, setMenuItemsByCategory] = useState<Record<number, MenuItem[]>>({});
   const [current, setCurrent] = useState(0);
@@ -29,8 +30,14 @@ const CustomOrder: React.FC = () => {
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
   const [note, setNote] = useState<string>('');
   
-  // Order customer mutation
+  // Check if we're in edit mode
+  const editMode = location.state?.editMode;
+  const editDishId = location.state?.dishId;
+  const editDishData = location.state?.dishData;
+  
+  // Order customer mutations
   const addDish = useAddCustomDishToOrder(selectedStoreId || 0);
+  const updateDish = useUpdateDish(selectedStoreId || 0);
   
   // Pagination for items (4 columns x 3 rows = 12 items per page)
   const ITEMS_PER_PAGE = 12;
@@ -97,6 +104,39 @@ const CustomOrder: React.FC = () => {
     })();
     return () => { mounted = false; };
   }, [selectedStoreId]);
+
+  // Prefill data when in edit mode
+  useEffect(() => {
+    if (editMode && editDishData && steps.length > 0 && !loading) {
+      try {
+        // Convert dish.steps format to SelectionMap format
+        const prefillSelection: SelectionMap = {};
+        
+        if (editDishData.steps && Array.isArray(editDishData.steps)) {
+          editDishData.steps.forEach((step: any) => {
+            if (step.stepId && step.items && Array.isArray(step.items)) {
+              prefillSelection[step.stepId] = step.items.map((item: any) => ({
+                menuItemId: item.menuItemId,
+                quantity: item.quantity || 1,
+              }));
+            }
+          });
+        }
+        
+        setSelection(prefillSelection);
+        
+        // Also prefill note if exists
+        if (editDishData.note) {
+          setNote(editDishData.note);
+        }
+        
+        toast.success('Dish data loaded for editing');
+      } catch (err) {
+        console.error('Failed to prefill edit data:', err);
+        toast.error('Failed to load dish data');
+      }
+    }
+  }, [editMode, editDishData, steps, loading]);
 
   const currentStep = useMemo(() => steps[current], [steps, current]);
   const currentStepMenuItems = useMemo(() => {
@@ -238,7 +278,47 @@ const CustomOrder: React.FC = () => {
         })),
       }));
 
-    // Add custom bowl to order
+    // If in edit mode, update existing dish instead of adding new
+    if (editMode && editDishId) {
+      updateDish.mutate(
+        {
+          dishId: editDishId,
+          request: {
+            note: note.trim() || 'Custom bowl',
+            selections,
+          },
+        },
+        {
+          onSuccess: () => {
+            toast.success('Custom dish updated!', {
+              description: 'Your changes have been saved successfully.',
+              duration: 3000,
+            });
+            // Navigate back to cart
+            navigate(APP_ROUTES.CART);
+          },
+          onError: (error: any) => {
+            console.error('Failed to update custom dish:', error);
+            
+            if (error.response?.status === 401) {
+              toast.error('Authentication required', {
+                description: 'Please login to update items in cart',
+                duration: 4000,
+              });
+            } else {
+              const errorMsg = error.response?.data?.message || error.message || 'Failed to update dish';
+              toast.error('Update failed', {
+                description: errorMsg,
+                duration: 4000,
+              });
+            }
+          },
+        }
+      );
+      return;
+    }
+
+    // Add new custom bowl to order
     addDish.mutate(
       {
         storeId: selectedStoreId,
@@ -252,13 +332,12 @@ const CustomOrder: React.FC = () => {
           setSelection({});
           setCurrent(0);
           setNote('');
-          // Show success toast
+          
+          // Show add success toast
           toast.success('Custom bowl added to order!', {
             description: 'Your custom dish has been added successfully.',
             duration: 3000,
           });
-          // Optionally navigate to menu or cart
-          // navigate(APP_ROUTES.MENU);
         },
         onError: (error: any) => {
           console.error('Failed to add custom bowl:', error);
@@ -289,8 +368,20 @@ const CustomOrder: React.FC = () => {
         <div className="w-[95vw] lg:w-[80vw] mx-auto overflow-x-hidden">
           {/* Header - Compact */}
           <div className="text-center mb-4">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Build Your Perfect Bowl</h1>
-            <p className="text-sm text-gray-600">Customize your meal step by step</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+              {editMode ? 'Edit Your Custom Dish' : 'Build Your Perfect Bowl'}
+            </h1>
+            <p className="text-sm text-gray-600">
+              {editMode ? 'Update your customizations below' : 'Customize your meal step by step'}
+            </p>
+            {editMode && (
+              <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Editing existing dish
+              </div>
+            )}
           </div>
 
           {/* Store selector - Compact */}
@@ -484,10 +575,12 @@ const CustomOrder: React.FC = () => {
                       <button
                         className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleDone}
-                        disabled={!hasAnySelection}
+                        disabled={!hasAnySelection || addDish.isPending || updateDish.isPending}
                       >
                         <ShoppingCart className="w-4 h-4" />
-                        Add to Cart
+                        {addDish.isPending || updateDish.isPending 
+                          ? 'Processing...' 
+                          : editMode ? 'Update Dish' : 'Add to Cart'}
                       </button>
                     ) : (
                       <button
@@ -601,10 +694,12 @@ const CustomOrder: React.FC = () => {
                   <button
                     className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 font-semibold text-sm text-white hover:from-red-700 hover:to-red-800 shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={handleDone}
-                    disabled={!hasAnySelection}
+                    disabled={!hasAnySelection || addDish.isPending || updateDish.isPending}
                   >
                     <ShoppingCart className="w-4 h-4" />
-                    Add to Cart
+                    {addDish.isPending || updateDish.isPending 
+                      ? 'Processing...' 
+                      : editMode ? 'Update Dish' : 'Add to Cart'}
                   </button>
                 ) : (
                   <button
